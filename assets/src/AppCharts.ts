@@ -1,6 +1,5 @@
 import Axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
-import {Chart, ChartItem, ChartOptions, TooltipItem, TooltipOptions} from "chart.js/auto";
-import defaultCallbacks from "chart.js/dist/plugins/plugin.tooltip";
+import {Chart, ChartItem, ChartOptions} from "chart.js/auto";
 
 function currencyFormatter(value: number): string {
     return Intl.NumberFormat(

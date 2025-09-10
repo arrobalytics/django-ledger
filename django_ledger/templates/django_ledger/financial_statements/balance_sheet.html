@@ -36,7 +36,7 @@
                                 {% elif month %}{{ from_date | date:'F, Y' }}
                                 {% else %}{% trans 'Fiscal Year' %} {{ year }}
                             {% endif %}</h2>
-                        <h3 class="is-size-4 is-italic has-font-weight-light">As Of {{ to_date | date:'m/d/Y' }}</h3>
+                        <h3 class="is-size-4 is-italic has-font-weight-light">{% trans 'As of' %} {{ to_date | date:'F j, Y' }}</h3>
                     </div>
                 </div>
             </div>

@@ -5,57 +5,72 @@
     <div class="box">
         <aside class="menu">
             <p class="menu-label">{% session_entity_name request %}</p>
-            <ul class="menu-list">
-
+            <ul>
                 {% for link in links %}
                     {% if link.type == 'link' %}
                         <li>
-                            <a href="{{ link.url }}">{{ link.title }}</a>
+                            <a href="{{ link.url }}" class="button is-light has-text-grey is-light is-outlined has-text-weight-bold is-fullwidth is-justify-content-flex-start is-align-items-center mt-1">
+                                <span class="icon is-small" aria-hidden="true">
+                                    <iconify-icon icon="{{ link.icon }}" width="1em" height="1em"></iconify-icon>
+                                </span>
+                                <span class="ml-2">{{ link.title }}</span>
+                            </a>
                         </li>
                     {% elif link.type == 'links' %}
-                        <li>
-                            <a>{{ link.title }}</a>
-                            <ul>
-                                {% for l in link.links %}
-                                    <li>
-                                        <a href="{{ l.url }}">{{ l.title }}</a>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </li>
+                        </ul>
+                        <p class="menu-label">{{ link.title }}</p>
+                        <ul class="menu-list">
+                            {% for l in link.links %}
+                                <li>
+                                    <a href="{{ l.url }}" class="button is-light has-text-grey is-light is-outlined has-text-weight-bold is-fullwidth is-justify-content-flex-start is-align-items-center mt-1">
+                                        <span class="icon is-small" aria-hidden="true">
+                                            <iconify-icon icon="{{ l.icon }}" width="1em" height="1em"></iconify-icon>
+                                        </span>
+                                        <span class="ml-2">{{ l.title }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
                     {% endif %}
                 {% endfor %}
-
             </ul>
         </aside>
     </div>
 
-{# A menu that renders only on mobile devices when the burger menu is opened #}
 {% elif style == 'mobile' %}
     <div class="navbar-start">
-        <div class="navbar-item has-text-weight-bold is-hidden-desktop">{{ entity.name | upper }}</div>
+        <div class="navbar-item has-text-weight-bold is-hidden-desktop">
+            {{ entity.name | upper }}
+        </div>
         {% for link in links %}
 
             {% if link.type == 'link' %}
-                <a class="navbar-item is-hidden-desktop"
-                   href="{{ link.url }}">{{ link.title }}</a>
+                <a class="navbar-item is-hidden-desktop is-flex is-align-items-center has-text-primary"
+                   href="{{ link.url }}">
+                    <span class="icon is-small" aria-hidden="true">
+                        <iconify-icon icon="{{ link.icon }}" width="1em" height="1em"></iconify-icon>
+                    </span>
+                    <span class="ml-2">{{ link.title }}</span>
+                </a>
 
             {% elif link.type == 'links' %}
                 <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
-                    <a class="navbar-link">{{ link.title }}</a>
-                    <div class="navbar-dropdown">
-
+                    <a class="navbar-link has-text-primary is-flex is-align-items-center">
+                        <span class="has-text-weight-semibold">{{ link.title }}</span>
+                    </a>
+                    <div class="navbar-dropdown is-boxed">
                         {% for l in link.links %}
-                            <a class="navbar-item"
-                               href="{{ l.url }}">{{ l.title }}</a>
+                            <a class="navbar-item is-flex is-align-items-center has-text-primary"
+                               href="{{ l.url }}">
+                                <span class="icon is-small" aria-hidden="true">
+                                    <iconify-icon icon="{{ l.icon }}" width="1em" height="1em"></iconify-icon>
+                                </span>
+                                <span class="ml-2">{{ l.title }}</span>
+                            </a>
                         {% endfor %}
-
                     </div>
                 </div>
             {% endif %}
 
         {% endfor %}
     </div>
-
-
 {% endif %}

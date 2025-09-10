@@ -20,15 +20,19 @@
             <tr class="has-text-centered">
                 <td>{{ vendor.vendor_number }}</td>
                 <td>{{ vendor.vendor_name }}</td>
-                <td>{{ vendor.address_1 }}</td>
+                <td>
+                    {% if vendor.address_1 %}
+                        {{ vendor.address_1 }}
+                    {% endif %}
+                </td>
                 <td>{% if vendor.vendor_code %}{{ vendor.vendor_code }}{% endif %}</td>
                 <td>
                     {% if vendor.active %}
-                        <span class="icon has-text-success-dark">
+                        <span class="icon has-text-success">
                                         {% icon 'ant-design:check-circle-filled' 24 %}
                                     </span>
                     {% elif not vendor.active %}
-                        <span class="icon has-text-danger-dark">
+                        <span class="icon has-text-danger">
                                         {% icon 'mdi:dangerous' 24 %}
                                     </span>
                     {% endif %}
@@ -36,11 +40,11 @@
 
                 <td>
                     {% if vendor.hidden %}
-                        <span class="icon has-text-success-dark">
+                        <span class="icon has-text-success">
                                         {% icon 'ant-design:check-circle-filled' 24 %}
                                     </span>
                     {% elif not vendor.hidden %}
-                        <span class="icon has-text-danger-dark">
+                        <span class="icon has-text-danger">
                                         {% icon 'mdi:dangerous' 24 %}
                                     </span>
                     {% endif %}

@@ -1,4 +1,4 @@
-from django.forms import ModelForm, TextInput, Select, ChoiceField
+from django.forms import ModelForm, TextInput, Select
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_INVENTORY, GROUP_EXPENSES, GROUP_COGS
@@ -48,7 +48,6 @@ class ProductCreateForm(ModelForm):
 
         accounts_qs = AccountModel.objects.for_entity(
             entity_model=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
         ).with_roles(
             roles=self.PRODUCT_OR_SERVICE_ROLES
         ).active()
@@ -62,8 +61,7 @@ class ProductCreateForm(ModelForm):
 
         if 'uom' in self.fields:
             uom_qs = UnitOfMeasureModel.objects.for_entity_active(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
+                entity_model=self.ENTITY_SLUG
             )
             self.fields['uom'].queryset = uom_qs
 
@@ -142,8 +140,7 @@ class ServiceCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.for_entity(
-            entity_model=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG
         ).with_roles(
             roles=self.SERVICE_ROLES,
         ).active()
@@ -156,8 +153,7 @@ class ServiceCreateForm(ModelForm):
 
         if 'uom' in self.fields:
             uom_qs = UnitOfMeasureModel.objects.for_entity_active(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
+                entity_model=self.ENTITY_SLUG,
             )
             self.fields['uom'].queryset = uom_qs
 
@@ -229,8 +225,7 @@ class ExpenseItemCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.for_entity(
-            entity_model=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG
         ).with_roles(
             roles=GROUP_EXPENSES
         ).active()
@@ -239,9 +234,8 @@ class ExpenseItemCreateForm(ModelForm):
 
         if 'uom' in self.fields:
             uom_qs = UnitOfMeasureModel.objects.for_entity(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
-            )
+                entity_model=self.ENTITY_SLUG
+            ).for_user(user_model=self.USER_MODEL)
             self.fields['uom'].queryset = uom_qs
 
     class Meta:
@@ -313,18 +307,16 @@ class InventoryItemCreateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.objects.for_entity(
+        inventory_account_qs = AccountModel.objects.for_entity(
             entity_model=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
         ).with_roles(
             roles=[ASSET_CA_INVENTORY]
         ).active()
-        self.fields['inventory_account'].queryset = accounts_qs
+        self.fields['inventory_account'].queryset = inventory_account_qs
 
         if 'uom' in self.fields:
             uom_qs = UnitOfMeasureModel.objects.for_entity_active(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
+                entity_model=self.ENTITY_SLUG,
             )
             self.fields['uom'].queryset = uom_qs
 

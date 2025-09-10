@@ -11,7 +11,8 @@ whether temporarily or indefinitely may be flagged as inactive (i.e. active is F
 as an option in the UI, but can still be used programmatically (via API).
 """
 import os
-from uuid import uuid4
+import warnings
+from uuid import uuid4, UUID
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
@@ -19,9 +20,14 @@ from django.db.models import Q, F, QuerySet, Manager
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, FinancialAccountInfoMixin, TaxInfoMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_VENDOR_NUMBER_PREFIX
+from django_ledger.settings import (
+    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_VENDOR_NUMBER_PREFIX,
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+)
 
 
 def vendor_picture_upload_to(instance, filename):
@@ -42,7 +48,15 @@ class VendorModelQuerySet(QuerySet):
     Custom defined VendorModel QuerySet.
     """
 
-    def active(self) -> QuerySet:
+    def for_user(self, user_model) -> 'VendorModelQuerySet':
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity_model__admin=user_model) |
+            Q(entity_model__managers__in=[user_model])
+        )
+
+    def active(self) -> 'VendorModelQuerySet':
         """
         Active vendors can be assigned to new bills and show on dropdown menus and views.
 
@@ -53,7 +67,7 @@ class VendorModelQuerySet(QuerySet):
         """
         return self.filter(active=True)
 
-    def inactive(self) -> QuerySet:
+    def inactive(self) -> 'VendorModelQuerySet':
         """
         Active vendors can be assigned to new bills and show on dropdown menus and views.
         Marking VendorModels as inactive can help reduce Database load to populate select inputs and also inactivate
@@ -67,7 +81,7 @@ class VendorModelQuerySet(QuerySet):
         """
         return self.filter(active=False)
 
-    def hidden(self) -> QuerySet:
+    def hidden(self) -> 'VendorModelQuerySet':
         """
         Hidden vendors do not show on dropdown menus, but may be used via APIs or any other method that does not
         involve the UI.
@@ -79,7 +93,7 @@ class VendorModelQuerySet(QuerySet):
         """
         return self.filter(hidden=True)
 
-    def visible(self) -> QuerySet:
+    def visible(self) -> 'VendorModelQuerySet':
         """
         Visible vendors show on dropdown menus and views. Visible vendors are active and not hidden.
 
@@ -95,49 +109,67 @@ class VendorModelQuerySet(QuerySet):
 
 class VendorModelManager(Manager):
     """
-    Custom defined VendorModel Manager, which defines many methods for initial query of the Database.
+    Manages operations related to VendorModel instances.
+
+    A specialized manager for handling interactions with VendorModel entities,
+    providing additional support for filtering based on associated EntityModel or EntityModel slug.
     """
 
-    def for_user(self, user_model):
+    @deprecated_entity_slug_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> VendorModelQuerySet:
+        """
+            Filters the queryset for a given entity model.
+
+            This method modifies the queryset to include only those records
+            associated with the specified entity model. The entity model can
+            be provided in various formats such as an instance of `EntityModel`,
+            a string representing the entity's slug, or its UUID.
+
+            If a deprecated parameter `user_model` is provided, it will issue
+            a warning and may alter the behavior if the deprecated behavior flag
+            `DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR` is set.
+
+            Parameters
+            ----------
+            entity_model : EntityModel | str | UUID
+                The entity model or its identifier (slug or UUID) to filter the
+                queryset by.
+
+            **kwargs
+                Additional parameters for optional functionality. The parameter
+                `user_model` is supported for backward compatibility but is
+                deprecated and should be avoided.
+
+            Returns
+            -------
+            VendorModelQuerySet
+                A queryset filtered for the given entity model.
+        """
+        EntityModel = lazy_loader.get_entity_model()
+
         qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(entity_model__admin=user_model) |
-            Q(entity_model__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug, user_model) -> VendorModelQuerySet:
-        """
-        Fetches a QuerySet of VendorModel associated with a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
-
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> vendor_model_qs = VendorModel.objects.for_entity(user_model=request_user, entity_slug=slug)
-
-        Returns
-        -------
-        VendorModelQuerySet
-            A filtered VendorModel QuerySet.
-        """
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity_model=entity_slug)
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        return qs.filter(
-            Q(entity_model__slug__exact=entity_slug)
-        )
+
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity_model=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity_model__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_model_id=entity_model)
+        else:
+            raise VendorModelValidationError(
+                'EntityModel slug must be either a string or an EntityModel instance'
+            )
+        return qs
 
 
 class VendorModelAbstract(ContactInfoMixIn,

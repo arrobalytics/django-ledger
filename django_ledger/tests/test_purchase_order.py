@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from random import choice, randint
-from typing import Union, Optional
+from typing import Union, Optional, List
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -31,8 +31,8 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
                                       commit=True)
         return po_model
 
-    def get_purchase_orders(self, entity_model: EntityModel) -> list[PurchaseOrderModel]:
-        return PurchaseOrderModel.objects.for_entity(entity_model, self.user_model)
+    def get_purchase_orders(self, entity_model: EntityModel) -> List[PurchaseOrderModel]:
+        return PurchaseOrderModel.objects.for_entity(entity_model=entity_model)
 
     def test_protected_views(self):
         """

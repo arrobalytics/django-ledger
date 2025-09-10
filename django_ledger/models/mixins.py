@@ -106,7 +106,7 @@ class ContactInfoMixIn(models.Model):
     phone: str
         A string used to document the contact phone.
     """
-    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
+    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'), null=True, blank=True)
     address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
     city = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('City'))
     state = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('State/Province'))
@@ -129,6 +129,10 @@ class ContactInfoMixIn(models.Model):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
     def clean(self):
+        if self.address_2 and not self.address_1:
+            raise ValidationError(
+                {'address_1': _('Address line 1 is required if address_2 is provided.')},
+            )
         super().clean()
 
 
@@ -231,8 +235,6 @@ class AccrualMixIn(models.Model):
                                         null=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
-
-    # todo: rename to payable account...
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.RESTRICT,
                                          blank=True,

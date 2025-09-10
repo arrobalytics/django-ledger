@@ -23,21 +23,18 @@ from django_ledger.models import PurchaseOrderModel, ItemTransactionModel, Estim
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class PurchaseOrderModelModelViewQuerySetMixIn:
+class PurchaseOrderModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = PurchaseOrderModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
             ).select_related('entity', 'ce_model')
         return super().get_queryset()
 
 
-class PurchaseOrderModelListView(DjangoLedgerSecurityMixIn,
-                                 PurchaseOrderModelModelViewQuerySetMixIn,
-                                 ArchiveIndexView):
+class PurchaseOrderModelListView(PurchaseOrderModelModelViewQuerySetMixIn, ArchiveIndexView):
     template_name = 'django_ledger/purchase_order/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
@@ -76,9 +73,7 @@ class PurchaseOrderModelMonthListView(MonthArchiveView,
     date_list_period = 'year'
 
 
-class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
-                                   PurchaseOrderModelModelViewQuerySetMixIn,
-                                   CreateView):
+class PurchaseOrderModelCreateView(PurchaseOrderModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/purchase_order/po_create.html'
     PAGE_TITLE = _('Create Purchase Order')
     extra_context = {
@@ -92,8 +87,7 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
         response = super(PurchaseOrderModelCreateView, self).get(request, entity_slug, **kwargs)
         if self.for_estimate and 'ce_pk' in self.kwargs:
             estimate_qs = EstimateModel.objects.for_entity(
-                entity_slug=entity_slug,
-                user_model=self.request.user
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
             )
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             if not estimate_model.can_bind():
@@ -110,8 +104,7 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
                                                      'ce_pk': self.kwargs['ce_pk']
                                                  })
             estimate_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.AUTHORIZED_ENTITY_MODEL
             ).select_related('customer')
             estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             context['estimate_model'] = estimate_model
@@ -125,23 +118,25 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
-        form = PurchaseOrderModelCreateForm(entity_slug=entity_slug,
-                                            user_model=self.request.user,
-                                            **self.get_form_kwargs())
+        form = PurchaseOrderModelCreateForm(
+            entity_slug=entity_slug,
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
         return form
 
     def form_valid(self, form):
         po_model: PurchaseOrderModel = form.save(commit=False)
         po_model = po_model.configure(
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user)
+            user_model=self.request.user
+        )
 
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            )
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
+            ).for_user(user_model=self.request.user)
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             po_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
         return super().form_valid(form=form)
@@ -162,9 +157,7 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
                        })
 
 
-class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
-                                   PurchaseOrderModelModelViewQuerySetMixIn,
-                                   UpdateView):
+class PurchaseOrderModelUpdateView(PurchaseOrderModelModelViewQuerySetMixIn, UpdateView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -322,8 +315,7 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
 
         if form.has_changed():
             po_items_qs = ItemTransactionModel.objects.for_po(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
+                entity_model=self.kwargs['entity_slug'],
                 po_pk=po_model.uuid,
             ).select_related('bill_model')
 
@@ -360,9 +352,7 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
         return super().form_valid(form)
 
 
-class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn,
-                                   PurchaseOrderModelModelViewQuerySetMixIn,
-                                   DetailView):
+class PurchaseOrderModelDetailView(PurchaseOrderModelModelViewQuerySetMixIn, DetailView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -390,9 +380,7 @@ class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn,
         return context
 
 
-class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn,
-                                   PurchaseOrderModelModelViewQuerySetMixIn,
-                                   DeleteView):
+class PurchaseOrderModelDeleteView(PurchaseOrderModelModelViewQuerySetMixIn, DeleteView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -436,10 +424,11 @@ class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn,
 
 
 # ACTIONS...
-class BasePurchaseOrderActionActionView(DjangoLedgerSecurityMixIn,
-                                        PurchaseOrderModelModelViewQuerySetMixIn,
-                                        RedirectView,
-                                        SingleObjectMixin):
+class BasePurchaseOrderActionActionView(
+    PurchaseOrderModelModelViewQuerySetMixIn,
+    RedirectView,
+    SingleObjectMixin
+):
     http_method_names = ['get']
     pk_url_kwarg = 'po_pk'
     action_name = None

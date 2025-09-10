@@ -1,8 +1,18 @@
 {% load django_ledger %}
 {% load i18n %}
 
+<style>
+    /* Align currency columns on balance sheet tables */
+    table.financial-statement thead th:nth-last-child(2),
+    table.financial-statement tbody td:nth-last-child(2),
+    table.financial-statement thead th:last-child,
+    table.financial-statement tbody td:last-child {
+        text-align: right;
+    }
+</style>
+
 <div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
         <tbody>
         {% for bs_role, bs_role_data in tx_digest.balance_sheet.items %}
             {% if bs_role_data.is_block %}
@@ -23,7 +33,7 @@
                         <th class="has-text-centered">{% trans 'Unit' %}</th>
                     {% endif %}
                     <th class="has-text-centered">{% trans 'Balance Type' %}</th>
-                    <th class="has-text-centered">{% trans 'Balance Through' %} {{ tx_digest.to_date | date }}</th>
+                    <th class="has-text-right">{% trans 'Balance Through' %} {{ tx_digest.to_date | date }}</th>
                     <th class="has-text-centered">{% trans 'Actions' %}</th>
                 </tr>
 
@@ -46,7 +56,21 @@
                             {% if tx_digest.by_unit %}
                                 <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                             {% endif %}
-                            <td class="has-text-centered">{{ acc.balance_type.0 | upper }}</td>
+                            <td class="has-text-centered">
+                                {% if acc.balance_type == 'debit' %}
+                                    <span class="tag is-info is-light">
+                                        <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                                        debit
+                                    </span>
+                                {% elif acc.balance_type == 'credit' %}
+                                    <span class="tag is-success is-light">
+                                        <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                                        credit
+                                    </span>
+                                {% else %}
+                                    <span class="tag is-light">{{ acc.balance_type }}</span>
+                                {% endif %}
+                            </td>
                             <td class="has-text-right">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
                             <td>
                                 <div class="dropdown is-hoverable" id="account-action-{{ account.uuid }}">

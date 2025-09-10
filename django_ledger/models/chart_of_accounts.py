@@ -39,28 +39,32 @@ roles to create comprehensive financial statements.
 This structure ensures a clear and organized approach to financial management within Django Ledger, facilitating
 accurate record-keeping and reporting.
 """
-
+import warnings
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Optional, Union, Dict
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F, Count, Manager, QuerySet
+from django.db.models import Q, F, Count, Manager, QuerySet, BooleanField, Value
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
-                              ROOT_LIABILITIES, ROOT_CAPITAL,
-                              ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
+from django_ledger.io import (
+    ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
+    ROOT_LIABILITIES, ROOT_CAPITAL,
+    ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES, ROOT_GROUP
+)
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 UserModel = get_user_model()
 
@@ -75,21 +79,55 @@ class ChartOfAccountsModelValidationError(ValidationError):
 
 class ChartOfAccountModelQuerySet(QuerySet):
 
-    def active(self):
+    def active(self) -> 'ChartOfAccountModelQuerySet':
         """
         QuerySet method to retrieve active items.
         """
         return self.filter(active=True)
 
+    def not_active(self) -> 'ChartOfAccountModelQuerySet':
+        """≤
+        QuerySet method to retrieve not active items.
+        """
+        return self.filter(active=False)
+
+    def for_user(self, user_model) -> 'ChartOfAccountModelQuerySet':
+        """
+        Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
+        multiple Entities. The user has access to bills if:
+        1. Is listed as Manager of Entity.
+        2. Is the Admin of the Entity.
+
+        Parameters
+        ----------
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Returns
+        -------
+        ChartOfAccountQuerySet
+            Returns a ChartOfAccountQuerySet with applied filters.
+        """
+
+        if user_model.is_superuser:
+            return self
+
+        return self.filter(
+            (
+                    Q(entity__admin=user_model) |
+                    Q(entity__managers__in=[user_model])
+            )
+        )
+
 
 class ChartOfAccountModelManager(Manager):
     """
-    A custom defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
+    A custom-defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
     to the ChartOfAccountModel.
     """
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def get_queryset(self) -> ChartOfAccountModelQuerySet:
+        qs = ChartOfAccountModelQuerySet(self.model, using=self._db)
         return qs.annotate(
             _entity_slug=F('entity__slug'),
             accountmodel_total__count=Count(
@@ -107,34 +145,32 @@ class ChartOfAccountModelManager(Manager):
                 # excludes coa root accounts...
                 filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__active=True)
             ),
+            # Root-group presence and uniqueness checks:
+            accountmodel_rootgroup__count=Count(
+                'accountmodel',
+                filter=Q(accountmodel__role__in=ROOT_GROUP)
+            ),
+            accountmodel_rootgroup_roles__distinct_count=Count(
+                'accountmodel__role',
+                filter=Q(accountmodel__role__in=ROOT_GROUP_META),
+                distinct=True
+            ),
+        ).annotate(
+            configured=models.Case(
+                models.When(
+                    Q(accountmodel_rootgroup__count__gte=1) &
+                    Q(accountmodel_rootgroup__count=F('accountmodel_rootgroup_roles__distinct_count')),
+                    then=Value(True, output_field=BooleanField()),
+                ),
+                default=Value(False, output_field=BooleanField()),
+                output_field=BooleanField()
+            )
         ).select_related('entity')
 
-    def for_user(self, user_model) -> ChartOfAccountModelQuerySet:
-        """
-        Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
-        multiple Entities. The user has access to bills if:
-        1. Is listed as Manager of Entity.
-        2. Is the Admin of the Entity.
-
-        Parameters
-        ----------
-        user_model
-            Logged in and authenticated django UserModel instance.
-
-        Returns
-        -------
-        ChartOfAccountQuerySet
-            Returns a ChartOfAccountQuerySet with applied filters.
-        """
-        qs = self.get_queryset()
-        return qs.filter(
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
-        )
-
-    def for_entity(self, entity_model, user_model) -> ChartOfAccountModelQuerySet:
+    @deprecated_entity_slug_behavior
+    def for_entity(self,
+                   entity_model: Union['EntityModel | str | UUID'] = None,
+                   **kwargs) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -145,18 +181,36 @@ class ChartOfAccountModelManager(Manager):
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
 
-        user_model
-            Logged in and authenticated django UserModel instance.
-
         Returns
         -------
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
         """
-        qs = self.for_user(user_model)
-        if isinstance(entity_model, lazy_loader.get_entity_model()):
-            return qs.filter(entity=entity_model)
-        return qs.filter(entity__slug__iexact=entity_model)
+
+        EntityModel = lazy_loader.get_entity_model()
+
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise ChartOfAccountsModelValidationError(
+                message='Must pass an instance of EntityModel, String or UUID for entity_slug.'
+            )
+        return qs
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
@@ -202,10 +256,79 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     @property
     def entity_slug(self) -> str:
         try:
-            # from QS annotation...
             return getattr(self, '_entity_slug')
         except AttributeError:
             return self.entity.slug
+
+    def is_configured(self) -> bool:
+        try:
+            return getattr(self, 'configured')
+        except AttributeError:
+            pass
+        account_qs = self.accountmodel_set.filter(role__in=[ROOT_GROUP])
+        self.configured = len(account_qs) == len(ROOT_GROUP)
+        return self.configured
+
+    def configure(self, raise_exception: bool = True):
+        """
+        A method that properly configures the ChartOfAccounts model and creates the appropriate hierarchy boilerplate
+        to support the insertion of new accounts into the chart of account model tree.
+        This method must be called every time the ChartOfAccounts model is created.
+
+        Parameters
+        ----------
+        raise_exception : bool, optional
+            Whether to raise an exception if root nodes already exist in the Chart of Accounts (default is True).
+            This indicates that the ChartOfAccountModel instance is already configured.
+        """
+        self.generate_slug(commit=False)
+
+        if not self.is_configured():
+            root_accounts_qs = self.get_coa_root_accounts_qs()
+            existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
+
+            if len(existing_root_roles) > 0:
+                if raise_exception:
+                    raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
+                return
+
+            if ROOT_COA not in existing_root_roles:
+                # add coa root...
+                role_meta = ROOT_GROUP_META[ROOT_COA]
+                account_pk = uuid4()
+                root_account = AccountModel(
+                    uuid=account_pk,
+                    code=role_meta['code'],
+                    name=role_meta['title'],
+                    coa_model=self,
+                    role=ROOT_COA,
+                    role_default=True,
+                    active=False,
+                    locked=True,
+                    balance_type=role_meta['balance_type']
+                )
+                AccountModel.add_root(instance=root_account)
+
+                # must retrieve root model after added pero django-treebeard documentation...
+                coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
+
+                for root_role in ROOT_GROUP_LEVEL_2:
+                    if root_role not in existing_root_roles:
+                        account_pk = uuid4()
+                        role_meta = ROOT_GROUP_META[root_role]
+                        coa_root_account_model.add_child(
+                            instance=AccountModel(
+                                uuid=account_pk,
+                                code=role_meta['code'],
+                                name=role_meta['title'],
+                                coa_model=self,
+                                role=root_role,
+                                role_default=True,
+                                active=False,
+                                locked=True,
+                                balance_type=role_meta['balance_type']
+                            ))
+                self.configured = True
 
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
         """
@@ -260,6 +383,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             raise ChartOfAccountsModelValidationError(
                 message=_(f'The account model {account_model} is not part of the chart of accounts {self.name}.'),
             )
+
+        # Chart of Accounts hasn't been configured...
+        if not self.is_configured():
+            self.configure(raise_exception=True)
 
         if not account_model.is_root_account():
 
@@ -372,65 +499,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     'updated'
                 ]
             )
-
-    def configure(self, raise_exception: bool = True):
-        """
-        A method that properly configures the ChartOfAccounts model and creates the appropriate hierarchy boilerplate
-        to support the insertion of new accounts into the chart of account model tree.
-        This method must be called every time the ChartOfAccounts model is created.
-
-        Parameters
-        ----------
-        raise_exception : bool, optional
-            Whether to raise an exception if root nodes already exist in the Chart of Accounts (default is True).
-            This indicates that the ChartOfAccountModel instance is already configured.
-        """
-        self.generate_slug(commit=False)
-
-        root_accounts_qs = self.get_coa_root_accounts_qs()
-        existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
-
-        if len(existing_root_roles) > 0:
-            if raise_exception:
-                raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
-            return
-
-        if ROOT_COA not in existing_root_roles:
-            # add coa root...
-            role_meta = ROOT_GROUP_META[ROOT_COA]
-            account_pk = uuid4()
-            root_account = AccountModel(
-                uuid=account_pk,
-                code=role_meta['code'],
-                name=role_meta['title'],
-                coa_model=self,
-                role=ROOT_COA,
-                role_default=True,
-                active=False,
-                locked=True,
-                balance_type=role_meta['balance_type']
-            )
-            AccountModel.add_root(instance=root_account)
-
-            # must retrieve root model after added pero django-treebeard documentation...
-            coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
-
-            for root_role in ROOT_GROUP_LEVEL_2:
-                if root_role not in existing_root_roles:
-                    account_pk = uuid4()
-                    role_meta = ROOT_GROUP_META[root_role]
-                    coa_root_account_model.add_child(
-                        instance=AccountModel(
-                            uuid=account_pk,
-                            code=role_meta['code'],
-                            name=role_meta['title'],
-                            coa_model=self,
-                            role=root_role,
-                            role_default=True,
-                            active=False,
-                            locked=True,
-                            balance_type=role_meta['balance_type']
-                        ))
 
     def is_default(self) -> bool:
         """
@@ -597,7 +665,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         account_qs = self.get_non_root_coa_accounts_qs()
         account_qs.update(locked=False)
         return account_qs
-
 
     def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -839,6 +906,7 @@ class ChartOfAccountModel(ChartOfAccountModelAbstract):
     """
     Base ChartOfAccounts Model
     """
+
     class Meta(ChartOfAccountModelAbstract.Meta):
         abstract = False
 
@@ -854,5 +922,5 @@ def chartofaccountsmodel_presave(instance: ChartOfAccountModelAbstract, **kwargs
 
 @receiver(post_save, sender=ChartOfAccountModel)
 def chartofaccountsmodel_postsave(instance: ChartOfAccountModelAbstract, **kwargs):
-    if instance._state.adding:
+    if not instance.is_configured():
         instance.configure()

@@ -29,8 +29,7 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
     def get_customer_queryset(self):
         if 'customer' in self.fields:
             customer_qs = CustomerModel.objects.for_entity(
-                user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG
+                entity_model=self.ENTITY_SLUG
             ).active()
             self.fields['customer'].queryset = customer_qs
 
@@ -43,7 +42,6 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
         ]):
 
             account_qs = AccountModel.objects.for_entity(
-                user_model=self.USER_MODEL,
                 entity_model=self.ENTITY_SLUG
             ).for_invoice()
 
@@ -237,8 +235,7 @@ class BaseInvoiceItemTransactionFormset(BaseModelFormSet):
         self.ENTITY_SLUG = entity_slug
 
         items_qs = ItemModel.objects.for_invoice(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG
         )
 
         for form in self.forms:
@@ -252,8 +249,7 @@ class BaseInvoiceItemTransactionFormset(BaseModelFormSet):
     def get_queryset(self):
         if not self.queryset:
             self.queryset = ItemTransactionModel.objects.for_invoice(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL,
+                entity_model=self.ENTITY_SLUG,
                 invoice_pk=self.INVOICE_MODEL.uuid
             )
         else:

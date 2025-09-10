@@ -16,11 +16,11 @@ ________
 >>> ledger_model, invoice_model = invoice_model.configure(entity_slug=entity_slug, user_model=user_model)
 >>> invoice_model.save()
 """
-
+import warnings
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Union, Optional, Tuple, Dict
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -37,6 +37,7 @@ from django_ledger.models import (
     lazy_loader, ItemTransactionModelQuerySet,
     ItemModelQuerySet, ItemModel, QuerySet, Manager
 )
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import (
     CreateUpdateMixIn, AccrualMixIn,
@@ -51,7 +52,8 @@ from django_ledger.models.signals import (
     invoice_status_canceled,
     invoice_status_void
 )
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX, \
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 UserModel = get_user_model()
 
@@ -176,6 +178,14 @@ class InvoiceModelQuerySet(QuerySet):
         """
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
 
+    def for_user(self, user_model):
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__in=[user_model])
+        )
+
 
 class InvoiceModelManager(Manager):
     """
@@ -183,48 +193,52 @@ class InvoiceModelManager(Manager):
     The default "get_queryset" has been overridden to refer the custom defined "InvoiceModelQuerySet"
     """
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def get_queryset(self) -> InvoiceModelQuerySet:
+        qs = InvoiceModelQuerySet(self.model, using=self._db)
         return qs.select_related(
             'ledger',
             'ledger__entity'
         )
 
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(ledger__entity__admin=user_model) |
-            Q(ledger__entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug, user_model) -> InvoiceModelQuerySet:
+    @deprecated_entity_slug_behavior
+    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> InvoiceModelQuerySet:
         """
         Returns a QuerySet of InvoiceModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
         InvoiceModelQuerySet
             A Filtered InvoiceModelQuerySet.
         """
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, EntityModel):
-            return qs.filter(ledger__entity=entity_slug)
-        elif isinstance(entity_slug, str):
-            return qs.filter(ledger__entity__slug__exact=entity_slug)
+        qs = self.get_queryset()
 
-    def for_entity_unpaid(self, entity_slug, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.approved()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(ledger__entity=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(ledger__entity_id=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(ledger__entity__slug__exact=entity_model)
+        else:
+            raise InvoiceModelValidationError(
+                message='Must provide either a string, UUID or an EntityModel',
+            )
+        return qs
 
 
 class InvoiceModelAbstract(
@@ -325,14 +339,20 @@ class InvoiceModelAbstract(
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.RESTRICT,
+                                     null=True,
+                                     blank=True,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     prepaid_account = models.ForeignKey('django_ledger.AccountModel',
                                         on_delete=models.RESTRICT,
+                                        null=True,
+                                        blank=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.RESTRICT,
+                                         null=True,
+                                         blank=True,
                                          verbose_name=_('Unearned Account'),
                                          related_name=f'{REL_NAME_PREFIX}_unearned_account')
 

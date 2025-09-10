@@ -22,8 +22,7 @@ class VendorModelModelBaseView(DjangoLedgerSecurityMixIn):
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = VendorModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.kwargs['entity_slug']
             ).order_by('-updated')
         return super().get_queryset()
 

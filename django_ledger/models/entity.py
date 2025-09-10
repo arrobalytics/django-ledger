@@ -24,7 +24,7 @@ from decimal import Decimal
 from itertools import zip_longest
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Tuple, Union, Optional, List, Dict, Set
+from typing import Tuple, Union, Optional, List, Dict, Set, Self
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
@@ -71,7 +71,7 @@ class EntityModelQuerySet(MP_NodeQuerySet):
     Inherits from the Materialized Path Node QuerySet Class from Django Treebeard.
     """
 
-    def hidden(self):
+    def hidden(self) -> 'EntityModelQuerySet':
         """
         A QuerySet of all hidden EntityModel.
 
@@ -82,7 +82,7 @@ class EntityModelQuerySet(MP_NodeQuerySet):
         """
         return self.filter(hidden=True)
 
-    def visible(self):
+    def visible(self) -> 'EntityModelQuerySet':
         """
         A Queryset of all visible EntityModel.
 
@@ -108,7 +108,7 @@ class EntityModelManager(MP_NodeManager):
 
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> EntityModelQuerySet:
         """Sets the custom queryset as the default."""
         qs = EntityModelQuerySet(
             self.model,
@@ -441,12 +441,13 @@ class EntityModelClosingEntryMixIn:
             )
 
     # ---> Closing Entry IO Digest <---
-    def get_closing_entry_digest(self,
-                                 to_date: date,
-                                 from_date: Optional[date] = None,
-                                 user_model: Optional[UserModel] = None,
-                                 closing_entry_model=None,
-                                 **kwargs: Dict) -> Tuple:
+    def get_closing_entry_digest(
+            self,
+            to_date: date,
+            from_date: Optional[date] = None,
+            user_model: Optional[UserModel] = None,
+            closing_entry_model=None,
+            **kwargs: Dict) -> Tuple:
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
         ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
 
@@ -512,8 +513,8 @@ class EntityModelClosingEntryMixIn:
     def get_closing_entry_queryset_for_date(self, closing_date: date):
         ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
         return ClosingEntryTransactionModel.objects.for_entity(
-            entity_slug=self,
-        ).filter(closing_entry_model__closing_date__exact=closing_date)
+            entity_model=self,
+        ).for_closing_date(closing_date)
 
     def get_closing_entry_queryset_for_month(self, year: int, month: int):
         _, end_day = monthrange(year, month)
@@ -538,7 +539,7 @@ class EntityModelClosingEntryMixIn:
                 message=_(f'Cannot create closing entry with a future date {closing_date}.')
             )
 
-        if closing_entry_model is None or closing_entry_exists:
+        if closing_entry_model is None:
             self.closingentrymodel_set.filter(closing_date__exact=closing_date).delete()
         else:
             closing_entry_model.closingentrytransactionmodel_set.all().delete()
@@ -786,7 +787,6 @@ class EntityModelAbstract(MP_Node,
     picture = models.ImageField(blank=True, null=True)
     meta = models.JSONField(default=dict, null=True, blank=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
-
 
     class Meta:
         abstract = True
@@ -1547,7 +1547,7 @@ class EntityModelAbstract(MP_Node,
             return qs
 
         JournalEntryModel = lazy_loader.get_journal_entry_model()
-        qs = JournalEntryModel.objects.for_entity(entity_slug=self)
+        qs = JournalEntryModel.objects.for_entity(entity_model=self)
         if posted:
             return qs.posted()
         return qs
@@ -2603,7 +2603,9 @@ class EntityModelAbstract(MP_Node,
         ItemTransactionModel = lazy_loader.get_item_transaction_model()
         ItemModel = lazy_loader.get_item_model()
 
-        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(entity_slug=self.slug)
+        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(
+            entity_model=self.slug
+        )
         recorded_qs: ItemModelQuerySet = self.recorded_inventory(as_values=False)
         recorded_qs_values = self.recorded_inventory(item_qs=recorded_qs, as_values=True)
 

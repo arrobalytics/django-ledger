@@ -1,10 +1,22 @@
 {% load django_ledger %}
 {% load i18n %}
 
+<style>
+    table.financial-statement thead th:last-child,
+    table.financial-statement tbody td:last-child,
+    table.financial-statement tfoot td:last-child {
+        text-align: right;
+    }
+
+    table.financial-statement tfoot td {
+        font-weight: 700;
+    }
+</style>
+
 <div class="table-container">
 
     {# OPERATING ACTIVITIES #}
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
         <thead>
         <tr>
             <td class="has-text-weight-light is-size-3">{% trans 'Cash from Operating Activities' %}</td>
@@ -96,7 +108,7 @@
     </table>
 
     {# FINANCING ACTIVITIES #}
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
         <thead>
         <tr>
             <td class="has-text-weight-light is-size-3">{% trans 'Cash from Financing Activities' %}</td>
@@ -146,7 +158,7 @@
     </table>
 
     {# INVESTING ACTIVITIES #}
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
         <thead>
         <tr>
             <td class="has-text-weight-light is-size-3">{% trans 'Cash from Investing Activities' %}</td>
@@ -185,7 +197,7 @@
     </table>
 
     {# NET CASH #}
-    <table class="table is-fullwidth is-narrow is-stripped">
+    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
         <thead>
         <tr>
             <td class="has-text-weight-light is-size-3">{% trans 'Net Cashflow' %}</td>

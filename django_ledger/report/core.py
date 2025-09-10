@@ -6,25 +6,16 @@ from django.core.exceptions import ValidationError
 from django_ledger.io.io_context import IODigestContextManager
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.unit import EntityUnitModel
-from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
 
-if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-    from fpdf import FPDF, XPos, YPos
+from fpdf import FPDF, XPos, YPos
 
 
 class PDFReportValidationError(ValidationError):
     pass
 
 
-def load_support():
-    support = list()
-    if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-        support.append(FPDF)
-    return support
-
-
-class BaseReportSupport(*load_support()):
+class BaseReportSupport(FPDF):
     FOOTER_LOGO_PATH = 'django_ledger/logo/django-ledger-logo-report.png'
 
     def __init__(self,
@@ -32,9 +23,6 @@ class BaseReportSupport(*load_support()):
                  io_digest: IODigestContextManager,
                  report_subtitle: Optional[str] = None,
                  **kwargs):
-
-        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            raise NotImplementedError('PDF support not enabled.')
 
         super().__init__(*args, **kwargs)
         self.REPORT_TYPE: Optional[str] = None

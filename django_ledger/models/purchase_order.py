@@ -12,10 +12,11 @@ starts in draft model by default and goes through different states including InR
 Void. The PurchaseOrderModel also keeps track of when these states take place.
 
 """
+import warnings
 from datetime import date
 from string import ascii_uppercase, digits
 from typing import Tuple, List, Union, Optional, Dict
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -30,6 +31,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models.bill import BillModel, BillModelQuerySet
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
@@ -42,7 +44,8 @@ from django_ledger.models.signals import (
     po_status_in_review
 )
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX, \
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -55,8 +58,16 @@ class PurchaseOrderModelValidationError(ValidationError):
 
 class PurchaseOrderModelQuerySet(QuerySet):
     """
-    A custom defined PurchaseOrderModel QuerySet.
+    A custom-defined PurchaseOrderModel QuerySet.
     """
+
+    def for_user(self, user_model):
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
 
     def approved(self):
         """
@@ -105,16 +116,8 @@ class PurchaseOrderModelManager(Manager):
     A custom defined PurchaseOrderModel Manager.
     """
 
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug, user_model) -> PurchaseOrderModelQuerySet:
+    @deprecated_entity_slug_behavior
+    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> PurchaseOrderModelQuerySet:
         """
         Fetches a QuerySet of PurchaseOrderModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -124,10 +127,29 @@ class PurchaseOrderModelManager(Manager):
         PurchaseOrderModelQuerySet
             A PurchaseOrderModelQuerySet with applied filters.
         """
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, EntityModel):
-            qs = qs.filter(entity=entity_slug)
-        return qs.filter(entity__slug__exact=entity_slug)
+
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise PurchaseOrderModelValidationError(
+                message='Entity slug must be either an EntityModel or a String representing the EntityModel slug',
+            )
+        return qs
 
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn,

@@ -214,10 +214,6 @@ class BillModelConfigureForm(BaseBillModelUpdateForm):
 
 class BillItemTransactionForm(ModelForm):
 
-    # def __init__(self, entity_unit_qs, *args, **kwargs):
-    #     super().__init__(self, *args, **kwargs)
-    #     self.fields['entity_unit'].queryset = entity_unit_qs
-
     def clean(self):
         cleaned_data = super(BillItemTransactionForm, self).clean()
         itemtxs_model: ItemTransactionModel = self.instance
