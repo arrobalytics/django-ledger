@@ -52,3 +52,24 @@ readthedocs = [
     "renku-sphinx-theme>=0.5.0",
     "sphinx>=8.2.3",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = [
+    "dev_env",
+    "dev_env.*",
+    "docs",
+    "docs.*",
+    "assets",
+    "assets.*",
+    "docs.source",
+    "docs.source.*",
+    "notebooks",
+    "notebooks.*",
+]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

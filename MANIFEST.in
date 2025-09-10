@@ -1,2 +1,8 @@
 recursive-include django_ledger/templates *
 recursive-include django_ledger/static *
+
+prune dev_env
+prune docs
+prune assets
+prune docs.source
+prune notebooks
