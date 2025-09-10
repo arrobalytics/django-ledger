@@ -40,13 +40,15 @@ classifiers = [
 [project.license]
 text = "GPLv3 License"
 
-[project.optional-dependencies]
-dev = ["sphinx~=4.5.0", "behave~=1.2.6", "pipenv-setup", "pylint", "furo"]
 
 [dependency-groups]
 dev = [
     "django-debug-toolbar>=6.0.0",
     "jupyterlab>=3.5.3",
-    "myst-parser>=0.18.1",
     "notebook>=6.5.7",
+]
+readthedocs = [
+    "furo>=2022.9.29",
+    "myst-parser>=0.18.1",
+    "standard-imghdr>=3.13.0",
 ]

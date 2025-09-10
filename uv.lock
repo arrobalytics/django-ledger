@@ -512,8 +512,12 @@ dev = [
 dev = [
     { name = "django-debug-toolbar" },
     { name = "jupyterlab" },
-    { name = "myst-parser" },
     { name = "notebook" },
+]
+readthedocs = [
+    { name = "furo" },
+    { name = "myst-parser" },
+    { name = "standard-imghdr" },
 ]
 
 [package.metadata]
@@ -537,8 +541,12 @@ provides-extras = ["dev"]
 dev = [
     { name = "django-debug-toolbar", specifier = ">=6.0.0" },
     { name = "jupyterlab", specifier = ">=3.5.3" },
-    { name = "myst-parser", specifier = ">=0.18.1" },
     { name = "notebook", specifier = ">=6.5.7" },
+]
+readthedocs = [
+    { name = "furo", specifier = ">=2022.9.29" },
+    { name = "myst-parser", specifier = ">=0.18.1" },
+    { name = "standard-imghdr", specifier = ">=3.13.0" },
 ]
 
 [[package]]
@@ -2295,6 +2303,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
+]
+
+[[package]]
+name = "standard-imghdr"
+version = "3.13.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1a/8d/ab2620fbe2e348483c9cb776c3b7b3cc407899291a041d7fa026469b7cd1/standard_imghdr-3.13.0.tar.gz", hash = "sha256:8d9c68058d882f6fc3542a8d39ef9ff94d2187dc90bd0c851e0902776b7b7a42", size = 5511, upload-time = "2024-10-30T16:01:36.412Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/cb/e1da7e340586a078404c7e4328bfefc930867ace8a9a55916fd220cf9547/standard_imghdr-3.13.0-py3-none-any.whl", hash = "sha256:30a1bff5465605bb496f842a6ac3cc1f2131bf3025b0da28d4877d6d4b7cc8e9", size = 4639, upload-time = "2024-10-30T16:01:13.829Z" },
 ]
 
 [[package]]
