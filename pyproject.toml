@@ -2,7 +2,7 @@
 name = "django-ledger"
 version = "0.8.0"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 description = "Double entry accounting system built on the Django Web Framework."
 keywords = ["django", "finance", "bookkeeping", "accounting", "balance sheet", "income statement", "general ledger", "money", "engine"]
 authors = [
@@ -48,7 +48,6 @@ dev = [
     "notebook>=6.5.7",
 ]
 readthedocs = [
-    "furo>=2022.9.29",
-    "myst-parser>=0.18.1",
-    "standard-imghdr>=3.13.0",
+    "furo>=2025.7.19",
+    "sphinx>=8.2.3",
 ]
