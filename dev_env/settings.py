@@ -128,6 +128,7 @@ CACHES = {
 }
 
 # DJANGO_LEDGER_THEME = 'minty'
+DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = False
 
 # LOGGING = {
 #     'version': 1,

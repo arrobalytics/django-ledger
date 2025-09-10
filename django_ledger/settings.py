@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 import logging
 from decimal import Decimal
 
-import django.conf.global_settings as settings
+from django.conf import settings
 
 logger = logging.getLogger('Django Ledger Logger')
 logger.setLevel(logging.INFO)
