@@ -40,7 +40,7 @@ class ImportJobModelCreateForm(ModelForm):
         widgets = {
             'description': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
-                'placeholder': _('What\'s this import about?...')
+                'placeholder': _('Name this import...')
             }),
             'bank_account_model': Select(
                 attrs={
