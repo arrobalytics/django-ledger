@@ -28,8 +28,7 @@ class EntityUnitModelModelBaseView(DjangoLedgerSecurityMixIn):
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = EntityUnitModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.get_authorized_entity_instance()
             ).select_related('entity')
         return super().get_queryset()
 

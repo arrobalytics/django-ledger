@@ -21,21 +21,21 @@ from django_ledger.forms.item import (
     ExpenseItemCreateForm, ExpenseItemUpdateForm, InventoryItemCreateForm, InventoryItemUpdateForm,
     ServiceCreateForm, ServiceUpdateForm
 )
-from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel
+from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel, UnitOfMeasureModelQuerySet
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 # todo: Create delete views...
 
-# UNIT OF MEASURE VIEWS....
+# UNIT OF MEASURE VIEWS...
 class UnitOfMeasureModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    queryset: UnitOfMeasureModelQuerySet = None
 
     def get_queryset(self):
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
             self.queryset = entity_model.unitofmeasuremodel_set.all()
-        return super().get_queryset()
+        return self.queryset
 
 
 class UnitOfMeasureModelListView(UnitOfMeasureModelModelBaseView, ListView):
@@ -75,9 +75,7 @@ class UnitOfMeasureModelCreateView(UnitOfMeasureModelModelBaseView, CreateView):
         instance: UnitOfMeasureModel = form.save(commit=False)
         entity_slug = self.kwargs['entity_slug']
         try:
-            entity_model: EntityModel = EntityModel.objects.for_user(
-                user_model=self.request.user
-            ).get(slug__iexact=entity_slug)
+            entity_model: EntityModel = self.AUTHORIZED_ENTITY_MODEL
             instance.entity = entity_model
         except ObjectDoesNotExist:
             add_message(self.request,
@@ -227,8 +225,7 @@ class ProductUpdateView(ProductItemModelModelBaseView, UpdateView):
 
     def get_queryset(self):
         return ItemModel.objects.for_entity(
-            entity_slug=self.AUTHORIZED_ENTITY_MODEL,
-            user_model=self.request.user
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
         ).products()
 
     def get_form(self, form_class=None):
@@ -348,8 +345,7 @@ class ServiceUpdateView(ServiceItemModelModelBaseView, UpdateView):
 
     def get_queryset(self):
         return ItemModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
+            entity_model=self.kwargs['entity_slug']
         ).services()
 
     def get_form(self, form_class=None):

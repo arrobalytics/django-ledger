@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
+from typing import Optional
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError, ImproperlyConfigured
@@ -21,13 +22,14 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.closing_entry import ClosingEntryCreateForm, ClosingEntryUpdateForm
 from django_ledger.io.io_core import get_localdate
+from django_ledger.models import EstimateModel, ClosingEntryModelQuerySet
 from django_ledger.models.closing_entry import ClosingEntryModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
 
 
 class ClosingEntryModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    queryset: Optional[ClosingEntryModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -75,16 +77,18 @@ class ClosingEntryModelCreateView(ClosingEntryModelBaseView, CreateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'file-icons:finaldraft'
     }
+    form_class = ClosingEntryCreateForm
 
     def get_initial(self):
         return {
-            'closing_date': get_localdate()
+            'closing_date': get_localdate(),
+            'entity_model': self.AUTHORIZED_ENTITY_MODEL
         }
 
-    def get_form(self, form_class=None, **kwargs):
-        return ClosingEntryCreateForm(
-            **self.get_form_kwargs()
-        )
+    def get_form_kwargs(self, **kwargs):
+        return super().get_form_kwargs(**kwargs) | {
+            'entity_model': self.AUTHORIZED_ENTITY_MODEL
+        }
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -100,7 +104,7 @@ class ClosingEntryModelCreateView(ClosingEntryModelBaseView, CreateView):
             force_update=True,
             post_closing_entry=False
         )
-        self.ce_model = ce_model
+        self.ce_model: EstimateModel = ce_model
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):

@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
 
-from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
-
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     SECRET_KEY = 'djangoledger1234!DoNotUse!BadIdea!VeryInsecure!'
+
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
@@ -23,10 +22,13 @@ INSTALLED_APPS = [
     'django_ledger',
 ]
 
-if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
+if DEBUG:
     INSTALLED_APPS += [
-        'graphene_django',
-        'oauth2_provider'
+        'debug_toolbar',
+    ]
+
+    INTERNAL_IPS = [
+        "127.0.0.1",
     ]
 
 MIDDLEWARE = [
@@ -38,6 +40,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if DEBUG:
+    MIDDLEWARE += [
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+    ]
 
 ROOT_URLCONF = 'dev_env.urls'
 
@@ -52,6 +59,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django_ledger.context.django_ledger_context'
             ],
         },
     },
@@ -108,20 +116,6 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
-    GRAPHENE = {
-        'SCHEMA': 'django_ledger.contrib.django_ledger_graphene.api.schema',
-        'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphene/schema.graphql',  # defaults to schema.json,
-        # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
-        # 'MIDDLEWARE': [
-        #     'graphql_jwt.middleware.JSONWebTokenMiddleware',
-        # ],
-    }
-
-    OAUTH2_PROVIDER = {
-        'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
-    }
-
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -132,6 +126,8 @@ CACHES = {
         'LOCATION': 'redis://127.0.0.1:6379',
     }
 }
+
+# DJANGO_LEDGER_THEME = 'minty'
 
 # LOGGING = {
 #     'version': 1,

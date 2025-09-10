@@ -116,8 +116,7 @@ class IOCursor:
         LedgerModelQuerySet
         """
         return LedgerModel.objects.for_entity(
-            self.ENTITY_MODEL,
-            self.USER_MODEL
+            entity_model=self.ENTITY_MODEL
         )
 
     def get_account_model_qs(self) -> AccountModelQuerySet:

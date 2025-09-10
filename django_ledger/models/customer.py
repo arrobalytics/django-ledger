@@ -7,17 +7,23 @@ created before it can be assigned to the InvoiceModel. Only customers who are ac
 """
 
 import os
-from uuid import uuid4
+import warnings
+from uuid import uuid4, UUID
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, F, QuerySet, Manager
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX
+from django_ledger.settings import (
+    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX,
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+)
 
 
 def customer_picture_upload_to(instance, filename):
@@ -32,6 +38,10 @@ def customer_picture_upload_to(instance, filename):
     return f'customer_pictures/{customer_number}/{safe_name}{ext.lower()}'
 
 
+class CustomerModelValidationError(ValidationError):
+    pass
+
+
 class CustomerModelQueryset(QuerySet):
     """
     A custom defined QuerySet for the CustomerModel. This implements multiple methods or queries needed to get a
@@ -39,6 +49,27 @@ class CustomerModelQueryset(QuerySet):
     are active or hidden. All these separate functions will assist in making such queries and building customized
     reports.
     """
+
+    def for_user(self, user_model):
+        """
+        Fetches a QuerySet of BillModels that the UserModel as access to.
+        May include BillModels from multiple Entities.
+
+        The user has access to bills if:
+            1. Is listed as Manager of Entity.
+            2. Is the Admin of the Entity.
+
+        Parameters
+        __________
+        user_model
+            Logged in and authenticated django UserModel instance.
+        """
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity_model__admin=user_model) |
+            Q(entity_model__managers__in=[user_model])
+        )
 
     def active(self) -> QuerySet:
         """
@@ -93,59 +124,49 @@ class CustomerModelQueryset(QuerySet):
 
 class CustomerModelManager(Manager):
     """
-    A custom defined CustomerModelManager that will act as an interface to handling the DB queries to the
+    A custom-defined CustomerModelManager that will act as an interface to handling the DB queries to the
     CustomerModel.
     """
 
-    def for_user(self, user_model):
-        """
-        Fetches a QuerySet of BillModels that the UserModel as access to.
-        May include BillModels from multiple Entities.
-
-        The user has access to bills if:
-            1. Is listed as Manager of Entity.
-            2. Is the Admin of the Entity.
-
-        Parameters
-        __________
-        user_model
-            Logged in and authenticated django UserModel instance.
-        """
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(entity_model__admin=user_model) |
-            Q(entity_model__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug, user_model) -> CustomerModelQueryset:
+    @deprecated_entity_slug_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> CustomerModelQueryset:
         """
         Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
         __________
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
-
 
         Returns
         -------
         CustomerModelQueryset
             A filtered CustomerModel QuerySet.
         """
-        qs = self.for_user(user_model)
-
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity_model=entity_slug)
+        EntityModel = lazy_loader.get_entity_model()
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        return qs.filter(
-            Q(entity_model__slug__exact=entity_slug)
-        )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity_model=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity_model__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_model_id=entity_model)
+        else:
+            raise CustomerModelValidationError(
+                message='Must pass EntityModel, slug or EntityModel UUID',
+            )
+        return qs
 
 
 class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):

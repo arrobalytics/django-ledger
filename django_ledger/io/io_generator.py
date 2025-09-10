@@ -138,8 +138,7 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.logger.info('Checking for existing transactions...')
         txs_qs = TransactionModel.objects.for_entity(
-            entity_slug=self.entity_model,
-            user_model=self.user_model
+            entity_model=self.entity_model
         )
 
         if txs_qs.count() > 0 and not force_populate:
@@ -546,10 +545,12 @@ class EntityDataGenerator(LoggingMixIn):
 
             if random() > 0.50:
                 date_approved = self.get_next_timestamp(date_in_review)
-                bill_model.mark_as_approved(commit=True,
-                                            entity_slug=self.entity_model.slug,
-                                            user_model=self.user_model,
-                                            date_approved=date_approved)
+                bill_model.mark_as_approved(
+                    commit=True,
+                    entity_slug=self.entity_model.slug,
+                    user_model=self.user_model,
+                    date_approved=date_approved
+                )
 
                 if random() > 0.25:
                     paid_date = self.get_next_timestamp(date_approved)

@@ -10,8 +10,8 @@
                         <span class="icon">{% icon "ri:bill-line" 16 %}</span>
                         {% trans 'Bill' %}
                     </p>
-                    <p class="title">{{ bill.vendor.vendor_name }}</p>
-                    <p class="subtitle has-text-weight-light">{{ bill.vendor.address_1 }}</p>
+                    <h2 class="title">{{ bill.vendor.vendor_name }}</h2>
+                    <h3 class="has-text-weight-light">{{ bill.vendor.address_1 }}</h3>
                     {% if not bill.is_past_due %}
                         <p class="is-size-5 has-text-info">{% trans 'Due in' %}: {{ bill.date_due | timeuntil }}</p>
                     {% else %}

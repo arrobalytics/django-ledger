@@ -26,12 +26,13 @@ class ImportJobModelViewBaseView(DjangoLedgerSecurityMixIn):
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = ImportJobModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).order_by('-created').select_related('bank_account_model',
-                                                  'bank_account_model__entity_model',
-                                                  'bank_account_model__account_model',
-                                                  'bank_account_model__account_model__coa_model')
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
+            ).order_by('-created').select_related(
+                'bank_account_model',
+                'bank_account_model__entity_model',
+                'bank_account_model__account_model',
+                'bank_account_model__account_model__coa_model'
+            )
         return self.queryset
 
 

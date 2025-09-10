@@ -195,3 +195,20 @@ class IOTest(DjangoLedgerBaseTest):
         # )
         #
         # self.assertEqual(io_digest.get_io_txs_queryset().count(), 0)
+
+    def test_io_transactions_belong_to_entity(self):
+        entity_model = self.get_random_entity_model()
+        from_datetime = self.START_DATE
+        to_datetime = self.START_DATE + timedelta(days=randint(10, 60))
+
+        io_digest = entity_model.digest(
+            entity_slug=entity_model.slug,
+            from_date=from_datetime,
+            to_date=to_datetime,
+            for_test=True
+        )
+
+        tx_qs = io_digest.get_io_txs_queryset()
+        # Every transaction returned by the IO for an entity digest must belong to that entity.
+        for tx in tx_qs:
+            self.assertEqual(tx['journal_entry__ledger__entity_id'], entity_model.uuid)

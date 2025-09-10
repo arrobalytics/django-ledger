@@ -1,9 +1,21 @@
 {% load django_ledger %}
 {% load i18n %}
 
+<style>
+    /* Align currency (2nd-to-last column) to the right for financial-statement tables */
+    table.financial-statement thead th:nth-last-child(2),
+    table.financial-statement tbody td:nth-last-child(2) {
+        text-align: right;
+    }
+
+    table.financial-statement tfoot td {
+        font-weight: 700;
+    }
+</style>
 
 <div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
+        <thead>
         <tr>
             <th>{% trans 'Account Number' %}</th>
             <th>{% trans 'Description' %}</th>
@@ -11,13 +23,15 @@
                 <th>{% trans 'Unit' %}</th>
             {% endif %}
             <th>{% trans 'Balance Type' %}</th>
-            <th>{% trans 'Balance' %}</th>
+            <th class="has-text-right">{% trans 'Balance' %}</th>
             <th>{% trans 'Actions' %}</th>
         </tr>
+        </thead>
+        <tbody>
 
         {# OPERATING INCOME #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Operating Revenues' %}</h2></td>
+            <td><h2 class="is-size-4 has-text-left">{% trans 'Operating Revenues' %}</h2></td>
             <td></td>
             {% if tx_digest.by_unit %}
                 <td></td>
@@ -36,12 +50,20 @@
                 {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                        <span class="tag is-info is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                            debit
+                        </span>
                     {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                        <span class="tag is-success is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                            credit
+                        </span>
+                    {% else %}
+                        <span class="tag is-light">{{ acc.balance_type }}</span>
                     {% endif %}
                 </td>
-                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
+                <td class="has-text-right">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
                 <td>
                     <div class="dropdown is-hoverable" id="account-action-{{ account.uuid }}">
                         <div class="dropdown-trigger">
@@ -79,7 +101,7 @@
 
         {# COGS #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Less: Cost of Goods Sold' %}</h2></td>
+            <td><h2 class="is-size-4 has-text-left">{% trans 'Less: Cost of Goods Sold' %}</h2></td>
             <td></td>
             {% if tx_digest.by_unit %}
                 <td></td>
@@ -97,9 +119,17 @@
                 {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                        <span class="tag is-info is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                            debit
+                        </span>
                     {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                        <span class="tag is-success is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                            credit
+                        </span>
+                    {% else %}
+                        <span class="tag is-light">{{ acc.balance_type }}</span>
                     {% endif %}
                 </td>
                 <td>{% currency_symbol %}{{ acc.balance | reverse_sign | currency_format }}</td>
@@ -153,7 +183,7 @@
 
         {# OPERATING EXPENSES #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Operating Expenses' %}</h2></td>
+            <td><h2 class="is-size-4 has-text-left">{% trans 'Operating Expenses' %}</h2></td>
             <td></td>
             {% if tx_digest.by_unit %}
                 <td></td>
@@ -171,9 +201,17 @@
                 {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                        <span class="tag is-info is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                            debit
+                        </span>
                     {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                        <span class="tag is-success is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                            credit
+                        </span>
+                    {% else %}
+                        <span class="tag is-light">{{ acc.balance_type }}</span>
                     {% endif %}
                 </td>
                 <td>{% currency_symbol %}{{ acc.balance | reverse_sign | currency_format }}</td>
@@ -227,7 +265,7 @@
 
         {# OTHER REVENUES #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Other Revenues' %}</h2></td>
+            <td><h2 class="is-size-4 has-text-left">{% trans 'Other Revenues' %}</h2></td>
             <td></td>
             {% if tx_digest.by_unit %}
                 <td></td>
@@ -245,9 +283,17 @@
                 {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                        <span class="tag is-info is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                            debit
+                        </span>
                     {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                        <span class="tag is-success is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                            credit
+                        </span>
+                    {% else %}
+                        <span class="tag is-light">{{ acc.balance_type }}</span>
                     {% endif %}
                 </td>
                 <td class="is-size-5">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
@@ -288,7 +334,7 @@
 
         {# OTHER EXPENSES #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Other Expenses' %}</h2></td>
+            <td><h2 class="is-size-4 has-text-left">{% trans 'Other Expenses' %}</h2></td>
             <td></td>
             {% if tx_digest.by_unit %}
                 <td></td>
@@ -306,9 +352,17 @@
                 {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                        <span class="tag is-info is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                            debit
+                        </span>
                     {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                        <span class="tag is-success is-light">
+                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                            credit
+                        </span>
+                    {% else %}
+                        <span class="tag is-light">{{ acc.balance_type }}</span>
                     {% endif %}
                 </td>
                 <td class="is-size-5">{% currency_symbol %}{{ acc.balance | reverse_sign | currency_format }}</td>
@@ -375,5 +429,6 @@
             <td></td>
         </tr>
 
+        </tbody>
     </table>
 </div>

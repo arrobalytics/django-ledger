@@ -5,32 +5,30 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
+from typing import Optional
 
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from django_ledger.forms.customer import CustomerModelForm
-from django_ledger.models.customer import CustomerModel
+from django_ledger.models.customer import CustomerModel, CustomerModelQueryset
 from django_ledger.models.entity import EntityModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class CustomerModelModelViewQuerySetMixIn:
-    queryset = None
+class CustomerModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+    queryset: Optional[CustomerModelQueryset] = None
 
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = CustomerModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.kwargs['entity_slug'],
             ).order_by('-updated')
-        return super().get_queryset()
+        return self.queryset
 
 
-class CustomerModelListView(DjangoLedgerSecurityMixIn,
-                            CustomerModelModelViewQuerySetMixIn,
-                            ListView):
+class CustomerModelListView(CustomerModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/customer/customer_list.html'
     PAGE_TITLE = _('Customer List')
     extra_context = {
@@ -41,9 +39,7 @@ class CustomerModelListView(DjangoLedgerSecurityMixIn,
     context_object_name = 'customers'
 
 
-class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
-                              CustomerModelModelViewQuerySetMixIn,
-                              CreateView):
+class CustomerModelCreateView(CustomerModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/customer/customer_create.html'
     PAGE_TITLE = _('Create New Customer')
     form_class = CustomerModelForm
@@ -70,9 +66,7 @@ class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
         return super().form_valid(form)
 
 
-class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
-                              CustomerModelModelViewQuerySetMixIn,
-                              UpdateView):
+class CustomerModelUpdateView(CustomerModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/customer/customer_update.html'
     PAGE_TITLE = _('Customer Update')
     form_class = CustomerModelForm
@@ -99,4 +93,6 @@ class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
         form.save()
         return super().form_valid(form)
 
-# todo: add CustomerDeleteView
+
+class CustomerModelDeleteView(CustomerModelModelViewQuerySetMixIn, DeleteView):
+    pass

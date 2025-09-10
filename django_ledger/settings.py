@@ -5,53 +5,10 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 import logging
 from decimal import Decimal
 
-from django.conf import settings
+import django.conf.global_settings as settings
 
 logger = logging.getLogger('Django Ledger Logger')
 logger.setLevel(logging.INFO)
-
-try:
-    from graphene import __version__
-    from graphene_django import __version__
-    from oauth2_provider import __version__
-
-    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = True
-except ImportError:
-    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = False
-
-try:
-    from fpdf import FPDF
-
-    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = True
-except ImportError:
-    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = False
-
-logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
-
-
-## MODEL ABSTRACTS ##
-# DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
-# DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModel')
-# DJANGO_LEDGER_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_TRANSACTION_MODEL', 'django_ledger.TransactionModel')
-# DJANGO_LEDGER_JOURNAL_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL', 'django_ledger.JournalEntryModel')
-# DJANGO_LEDGER_LEDGER_MODEL = getattr(settings, 'DJANGO_LEDGER_LEDGER_MODEL', 'django_ledger.LedgerModel')
-# DJANGO_LEDGER_ENTITY_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_MODEL', 'django_ledger.EntityModel')
-# DJANGO_LEDGER_ENTITY_STATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_STATE_MODEL', 'django_ledger.EntityStateModel')
-# DJANGO_LEDGER_ENTITY_UNIT_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_UNIT_MODEL', 'django_ledger.EntityUnitModel')
-# DJANGO_LEDGER_ESTIMATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ESTIMATE_MODEL', 'django_ledger.EstimateModel')
-# DJANGO_LEDGER_BILL_MODEL = getattr(settings, 'DJANGO_LEDGER_BILL_MODEL', 'django_ledger.BillModel')
-# DJANGO_LEDGER_INVOICE_MODEL = getattr(settings, 'DJANGO_LEDGER_INVOICE_MODEL', 'django_ledger.InvoiceModel')
-# DJANGO_LEDGER_PURCHASE_ORDER_MODEL = getattr(settings, 'DJANGO_LEDGER_PURCHASE_ORDER_MODEL', 'django_ledger.PurchaseOrderModel')
-# DJANGO_LEDGER_CUSTOMER_MODEL = getattr(settings, 'DJANGO_LEDGER_CUSTOMER_MODEL', 'django_ledger.CustomerModel')
-# DJANGO_LEDGER_VENDOR_MODEL = getattr(settings, 'DJANGO_LEDGER_VENDOR_MODEL', 'django_ledger.VendorModel')
-# DJANGO_LEDGER_BANK_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_BANK_ACCOUNT_MODEL', 'django_ledger.BankAccountModel')
-# DJANGO_LEDGER_CLOSING_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL', 'django_ledger.ClosingEntryModel')
-# DJANGO_LEDGER_CLOSING_ENTRY_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_CLOSING_ENTRY_TRANSACTION_MODEL', 'django_ledger.ClosingEntryTransactionModel')
-# DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL = getattr(settings, 'DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL', 'django_ledger.UnitOfMeasureModel')
-# DJANGO_LEDGER_ITEM_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_TRANSACTION_MODEL', 'django_ledger.ItemTransactionModel')
-# DJANGO_LEDGER_ITEM_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_MODEL', 'django_ledger.ItemModel')
-# DJANGO_LEDGER_STAGED_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_STAGED_TRANSACTION_MODEL', 'django_ledger.StagedTransactionModel')
-# DJANGO_LEDGER_IMPORT_JOB_MODEL = getattr(settings, 'DJANGO_LEDGER_IMPORT_JOB_MODEL', 'django_ledger.ImportJobModel')
 
 DJANGO_LEDGER_USE_CLOSING_ENTRIES = getattr(settings, 'DJANGO_LEDGER_USE_CLOSING_ENTRIES', True)
 DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT = getattr(settings,
@@ -100,65 +57,93 @@ DJANGO_LEDGER_FINANCIAL_ANALYSIS = {
         'current_ratio': {
             'good_incremental': True,
             'ranges': {
-                'healthy': 2,
-                'watch': 1,
-                'warning': .5,
-                'critical': .25
+                'healthy': 2.0,
+                'watch': 1.5,
+                'warning': 1.0,
+                'critical': 0.5,
             }
         },
         'quick_ratio': {
             'good_incremental': True,
             'ranges': {
-                'healthy': 2,
-                'watch': 1,
-                'warning': .5,
-                'critical': .25
+                'healthy': 1.5,
+                'watch': 1.0,
+                'warning': 0.5,
+                'critical': 0.25
             }
         },
         'debt_to_equity': {
             'good_incremental': False,
             'ranges': {
-                'healthy': 0,
-                'watch': .25,
-                'warning': .5,
-                'critical': 1
+                'healthy': 0.5,
+                'watch': 1.0,
+                'warning': 1.5,
+                'critical': 2.0
             }
         },
         'return_on_equity': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .07,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.15,
+                'watch': 0.10,
+                'warning': 0.05,
+                'critical': 0.00
             }
         },
         'return_on_assets': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .06,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.05,
+                'watch': 0.03,
+                'warning': 0.02,
+                'critical': 0.01
             }
         },
         'net_profit_margin': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .06,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.10,
+                'watch': 0.05,
+                'warning': 0.03,
+                'critical': 0.01
             }
         },
         'gross_profit_margin': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .06,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.50,
+                'watch': 0.30,
+                'warning': 0.20,
+                'critical': 0.10
             }
         },
     }
 }
+
+DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = getattr(settings, 'DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR', False)
+DJANGO_LEDGER_THEME = getattr(settings, 'DJANGO_LEDGER_THEME', 'litera')
+
+## MODEL ABSTRACTS ##
+
+# DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
+# DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModel')
+# DJANGO_LEDGER_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_TRANSACTION_MODEL', 'django_ledger.TransactionModel')
+# DJANGO_LEDGER_JOURNAL_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL', 'django_ledger.JournalEntryModel')
+# DJANGO_LEDGER_LEDGER_MODEL = getattr(settings, 'DJANGO_LEDGER_LEDGER_MODEL', 'django_ledger.LedgerModel')
+# DJANGO_LEDGER_ENTITY_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_MODEL', 'django_ledger.EntityModel')
+# DJANGO_LEDGER_ENTITY_STATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_STATE_MODEL', 'django_ledger.EntityStateModel')
+# DJANGO_LEDGER_ENTITY_UNIT_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_UNIT_MODEL', 'django_ledger.EntityUnitModel')
+# DJANGO_LEDGER_ESTIMATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ESTIMATE_MODEL', 'django_ledger.EstimateModel')
+# DJANGO_LEDGER_BILL_MODEL = getattr(settings, 'DJANGO_LEDGER_BILL_MODEL', 'django_ledger.BillModel')
+# DJANGO_LEDGER_INVOICE_MODEL = getattr(settings, 'DJANGO_LEDGER_INVOICE_MODEL', 'django_ledger.InvoiceModel')
+# DJANGO_LEDGER_PURCHASE_ORDER_MODEL = getattr(settings, 'DJANGO_LEDGER_PURCHASE_ORDER_MODEL', 'django_ledger.PurchaseOrderModel')
+# DJANGO_LEDGER_CUSTOMER_MODEL = getattr(settings, 'DJANGO_LEDGER_CUSTOMER_MODEL', 'django_ledger.CustomerModel')
+# DJANGO_LEDGER_VENDOR_MODEL = getattr(settings, 'DJANGO_LEDGER_VENDOR_MODEL', 'django_ledger.VendorModel')
+# DJANGO_LEDGER_BANK_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_BANK_ACCOUNT_MODEL', 'django_ledger.BankAccountModel')
+# DJANGO_LEDGER_CLOSING_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL', 'django_ledger.ClosingEntryModel')
+# DJANGO_LEDGER_CLOSING_ENTRY_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_CLOSING_ENTRY_TRANSACTION_MODEL', 'django_ledger.ClosingEntryTransactionModel')
+# DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL = getattr(settings, 'DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL', 'django_ledger.UnitOfMeasureModel')
+# DJANGO_LEDGER_ITEM_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_TRANSACTION_MODEL', 'django_ledger.ItemTransactionModel')
+# DJANGO_LEDGER_ITEM_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_MODEL', 'django_ledger.ItemModel')
+# DJANGO_LEDGER_STAGED_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_STAGED_TRANSACTION_MODEL', 'django_ledger.StagedTransactionModel')
+# DJANGO_LEDGER_IMPORT_JOB_MODEL = getattr(settings, 'DJANGO_LEDGER_IMPORT_JOB_MODEL', 'django_ledger.ImportJobModel')
