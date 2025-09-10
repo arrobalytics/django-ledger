@@ -47,5 +47,6 @@ dev = ["sphinx~=4.5.0", "behave~=1.2.6", "pipenv-setup", "pylint", "furo"]
 dev = [
     "django-debug-toolbar>=6.0.0",
     "jupyterlab>=3.5.3",
+    "myst-parser>=0.18.1",
     "notebook>=6.5.7",
 ]
