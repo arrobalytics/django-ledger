@@ -1,0 +1,115 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+{% block view_content %}
+<div class="box">
+    <div class="level">
+        <div class="level-left">
+            <div class="level-item">
+                {% if month %}
+                    <h1 class="is-size-1 has-text-weight-thin">{{ month|date:'F Y' }} {% trans 'Customer Receipts' %} — {{ customer_model.customer_name }}</h1>
+                {% elif year %}
+                    <h1 class="is-size-1 has-text-weight-thin">{{ year|date:'Y' }} {% trans 'Customer Receipts' %} — {{ customer_model.customer_name }}</h1>
+                {% else %}
+                    <h1 class="is-size-1 has-text-weight-thin">{% trans 'Customer Receipts' %} — {{ customer_model.customer_name }}</h1>
+                {% endif %}
+            </div>
+        </div>
+        <div class="level-right">
+            {% if page_obj %}
+                {% if page_obj.has_previous %}
+                    <div class="level-item">
+                        <a href="?page={{ page_obj.previous_page_number }}"
+                           class="button is-small is-dark is-outlined">
+                            <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 24 %}</span>
+                        </a>
+                    </div>
+                {% endif %}
+                <div class="level-item">
+                    <p class="is-italic">page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+                </div>
+                {% if page_obj.has_next %}
+                    <div class="level-item">
+                        <a href="?page={{ page_obj.next_page_number }}"
+                           class="button is-small is-dark is-outlined">
+                            <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 24 %}</span>
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <table class="table is-fullwidth is-striped">
+        <thead>
+        <tr>
+            <th>{% trans 'Date' %}</th>
+            <th>{% trans 'Receipt #' %}</th>
+            <th>{% trans 'Type' %}</th>
+            <th>{% trans 'Imported' %}</th>
+            <th>{% trans 'Actions' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for r in receipt_list %}
+            <tr>
+                <td>{{ r.receipt_date }}</td>
+                <td><a href="{{ r.get_absolute_url }}">{{ r.receipt_number }}</a></td>
+                <td>{{ r.get_receipt_type_display }}</td>
+                <td>
+                    {% if r.staged_transaction_model %}
+                        <a href="{{ r.get_staged_tx_url }}">
+                            {% trans 'Staged TX' %}
+                        </a>
+                        <span class="is-size-7 has-text-grey"> · </span>
+                        <a href="{{ r.get_import_job_url }}">
+                            {% trans 'Bank Feed Job' %}
+                        </a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="button is-small is-danger is-outlined" href="{{ r.get_delete_url }}">
+                        {% trans 'Undo/Delete' %}
+                    </a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="5" class="has-text-centered">{% trans 'No receipts found.' %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if year %}
+        <h5 class="is-size-5">{% trans 'Go to quarter:' %}</h5>
+        <p>
+            {% for q in '1234' %}
+                <a href="{% url 'django_ledger:receipt-report-customer-quarter' entity_slug=view.kwargs.entity_slug customer_pk=customer_model.uuid year=year quarter=q %}">Q{{ q }}{% if not forloop.last %} > {% endif %}</a>
+            {% endfor %}
+        </p>
+        <h5 class="is-size-5">{% trans 'Go to month:' %}</h5>
+        <p>
+            <a href="{% url 'django_ledger:receipt-report-customer' entity_slug=view.kwargs.entity_slug customer_pk=customer_model.uuid %}">{% trans 'All' %} |</a>
+            {% for date in date_list %}
+                <a href="{% url 'django_ledger:receipt-report-customer-month' entity_slug=view.kwargs.entity_slug customer_pk=customer_model.uuid year=date.year month=date.month %}">
+                    {{ date | date:'F' }}{% if not forloop.last %} > {% endif %}
+                </a>
+            {% endfor %}
+        </p>
+    {% else %}
+        <h5 class="is-size-5">{% trans 'Go to year:' %}</h5>
+        <p>
+            <a href="{% url 'django_ledger:receipt-report-customer' entity_slug=view.kwargs.entity_slug customer_pk=customer_model.uuid %}">{% trans 'All' %} |</a>
+            {% for date in date_list %}
+                <a href="{% url 'django_ledger:receipt-report-customer-year' entity_slug=view.kwargs.entity_slug customer_pk=customer_model.uuid year=date.year %}">
+                    {{ date.year }}{% if not forloop.last %} > {% endif %}
+                </a>
+            {% endfor %}
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

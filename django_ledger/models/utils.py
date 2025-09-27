@@ -75,6 +75,7 @@ class LazyLoader:
     LEDGER_MODEL = 'ledgermodel'
     JE_MODEL = 'journalentrymodel'
     TRANSACTION_MODEL = 'transactionmodel'
+    STAGED_TRANSACTION_MODEL = 'stagedtransactionmodel'
     ACCOUNT_MODEL = 'accountmodel'
     COA_MODEL = 'chartofaccountmodel'
 
@@ -88,6 +89,7 @@ class LazyLoader:
 
     CUSTOMER_MODEL = 'customermodel'
     INVOICE_MODEL = 'invoicemodel'
+    RECEIPT_MODEL = 'receiptmodel'
     BILL_MODEL = 'billmodel'
     UOM_MODEL = 'unitofmeasuremodel'
     VENDOR_MODEL = 'vendormodel'
@@ -99,8 +101,6 @@ class LazyLoader:
     BALANCE_SHEET_REPORT_CLASS = None
     INCOME_STATEMENT_REPORT_CLASS = None
     CASH_FLOW_STATEMENT_REPORT_CLASS = None
-
-
 
     def get_entity_model(self):
         return self.app_config.get_model(self.ENTITY_MODEL)
@@ -123,6 +123,9 @@ class LazyLoader:
     def get_txs_model(self):
         return self.app_config.get_model(self.TRANSACTION_MODEL)
 
+    def get_staged_txs_model(self):
+        return self.app_config.get_model(self.STAGED_TRANSACTION_MODEL)
+
     def get_purchase_order_model(self):
         return self.app_config.get_model(self.PURCHASE_ORDER_MODEL)
 
@@ -138,6 +141,9 @@ class LazyLoader:
 
     def get_item_transaction_model(self):
         return self.app_config.get_model(self.ITEM_TRANSACTION_MODEL)
+
+    def get_receipt_model(self):
+        return self.app_config.get_model(self.RECEIPT_MODEL)
 
     def get_customer_model(self):
         return self.app_config.get_model(self.CUSTOMER_MODEL)
@@ -166,24 +172,28 @@ class LazyLoader:
     def get_entity_data_generator(self):
         if not self.ENTITY_DATA_GENERATOR:
             from django_ledger.io.io_generator import EntityDataGenerator
+
             self.ENTITY_DATA_GENERATOR = EntityDataGenerator
         return self.ENTITY_DATA_GENERATOR
 
     def get_balance_sheet_report_class(self):
         if not self.BALANCE_SHEET_REPORT_CLASS:
             from django_ledger.report.balance_sheet import BalanceSheetReport
+
             self.BALANCE_SHEET_REPORT_CLASS = BalanceSheetReport
         return self.BALANCE_SHEET_REPORT_CLASS
 
     def get_income_statement_report_class(self):
         if not self.INCOME_STATEMENT_REPORT_CLASS:
             from django_ledger.report.income_statement import IncomeStatementReport
+
             self.INCOME_STATEMENT_REPORT_CLASS = IncomeStatementReport
         return self.INCOME_STATEMENT_REPORT_CLASS
 
     def get_cash_flow_statement_report_class(self):
         if not self.CASH_FLOW_STATEMENT_REPORT_CLASS:
             from django_ledger.report.cash_flow_statement import CashFlowStatementReport
+
             self.CASH_FLOW_STATEMENT_REPORT_CLASS = CashFlowStatementReport
         return self.CASH_FLOW_STATEMENT_REPORT_CLASS
 

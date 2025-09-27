@@ -19,7 +19,7 @@
         {% for vendor in vendors %}
             <tr class="has-text-centered">
                 <td>{{ vendor.vendor_number }}</td>
-                <td>{{ vendor.vendor_name }}</td>
+                <td><a href="{% url 'django_ledger:vendor-detail' entity_slug=view.kwargs.entity_slug vendor_pk=vendor.uuid %}">{{ vendor.vendor_name }}</a></td>
                 <td>
                     {% if vendor.address_1 %}
                         {{ vendor.address_1 }}
@@ -65,7 +65,8 @@
                              id="dropdown-menu-{{ vendor.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
-                                {#                                <a href="" class="dropdown-item has-text-success">View</a>#}
+                                <a href="{% url 'django_ledger:vendor-detail' entity_slug=view.kwargs.entity_slug vendor_pk=vendor.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-success">{% trans 'View' %}</a>
                                 <a href="{% url 'django_ledger:vendor-update' entity_slug=view.kwargs.entity_slug vendor_pk=vendor.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
                             </div>

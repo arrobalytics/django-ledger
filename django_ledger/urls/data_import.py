@@ -18,4 +18,7 @@ urlpatterns = [
     path('<slug:entity_slug>/jobs/<uuid:job_pk>/txs/',
          views.DataImportJobDetailView.as_view(),
          name='data-import-job-txs'),
+    path('<slug:entity_slug>/jobs/<uuid:job_pk>/txs/<uuid:staged_tx_pk>/undo/',
+         views.StagedTransactionUndoView.as_view(),
+         name='data-import-staged-tx-undo'),
 ]

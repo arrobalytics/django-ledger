@@ -20,15 +20,16 @@ Key advantages of EntityUnits:
        flexibility to track inventory, expenses, or income associated with distinct
        business units.
 """
+
 import warnings
 from random import choices
-from string import ascii_lowercase, digits, ascii_uppercase
+from string import ascii_lowercase, ascii_uppercase, digits
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F
+from django.db.models import F, Q
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -48,18 +49,15 @@ class EntityUnitModelValidationError(ValidationError):
 
 
 class EntityUnitModelQuerySet(MP_NodeQuerySet):
-
     def for_user(self, user_model) -> 'EntityUnitModelQuerySet':
         if user_model.is_superuser:
             return self
         return self.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
+            Q(entity__admin=user_model) | Q(entity__managers__in=[user_model])
         )
 
 
 class EntityUnitModelManager(MP_NodeManager):
-
     def get_queryset(self):
         qs = EntityUnitModelQuerySet(self.model, using=self._db)
         return qs.annotate(
@@ -106,7 +104,7 @@ class EntityUnitModelManager(MP_NodeManager):
                 'user_model parameter is deprecated and will be removed in a future release. '
                 'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
                 qs = qs.for_user(kwargs['user_model'])
@@ -124,10 +122,7 @@ class EntityUnitModelManager(MP_NodeManager):
         return qs
 
 
-class EntityUnitModelAbstract(MP_Node,
-                              IOMixIn,
-                              SlugNameMixIn,
-                              CreateUpdateMixIn):
+class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn):
     """
     Base implementation of the EntityUnitModel.
 
@@ -152,17 +147,22 @@ class EntityUnitModelAbstract(MP_Node,
     hidden: bool
         Hidden Units will not show on drop down menus on the UI. Defaults to False.
     """
+
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     slug = models.SlugField(max_length=50)
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               editable=False,
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Unit Entity'))
+    entity = models.ForeignKey(
+        'django_ledger.EntityModel',
+        editable=False,
+        on_delete=models.CASCADE,
+        verbose_name=_('Unit Entity'),
+    )
     document_prefix = models.CharField(max_length=3)
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 
-    objects = EntityUnitModelManager.from_queryset(queryset_class=EntityUnitModelQuerySet)()
+    objects = EntityUnitModelManager.from_queryset(
+        queryset_class=EntityUnitModelQuerySet
+    )()
 
     class Meta:
         abstract = True
@@ -212,19 +212,20 @@ class EntityUnitModelAbstract(MP_Node,
         str
             The EntityModelUnit instance dashboard URL.
         """
-        return reverse('django_ledger:unit-dashboard',
-                       kwargs={
-                           'entity_slug': self.slug
-                       })
+        return reverse(
+            'django_ledger:unit-dashboard', kwargs={'entity_slug': self.slug}
+        )
 
     def get_entity_name(self) -> str:
         return self.entity.name
 
-    def create_entity_unit_slug(self,
-                                name: Optional[str] = None,
-                                force: bool = False,
-                                add_suffix: bool = True,
-                                k: int = 5) -> str:
+    def create_entity_unit_slug(
+        self,
+        name: Optional[str] = None,
+        force: bool = False,
+        add_suffix: bool = True,
+        k: int = 5,
+    ) -> str:
         """
         Automatically generates a EntityUnitModel slug. If slug is present, will not be replaced.
         Called during the clean() method.
@@ -255,13 +256,24 @@ class EntityUnitModelAbstract(MP_Node,
             self.slug = unit_slug
         return self.slug
 
+    def validate_for_entity(self, entity_model: 'EntityModel | str | UUID'):
+        EntityModel = lazy_loader.get_entity_model()
+
+        if isinstance(entity_model, UUID):
+            is_valid = self.entity_id == entity_model
+        elif isinstance(entity_model, str):
+            is_valid = self.entity_slug == entity_model
+        elif isinstance(entity_model, EntityModel):
+            is_valid = self.entity == entity_model
+        if not is_valid:
+            raise EntityUnitModelValidationError(
+                f'Entity Unit Model {entity_model} is not a valid Entity Model'
+            )
+
     def get_absolute_url(self):
         return reverse(
             viewname='django_ledger:unit-detail',
-            kwargs={
-                'entity_slug': self.entity.slug,
-                'unit_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity.slug, 'unit_slug': self.slug},
         )
 
 

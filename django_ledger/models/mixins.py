@@ -5,18 +5,23 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 This module implements the different model MixIns used on different Django Ledger Models to implement common
 functionality.
 """
+
 import logging
 from collections import defaultdict
-from datetime import timedelta, date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
-from django.core.validators import int_list_validator
+from django.core.validators import (
+    MaxValueValidator,
+    MinLengthValidator,
+    MinValueValidator,
+    int_list_validator,
+)
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
@@ -24,10 +29,19 @@ from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
 from django_ledger.io import (
-    ASSET_CA_CASH, LIABILITY_CL_ST_NOTES_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE,
-    LIABILITY_CL_ACC_PAYABLE, LIABILITY_CL_OTHER, LIABILITY_LTL_NOTES_PAYABLE
+    ASSET_CA_CASH,
+    LIABILITY_CL_ACC_PAYABLE,
+    LIABILITY_CL_OTHER,
+    LIABILITY_CL_ST_NOTES_PAYABLE,
+    LIABILITY_LTL_MORTGAGE_PAYABLE,
+    LIABILITY_LTL_NOTES_PAYABLE,
 )
-from django_ledger.io.io_core import validate_io_timestamp, check_tx_balance, get_localtime, get_localdate
+from django_ledger.io.io_core import (
+    check_tx_balance,
+    get_localdate,
+    get_localtime,
+    validate_io_timestamp,
+)
 from django_ledger.models.utils import lazy_loader
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -44,13 +58,18 @@ class SlugNameMixIn(models.Model):
     name: str
         A human-readable name for display purposes. Maximum 150 characters.
     """
-    slug = models.SlugField(max_length=50,
-                            editable=False,
-                            unique=True,
-                            validators=[
-                                MinLengthValidator(limit_value=10,
-                                                   message=_('Slug field must contain at least 10 characters.'))
-                            ])
+
+    slug = models.SlugField(
+        max_length=50,
+        editable=False,
+        unique=True,
+        validators=[
+            MinLengthValidator(
+                limit_value=10,
+                message=_('Slug field must contain at least 10 characters.'),
+            )
+        ],
+    )
     name = models.CharField(max_length=150, null=True, blank=True)
 
     class Meta:
@@ -71,6 +90,7 @@ class CreateUpdateMixIn(models.Model):
     updated: str
         An updated timestamp used to identify when models are updated.
     """
+
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True, null=True, blank=True)
 
@@ -106,32 +126,53 @@ class ContactInfoMixIn(models.Model):
     phone: str
         A string used to document the contact phone.
     """
-    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'), null=True, blank=True)
-    address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
-    city = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('City'))
-    state = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('State/Province'))
-    zip_code = models.CharField(null=True, blank=True, max_length=20, verbose_name=_('Zip Code'))
-    country = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Country'))
+
+    address_1 = models.CharField(
+        max_length=70, verbose_name=_('Address Line 1'), null=True, blank=True
+    )
+    address_2 = models.CharField(
+        null=True, blank=True, max_length=70, verbose_name=_('Address Line 2')
+    )
+    city = models.CharField(
+        null=True, blank=True, max_length=70, verbose_name=_('City')
+    )
+    state = models.CharField(
+        null=True, blank=True, max_length=70, verbose_name=_('State/Province')
+    )
+    zip_code = models.CharField(
+        null=True, blank=True, max_length=20, verbose_name=_('Zip Code')
+    )
+    country = models.CharField(
+        null=True, blank=True, max_length=70, verbose_name=_('Country')
+    )
     email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
     website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
-    phone = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('Phone Number'))
+    phone = models.CharField(
+        max_length=30, null=True, blank=True, verbose_name=_('Phone Number')
+    )
 
     class Meta:
         abstract = True
 
     def get_cszc(self):
-        if all([
-            self.city,
-            self.state,
-            self.zip_code,
-            self.country,
-        ]):
+        if all(
+            [
+                self.city,
+                self.state,
+                self.zip_code,
+                self.country,
+            ]
+        ):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
     def clean(self):
         if self.address_2 and not self.address_1:
             raise ValidationError(
-                {'address_1': _('Address line 1 is required if address_2 is provided.')},
+                {
+                    'address_1': _(
+                        'Address line 1 is required if address_2 is provided.'
+                    )
+                },
             )
         super().clean()
 
@@ -169,6 +210,7 @@ class AccrualMixIn(models.Model):
         The AccountModel used to track receivables to the financial instrument. Must be of role
         LIABILITY_CL_DEFERRED_REVENUE.
     """
+
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -179,68 +221,82 @@ class AccrualMixIn(models.Model):
         'di': 'debit',
     }
 
-    amount_due = models.DecimalField(default=0,
-                                     max_digits=20,
-                                     decimal_places=2,
-                                     verbose_name=_('Amount Due'))
+    amount_due = models.DecimalField(
+        default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Due')
+    )
 
-    amount_paid = models.DecimalField(default=0,
-                                      max_digits=20,
-                                      decimal_places=2,
-                                      verbose_name=_('Amount Paid'),
-                                      validators=[MinValueValidator(limit_value=0)])
+    amount_paid = models.DecimalField(
+        default=0,
+        max_digits=20,
+        decimal_places=2,
+        verbose_name=_('Amount Paid'),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
-    amount_receivable = models.DecimalField(default=0,
-                                            max_digits=20,
-                                            decimal_places=2,
-                                            verbose_name=_('Amount Receivable'),
-                                            validators=[MinValueValidator(limit_value=0)])
-    amount_unearned = models.DecimalField(default=0,
-                                          max_digits=20,
-                                          decimal_places=2,
-                                          verbose_name=_('Amount Unearned'),
-                                          validators=[MinValueValidator(limit_value=0)])
-    amount_earned = models.DecimalField(default=0,
-                                        max_digits=20,
-                                        decimal_places=2,
-                                        verbose_name=_('Amount Earned'),
-                                        validators=[MinValueValidator(limit_value=0)])
+    amount_receivable = models.DecimalField(
+        default=0,
+        max_digits=20,
+        decimal_places=2,
+        verbose_name=_('Amount Receivable'),
+        validators=[MinValueValidator(limit_value=0)],
+    )
+    amount_unearned = models.DecimalField(
+        default=0,
+        max_digits=20,
+        decimal_places=2,
+        verbose_name=_('Amount Unearned'),
+        validators=[MinValueValidator(limit_value=0)],
+    )
+    amount_earned = models.DecimalField(
+        default=0,
+        max_digits=20,
+        decimal_places=2,
+        verbose_name=_('Amount Earned'),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
     # todo: change progress method from percent to currency amount and FloatField??...
-    progress = models.DecimalField(default=0,
-                                   verbose_name=_('Progress Amount'),
-                                   decimal_places=2,
-                                   max_digits=3,
-                                   validators=[
-                                       MinValueValidator(limit_value=0),
-                                       MaxValueValidator(limit_value=1)
-                                   ])
+    progress = models.DecimalField(
+        default=0,
+        verbose_name=_('Progress Amount'),
+        decimal_places=2,
+        max_digits=3,
+        validators=[MinValueValidator(limit_value=0), MaxValueValidator(limit_value=1)],
+    )
 
     # todo: rename to ledger_model...
-    ledger = models.OneToOneField('django_ledger.LedgerModel',
-                                  editable=False,
-                                  verbose_name=_('Ledger'),
-                                  on_delete=models.CASCADE)
-    cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.RESTRICT,
-                                     blank=True,
-                                     null=True,
-                                     verbose_name=_('Cash Account'),
-                                     related_name=f'{REL_NAME_PREFIX}_cash_account')
-    prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.RESTRICT,
-                                        blank=True,
-                                        null=True,
-                                        verbose_name=_('Prepaid Account'),
-                                        related_name=f'{REL_NAME_PREFIX}_prepaid_account')
-    unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.RESTRICT,
-                                         blank=True,
-                                         null=True,
-                                         verbose_name=_('Unearned Account'),
-                                         related_name=f'{REL_NAME_PREFIX}_unearned_account')
+    ledger = models.OneToOneField(
+        'django_ledger.LedgerModel',
+        editable=False,
+        verbose_name=_('Ledger'),
+        on_delete=models.CASCADE,
+    )
+    cash_account = models.ForeignKey(
+        'django_ledger.AccountModel',
+        on_delete=models.RESTRICT,
+        blank=True,
+        null=True,
+        verbose_name=_('Cash Account'),
+        related_name=f'{REL_NAME_PREFIX}_cash_account',
+    )
+    prepaid_account = models.ForeignKey(
+        'django_ledger.AccountModel',
+        on_delete=models.RESTRICT,
+        blank=True,
+        null=True,
+        verbose_name=_('Prepaid Account'),
+        related_name=f'{REL_NAME_PREFIX}_prepaid_account',
+    )
+    unearned_account = models.ForeignKey(
+        'django_ledger.AccountModel',
+        on_delete=models.RESTRICT,
+        blank=True,
+        null=True,
+        verbose_name=_('Unearned Account'),
+        related_name=f'{REL_NAME_PREFIX}_unearned_account',
+    )
 
     class Meta:
         abstract = True
@@ -255,12 +311,14 @@ class AccrualMixIn(models.Model):
         bool
             True if configured, else False.
         """
-        return all([
-            self.ledger_id is not None,
-            self.cash_account_id is not None,
-            self.unearned_account_id is not None,
-            self.prepaid_account_id is not None
-        ])
+        return all(
+            [
+                self.ledger_id is not None,
+                self.cash_account_id is not None,
+                self.unearned_account_id is not None,
+                self.prepaid_account_id is not None,
+            ]
+        )
 
     def is_posted(self):
         """
@@ -343,15 +401,9 @@ class AccrualMixIn(models.Model):
         payments = self.amount_paid or Decimal.from_float(0.00)
         if self.accrue:
             amt_earned = self.get_amount_earned()
-            if all([
-                self.IS_DEBIT_BALANCE,
-                amt_earned >= payments
-            ]):
+            if all([self.IS_DEBIT_BALANCE, amt_earned >= payments]):
                 return self.get_amount_earned() - payments
-            elif all([
-                not self.IS_DEBIT_BALANCE,
-                amt_earned <= payments
-            ]):
+            elif all([not self.IS_DEBIT_BALANCE, amt_earned <= payments]):
                 return payments - self.get_amount_earned()
         return Decimal.from_float(0.00)
 
@@ -366,15 +418,9 @@ class AccrualMixIn(models.Model):
         """
         if self.accrue:
             amt_earned = self.get_amount_earned()
-            if all([
-                self.IS_DEBIT_BALANCE,
-                amt_earned <= self.amount_paid
-            ]):
+            if all([self.IS_DEBIT_BALANCE, amt_earned <= self.amount_paid]):
                 return self.amount_paid - amt_earned
-            elif all([
-                not self.IS_DEBIT_BALANCE,
-                amt_earned >= self.amount_paid
-            ]):
+            elif all([not self.IS_DEBIT_BALANCE, amt_earned >= self.amount_paid]):
                 return amt_earned - self.amount_paid
         return Decimal.from_float(0.00)
 
@@ -414,9 +460,7 @@ class AccrualMixIn(models.Model):
             return False
         return not self.ledger.is_locked()
 
-    def get_tx_type(self,
-                    acc_bal_type: dict,
-                    adjustment_amount: Decimal):
+    def get_tx_type(self, acc_bal_type: dict, adjustment_amount: Decimal):
         """
         Determines the transaction type associated with an increase/decrease of an account balance of the financial
         instrument.
@@ -438,10 +482,13 @@ class AccrualMixIn(models.Model):
         return self.TX_TYPE_MAPPING[acc_bal_type + d_or_i]
 
     @classmethod
-    def split_amount(cls, amount: Union[Decimal, float],
-                     unit_split: Dict,
-                     account_uuid: UUID,
-                     account_balance_type: str) -> Dict:
+    def split_amount(
+        cls,
+        amount: Union[Decimal, float],
+        unit_split: Dict,
+        account_uuid: UUID,
+        account_balance_type: str,
+    ) -> Dict:
         """
         Splits an amount into different proportions representing the unit splits.
         Makes sure that 100% of the amount is numerically allocated taking into consideration decimal points.
@@ -467,7 +514,9 @@ class AccrualMixIn(models.Model):
         split_results = dict()
         for i, (u, p) in enumerate(unit_split.items()):
             if i == SPLIT_LEN:
-                split_results[(account_uuid, u, account_balance_type)] = amount - running_alloc
+                split_results[(account_uuid, u, account_balance_type)] = (
+                    amount - running_alloc
+                )
             else:
                 alloc = round(p * amount, 2)
                 split_results[(account_uuid, u, account_balance_type)] = alloc
@@ -489,11 +538,15 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if ledger_model.locked:
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is already locked...')
+                raise ValidationError(
+                    f'Bill ledger {ledger_model.name} is already locked...'
+                )
             return
         ledger_model.lock(commit, raise_exception=raise_exception)
 
-    def unlock_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+    def unlock_ledger(
+        self, commit: bool = False, raise_exception: bool = True, **kwargs
+    ):
         """
         Convenience method to un-lock the LedgerModel associated with the Accruable financial instrument.
 
@@ -507,7 +560,9 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if not ledger_model.is_locked():
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is already unlocked...')
+                raise ValidationError(
+                    f'Bill ledger {ledger_model.name} is already unlocked...'
+                )
             return
         ledger_model.unlock(commit, raise_exception=raise_exception)
 
@@ -526,11 +581,15 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if ledger_model.posted:
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is already posted...')
+                raise ValidationError(
+                    f'Bill ledger {ledger_model.name} is already posted...'
+                )
             return
         ledger_model.post(commit, raise_exception=raise_exception)
 
-    def unpost_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+    def unpost_ledger(
+        self, commit: bool = False, raise_exception: bool = True, **kwargs
+    ):
         """
         Convenience method to un-lock the LedgerModel associated with the Accruable financial instrument.
 
@@ -544,22 +603,25 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if not ledger_model.is_posted():
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is not posted...')
+                raise ValidationError(
+                    f'Bill ledger {ledger_model.name} is not posted...'
+                )
             return
         ledger_model.post(commit, raise_exception=raise_exception)
 
-    def migrate_state(self,
-                      # todo: remove usermodel param...?
-                      user_model,
-                      entity_slug: str,
-                      itemtxs_qs: Optional[QuerySet] = None,
-                      force_migrate: bool = False,
-                      commit: bool = True,
-                      void: bool = False,
-                      je_timestamp: Optional[Union[str, date, datetime]] = None,
-                      raise_exception: bool = True,
-                      **kwargs):
-
+    def migrate_state(
+        self,
+        # todo: remove usermodel param...?
+        user_model,
+        entity_slug: str,
+        itemtxs_qs: Optional[QuerySet] = None,
+        force_migrate: bool = False,
+        commit: bool = True,
+        void: bool = False,
+        je_timestamp: Optional[Union[str, date, datetime]] = None,
+        raise_exception: bool = True,
+        **kwargs,
+    ):
         """
         Migrates the current Accruable financial instrument into the books. The main objective of the migrate_state
         method is to determine the JournalEntry and TransactionModels necessary to accurately reflect the financial
@@ -573,7 +635,7 @@ class AccrualMixIn(models.Model):
             The EntityModel slug.
         itemtxs_qs: ItemTransactionModelQuerySet
             The pre-fetched ItemTransactionModelQuerySet containing the item information associated with the financial
-            element migration. If provided, will avoid additional database query.
+            element migration. If provided, it will avoid an additional database query.
         force_migrate: bool
             Forces migration of the financial instrument bypassing the can_migrate() check.
         commit: bool
@@ -592,60 +654,45 @@ class AccrualMixIn(models.Model):
         """
 
         if self.can_migrate() or force_migrate:
-
-            # getting current ledger state
-            # todo: validate itemtxs_qs...?
-            io_digest = self.ledger.digest(
-                user_model=user_model,
-                entity_slug=entity_slug,
-                process_groups=True,
-                process_roles=False,
-                process_ratios=False,
-                signs=False,
-                by_unit=True
-            )
-
-            io_data = io_digest.get_io_data()
-
-            accounts_data = io_data['accounts']
-
-            # Index (account_uuid, unit_uuid, balance_type, role)
-            current_ledger_state = {
-                (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in accounts_data
-                # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
-            }
-
             item_data = list(self.get_migration_data(queryset=itemtxs_qs))
             cogs_adjustment = defaultdict(lambda: Decimal('0.00'))
             inventory_adjustment = defaultdict(lambda: Decimal('0.00'))
             progress = self.get_progress()
 
             if isinstance(self, lazy_loader.get_bill_model()):
-
                 for item in item_data:
                     account_uuid_expense = item.get('item_model__expense_account__uuid')
-                    account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+                    account_uuid_inventory = item.get(
+                        'item_model__inventory_account__uuid'
+                    )
                     if account_uuid_expense:
                         item['account_uuid'] = account_uuid_expense
-                        item['account_balance_type'] = item.get('item_model__expense_account__balance_type')
+                        item['account_balance_type'] = item.get(
+                            'item_model__expense_account__balance_type'
+                        )
                     elif account_uuid_inventory:
                         item['account_uuid'] = account_uuid_inventory
-                        item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
+                        item['account_balance_type'] = item.get(
+                            'item_model__inventory_account__balance_type'
+                        )
 
             elif isinstance(self, lazy_loader.get_invoice_model()):
-
                 for item in item_data:
-
-                    account_uuid_earnings = item.get('item_model__earnings_account__uuid')
+                    account_uuid_earnings = item.get(
+                        'item_model__earnings_account__uuid'
+                    )
                     account_uuid_cogs = item.get('item_model__cogs_account__uuid')
-                    account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+                    account_uuid_inventory = item.get(
+                        'item_model__inventory_account__uuid'
+                    )
 
                     if account_uuid_earnings:
                         item['account_uuid'] = account_uuid_earnings
-                        item['account_balance_type'] = item.get('item_model__earnings_account__balance_type')
+                        item['account_balance_type'] = item.get(
+                            'item_model__earnings_account__balance_type'
+                        )
 
                     if account_uuid_cogs and account_uuid_inventory:
-
                         try:
                             irq = item.get('item_model__inventory_received')
                             irv = item.get('item_model__inventory_received_value')
@@ -661,27 +708,38 @@ class AccrualMixIn(models.Model):
 
                         if tot_amt != 0:
                             # keeps track of necessary transactions to increase COGS account...
-                            cogs_adjustment[(
-                                account_uuid_cogs,
-                                item.get('entity_unit__uuid'),
-                                item.get('item_model__cogs_account__balance_type')
-                            )] += tot_amt * progress
+                            cogs_adjustment[
+                                (
+                                    account_uuid_cogs,
+                                    item.get('entity_unit__uuid'),
+                                    item.get('item_model__cogs_account__balance_type'),
+                                )
+                            ] += tot_amt * progress
 
                             # keeps track of necessary transactions to reduce inventory account...
-                            inventory_adjustment[(
-                                account_uuid_inventory,
-                                item.get('entity_unit__uuid'),
-                                item.get('item_model__inventory_account__balance_type')
-                            )] -= tot_amt * progress
+                            inventory_adjustment[
+                                (
+                                    account_uuid_inventory,
+                                    item.get('entity_unit__uuid'),
+                                    item.get(
+                                        'item_model__inventory_account__balance_type'
+                                    ),
+                                )
+                            ] -= tot_amt * progress
 
-            item_data_gb = groupby(item_data,
-                                   key=lambda a: (a['account_uuid'],
-                                                  a['entity_unit__uuid'],
-                                                  a['account_balance_type']))
+            item_data_gb = groupby(
+                item_data,
+                key=lambda a: (
+                    a['account_uuid'],
+                    a['entity_unit__uuid'],
+                    a['account_balance_type'],
+                ),
+            )
 
             # scaling down item amount based on progress...
             progress_item_idx = {
-                idx: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for idx, ad in item_data_gb
+                idx: round(sum(a['account_unit_total'] for a in ad) * progress, 2)
+                for idx, ad in item_data_gb
             }
 
             # tuple ( unit_uuid, total_amount ) sorted by uuid...
@@ -696,7 +754,8 @@ class AccrualMixIn(models.Model):
 
             # { unit_uuid: float (percent) }
             unit_percents = {
-                k: (v / total_amount) if progress and total_amount else Decimal('0.00') for k, v in unit_amounts.items()
+                k: (v / total_amount) if progress and total_amount else Decimal('0.00')
+                for k, v in unit_amounts.items()
             }
 
             if not void:
@@ -708,19 +767,19 @@ class AccrualMixIn(models.Model):
                 amount=new_state['amount_paid'],
                 unit_split=unit_percents,
                 account_uuid=self.cash_account_id,
-                account_balance_type='debit'
+                account_balance_type='debit',
             )
             amount_prepaid_split = self.split_amount(
                 amount=new_state['amount_receivable'],
                 unit_split=unit_percents,
                 account_uuid=self.prepaid_account_id,
-                account_balance_type='debit'
+                account_balance_type='debit',
             )
             amount_unearned_split = self.split_amount(
                 amount=new_state['amount_unearned'],
                 unit_split=unit_percents,
                 account_uuid=self.unearned_account_id,
-                account_balance_type='credit'
+                account_balance_type='credit',
             )
 
             new_ledger_state = dict()
@@ -734,19 +793,40 @@ class AccrualMixIn(models.Model):
 
             new_ledger_state.update(progress_item_idx)
 
+            # getting current ledger state
+            # todo: validate itemtxs_qs...?
+            io_digest = self.ledger.digest(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                process_groups=True,
+                process_roles=False,
+                process_ratios=False,
+                signs=False,
+                by_unit=True,
+            )
+
+            io_data = io_digest.get_io_data()
+            accounts_data = io_data['accounts']
+
+            # Index (account_uuid, unit_uuid, balance_type, role)
+            current_ledger_state = {
+                (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance']
+                for a in accounts_data
+                # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
+            }
+
             # list of all keys involved
             idx_keys = set(list(current_ledger_state) + list(new_ledger_state))
 
             # difference between new vs current
             diff_idx = {
-                k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in
-                idx_keys
+                k: new_ledger_state.get(k, Decimal('0.00'))
+                - current_ledger_state.get(k, Decimal('0.00'))
+                for k in idx_keys
             }
 
             # eliminates transactions with no amount...
-            diff_idx = {
-                k: v for k, v in diff_idx.items() if v
-            }
+            diff_idx = {k: v for k, v in diff_idx.items() if v}
 
             if commit:
                 JournalEntryModel = lazy_loader.get_journal_entry_model()
@@ -764,21 +844,29 @@ class AccrualMixIn(models.Model):
                         timestamp=now_timestamp,
                         description=self.get_migrate_state_desc(),
                         origin='migration',
-                        ledger_id=self.ledger_id
-                    ) for u in unit_uuids
+                        ledger_id=self.ledger_id,
+                    )
+                    for u in unit_uuids
                 }
 
                 for u, je in je_list.items():
                     je.clean(verify=False)
 
                 txs_list = [
-                    (unit_uuid, TransactionModel(
-                        journal_entry=je_list.get(unit_uuid),
-                        amount=abs(round(amt, 2)),
-                        tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
-                        account_id=acc_uuid,
-                        description=self.get_migrate_state_desc()
-                    )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
+                    (
+                        unit_uuid,
+                        TransactionModel(
+                            journal_entry=je_list.get(unit_uuid),
+                            amount=abs(round(amt, 2)),
+                            tx_type=self.get_tx_type(
+                                acc_bal_type=bal_type, adjustment_amount=amt
+                            ),
+                            account_id=acc_uuid,
+                            description=self.get_migrate_state_desc(),
+                        ),
+                    )
+                    for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items()
+                    if amt
                 ]
 
                 for unit_uuid, tx in txs_list:
@@ -786,7 +874,10 @@ class AccrualMixIn(models.Model):
 
                 for uid in unit_uuids:
                     # validates each unit txs independently...
-                    check_tx_balance(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
+                    check_tx_balance(
+                        tx_data=[tx for ui, tx in txs_list if uid == ui],
+                        perform_correction=True,
+                    )
 
                 # validates all txs as a whole (for safety)...
                 txs = [tx for _, tx in txs_list]
@@ -798,19 +889,24 @@ class AccrualMixIn(models.Model):
                     je.clean(verify=True)
                     if je.is_verified():
                         je.mark_as_locked(commit=False, raise_exception=True)
-                        je.mark_as_posted(commit=False, verify=False, raise_exception=True)
+                        je.mark_as_posted(
+                            commit=False, verify=False, raise_exception=True
+                        )
 
                 if all([je.is_verified() for _, je in je_list.items()]):
                     # only if all JEs have been verified will be posted and locked...
                     JournalEntryModel.objects.bulk_update(
                         objs=[je for _, je in je_list.items()],
-                        fields=['posted', 'locked', 'activity']
+                        fields=['posted', 'locked', 'activity'],
                     )
 
             return item_data, io_data
-        else:
-            if raise_exception:
-                raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
+
+        if not raise_exception:
+            return None
+        raise ValidationError(
+            f'{self.REL_NAME_PREFIX.upper()} state migration not allowed'
+        )
 
     def void_state(self, commit: bool = False) -> Dict:
         """
@@ -854,7 +950,7 @@ class AccrualMixIn(models.Model):
             'amount_paid': self.get_amount_cash(),
             'amount_receivable': self.get_amount_prepaid(),
             'amount_unearned': self.get_amount_unearned(),
-            'amount_earned': self.get_amount_earned()
+            'amount_earned': self.get_amount_earned(),
         }
         if commit:
             self.update_state(new_state)
@@ -877,7 +973,6 @@ class AccrualMixIn(models.Model):
         self.amount_earned = state['amount_earned']
 
     def clean(self):
-
         super().clean()
 
         if not self.amount_due:
@@ -888,21 +983,31 @@ class AccrualMixIn(models.Model):
 
         if self.accrue:
             if not self.prepaid_account_id:
-                raise ValidationError(f'Accrued {self.__class__.__name__} must define a Prepaid Expense account.')
+                raise ValidationError(
+                    f'Accrued {self.__class__.__name__} must define a Prepaid Expense account.'
+                )
             if not self.unearned_account_id:
-                raise ValidationError(f'Accrued {self.__class__.__name__} must define an Unearned Income account.')
+                raise ValidationError(
+                    f'Accrued {self.__class__.__name__} must define an Unearned Income account.'
+                )
 
-        if any([
-            self.cash_account_id is not None,
-            self.prepaid_account_id is not None,
-            self.unearned_account_id is not None
-        ]):
-            if not all([
+        if any(
+            [
                 self.cash_account_id is not None,
                 self.prepaid_account_id is not None,
-                self.unearned_account_id is not None
-            ]):
-                raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
+                self.unearned_account_id is not None,
+            ]
+        ):
+            if not all(
+                [
+                    self.cash_account_id is not None,
+                    self.prepaid_account_id is not None,
+                    self.unearned_account_id is not None,
+                ]
+            ):
+                raise ValidationError(
+                    'Must provide all accounts Cash, Prepaid, UnEarned.'
+                )
 
         # if self.accrue:
         #     if self.is_approved():
@@ -911,7 +1016,9 @@ class AccrualMixIn(models.Model):
         #         self.progress = Decimal.from_float(0.00)
 
         if self.amount_paid > self.amount_due:
-            raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
+            raise ValidationError(
+                f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}'
+            )
 
         if self.is_paid():
             self.progress = Decimal.from_float(1.0)
@@ -921,17 +1028,21 @@ class AccrualMixIn(models.Model):
             if not self.date_paid:
                 self.date_paid = today
             if self.date_paid > today:
-                raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+                raise ValidationError(
+                    f'Cannot pay {self.__class__.__name__} in the future.'
+                )
         else:
             self.date_paid = None
 
         if self.is_void():
-            if any([
-                self.amount_paid,
-                self.amount_earned,
-                self.amount_unearned,
-                self.amount_receivable
-            ]):
+            if any(
+                [
+                    self.amount_paid,
+                    self.amount_earned,
+                    self.amount_unearned,
+                    self.amount_receivable,
+                ]
+            ):
                 raise ValidationError('Voided element cannot have any balance.')
 
             self.progress = Decimal.from_float(0.00)
@@ -952,6 +1063,7 @@ class PaymentTermsMixIn(models.Model):
         A choice of TERM_CHOICES that determines the payment terms.
 
     """
+
     TERMS_ON_RECEIPT = 'on_receipt'
     TERMS_NET_30 = 'net_30'
     TERMS_NET_60 = 'net_60'
@@ -971,13 +1083,15 @@ class PaymentTermsMixIn(models.Model):
         TERMS_NET_30: 30,
         TERMS_NET_60: 60,
         TERMS_NET_90: 90,
-        TERMS_NET_90_PLUS: 120
+        TERMS_NET_90_PLUS: 120,
     }
 
-    terms = models.CharField(max_length=10,
-                             default='on_receipt',
-                             choices=TERM_CHOICES,
-                             verbose_name=_('Terms'))
+    terms = models.CharField(
+        max_length=10,
+        default='on_receipt',
+        choices=TERM_CHOICES,
+        verbose_name=_('Terms'),
+    )
     date_due = models.DateField(verbose_name=_('Due Date'), null=True, blank=True)
 
     class Meta:
@@ -1090,7 +1204,10 @@ class MarkdownNotesMixIn(models.Model):
     markdown_notes: str
         A string of text representing the mark-down document.
     """
-    markdown_notes = models.TextField(blank=True, null=True, verbose_name=_('Markdown Notes'))
+
+    markdown_notes = models.TextField(
+        blank=True, null=True, verbose_name=_('Markdown Notes')
+    )
 
     class Meta:
         abstract = True
@@ -1149,7 +1266,7 @@ class FinancialAccountInfoMixin(models.Model):
         ACCOUNT_ST_LOAN: LIABILITY_CL_ST_NOTES_PAYABLE,
         ACCOUNT_LT_LOAN: LIABILITY_LTL_NOTES_PAYABLE,
         ACCOUNT_MORTGAGE: LIABILITY_LTL_MORTGAGE_PAYABLE,
-        ACCOUNT_OTHER: LIABILITY_CL_OTHER
+        ACCOUNT_OTHER: LIABILITY_CL_OTHER,
     }
 
     ACCOUNT_TYPE_CHOICES = [
@@ -1169,7 +1286,7 @@ class FinancialAccountInfoMixin(models.Model):
         'SAVINGS': ACCOUNT_SAVINGS,
         'MONEYMRKT': ACCOUNT_MONEY_MKT,
         'CREDITLINE': ACCOUNT_CREDIT_CARD,
-        'CD': ACCOUNT_CERT_DEPOSIT
+        'CD': ACCOUNT_CERT_DEPOSIT,
     }
 
     VALID_ACCOUNT_TYPES = tuple(atc[0] for atc in ACCOUNT_TYPE_CHOICES)
@@ -1179,23 +1296,33 @@ class FinancialAccountInfoMixin(models.Model):
         blank=True,
         null=True,
         verbose_name=_('Financial Institution'),
-        help_text=_('Name of the financial institution (i.e. Bank Name).')
+        help_text=_('Name of the financial institution (i.e. Bank Name).'),
     )
-    account_number = models.CharField(max_length=30, null=True, blank=True,
-                                      validators=[
-                                          int_list_validator(sep='', message=_('Only digits allowed'))
-                                      ], verbose_name=_('Account Number'))
-    routing_number = models.CharField(max_length=30, null=True, blank=True,
-                                      validators=[
-                                          int_list_validator(sep='', message=_('Only digits allowed'))
-                                      ], verbose_name=_('Routing Number'))
-    aba_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('ABA Number'))
-    swift_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('SWIFT Number'))
+    account_number = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+        validators=[int_list_validator(sep='', message=_('Only digits allowed'))],
+        verbose_name=_('Account Number'),
+    )
+    routing_number = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+        validators=[int_list_validator(sep='', message=_('Only digits allowed'))],
+        verbose_name=_('Routing Number'),
+    )
+    aba_number = models.CharField(
+        max_length=30, null=True, blank=True, verbose_name=_('ABA Number')
+    )
+    swift_number = models.CharField(
+        max_length=30, null=True, blank=True, verbose_name=_('SWIFT Number')
+    )
     account_type = models.CharField(
         choices=ACCOUNT_TYPE_CHOICES,
         max_length=20,
         default=ACCOUNT_CHECKING,
-        verbose_name=_('Account Type')
+        verbose_name=_('Account Type'),
     )
 
     class Meta:
@@ -1212,16 +1339,13 @@ class FinancialAccountInfoMixin(models.Model):
         return f'*{self.routing_number[-n:]}'
 
     def get_account_type_from_ofx(self, ofx_type):
-        return self.ACCOUNT_TYPE_OFX_MAPPING.get(
-            ofx_type, self.ACCOUNT_OTHER
-        )
+        return self.ACCOUNT_TYPE_OFX_MAPPING.get(ofx_type, self.ACCOUNT_OTHER)
 
 
 class TaxInfoMixIn(models.Model):
-    tax_id_number = models.CharField(max_length=30,
-                                     null=True,
-                                     blank=True,
-                                     verbose_name=_('Tax Registration Number'))
+    tax_id_number = models.CharField(
+        max_length=30, null=True, blank=True, verbose_name=_('Tax Registration Number')
+    )
 
     class Meta:
         abstract = True
@@ -1240,14 +1364,17 @@ class TaxCollectionMixIn(models.Model):
     sales_tax_rate: float
         The tax rate as a float. A Number between 0.00 and 1.00.
     """
-    sales_tax_rate = models.FloatField(default=0.00000,
-                                       verbose_name=_('Sales Tax Rate'),
-                                       null=True,
-                                       blank=True,
-                                       validators=[
-                                           MinValueValidator(limit_value=0.00000),
-                                           MaxValueValidator(limit_value=1.00000)
-                                       ])
+
+    sales_tax_rate = models.FloatField(
+        default=0.00000,
+        verbose_name=_('Sales Tax Rate'),
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(limit_value=0.00000),
+            MaxValueValidator(limit_value=1.00000),
+        ],
+    )
 
     class Meta:
         abstract = True
@@ -1261,13 +1388,16 @@ class LoggingMixIn:
     Implements functionality used to add logging capabilities to any python class.
     Useful for production and or testing environments.
     """
+
     LOGGER_NAME_ATTRIBUTE = None
     LOGGER_BYPASS_DEBUG = False
 
     def get_logger_name(self):
         if self.LOGGER_NAME_ATTRIBUTE is None:
-            raise NotImplementedError(f'{self.__class__.__name__} must define LOGGER_NAME_ATTRIBUTE of implement '
-                                      'get_logger_name() function.')
+            raise NotImplementedError(
+                f'{self.__class__.__name__} must define LOGGER_NAME_ATTRIBUTE of implement '
+                'get_logger_name() function.'
+            )
         return getattr(self, self.LOGGER_NAME_ATTRIBUTE)
 
     def get_logger(self) -> logging.Logger:
@@ -1302,7 +1432,9 @@ class ItemizeMixIn(models.Model):
         """
         raise NotImplementedError()
 
-    def get_itemtxs_data(self, queryset=None, aggregate_on_db: bool = False, lazy_agg: bool = False):
+    def get_itemtxs_data(
+        self, queryset=None, aggregate_on_db: bool = False, lazy_agg: bool = False
+    ):
         """
         Fetches the ItemTransactionModelQuerySet associated with the model.
 
@@ -1332,14 +1464,19 @@ class ItemizeMixIn(models.Model):
             Item transaction list to replace/aggregate.
         """
         if isinstance(itemtxs, dict):
-            if all([
-                all([
-                    isinstance(d, dict),
-                    'unit_cost' in d,
-                    'quantity' in d,
-                    'total_amount' in d
-                ]) for i, d in itemtxs.items()
-            ]):
+            if all(
+                [
+                    all(
+                        [
+                            isinstance(d, dict),
+                            'unit_cost' in d,
+                            'quantity' in d,
+                            'total_amount' in d,
+                        ]
+                    )
+                    for i, d in itemtxs.items()
+                ]
+            ):
                 return
         raise ItemizeError('itemtxs must be an instance of dict.')
 
@@ -1363,7 +1500,9 @@ class ItemizeMixIn(models.Model):
         item_model_qs_map = {i.item_number: i for i in item_model_qs}
 
         if itemtxs.keys() != item_model_qs_map.keys():
-            raise ItemizeError(message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.')
+            raise ItemizeError(
+                message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.'
+            )
 
         if isinstance(self, EstimateModel):
             return [
@@ -1373,7 +1512,8 @@ class ItemizeMixIn(models.Model):
                     ce_quantity=i['quantity'],
                     ce_unit_cost_estimate=i['unit_cost'],
                     ce_unit_revenue_estimate=i['unit_revenue'],
-                ) for item_number, i in itemtxs.items()
+                )
+                for item_number, i in itemtxs.items()
             ]
 
         if isinstance(self, PurchaseOrder):
@@ -1383,7 +1523,8 @@ class ItemizeMixIn(models.Model):
                     item_model=item_model_qs_map[item_number],
                     po_quantity=i['quantity'],
                     po_unit_cost=i['unit_cost'],
-                ) for item_number, i in itemtxs.items()
+                )
+                for item_number, i in itemtxs.items()
             ]
 
         BillModel = lazy_loader.get_bill_model()
@@ -1395,8 +1536,9 @@ class ItemizeMixIn(models.Model):
                 invoice_model=self if isinstance(self, InvoiceModel) else None,
                 item_model=item_model_qs_map[item_number],
                 quantity=i['quantity'],
-                unit_cost=i['unit_cost']
-            ) for item_number, i in itemtxs.items()
+                unit_cost=i['unit_cost'],
+            )
+            for item_number, i in itemtxs.items()
         ]
 
     def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
@@ -1430,7 +1572,6 @@ class ItemizeMixIn(models.Model):
                 itx.clean()
 
             if commit:
-
                 ItemTransactionModel = lazy_loader.get_item_transaction_model()
 
                 if operation == self.ITEMIZE_APPEND:

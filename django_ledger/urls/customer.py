@@ -7,4 +7,7 @@ urlpatterns = [
     path('<slug:entity_slug>/update/<uuid:customer_pk>/',
          views.CustomerModelUpdateView.as_view(),
          name='customer-update'),
+    path('<slug:entity_slug>/detail/<uuid:customer_pk>/',
+         views.CustomerModelDetailView.as_view(),
+         name='customer-detail'),
 ]
