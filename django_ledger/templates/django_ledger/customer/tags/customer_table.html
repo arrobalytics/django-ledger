@@ -18,7 +18,7 @@
         {% for customer in customers %}
             <tr class="has-text-centered">
                 <td>{{ customer.customer_number }}</td>
-                <td>{{ customer.customer_name }}</td>
+                <td><a href="{% url 'django_ledger:customer-detail' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}">{{ customer.customer_name }}</a></td>
                 <td>{% if customer.address_1 %}{{ customer.address_1 }}{% endif %}</td>
                 <td>{% if customer.customer_code %}{{ customer.customer_code }}{% endif %}</td>
                 <td>
@@ -61,6 +61,8 @@
                              id="dropdown-menu-{{ customer.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:customer-detail' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-success">{% trans 'View' %}</a>
                                 <a href="{% url 'django_ledger:customer-update' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
                             </div>

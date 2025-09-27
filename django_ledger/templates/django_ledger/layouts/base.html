@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block page_title %}{% session_entity_name %} | {{ page_title }}{% endblock %}</title>
+    <title>{% block page_title %}{{ page_title }} | {{ entity_model.name | default:'' }}{% endblock %}</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
     <link rel="stylesheet" href="{% static 'django_ledger/css/djl_styles.css' %}">
