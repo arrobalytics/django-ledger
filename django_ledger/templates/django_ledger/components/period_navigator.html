@@ -4,10 +4,12 @@
 <div class="card">
     <div class="card-content">
         <div class="has-text-centered">
-            <h2 class="is-size-2 has-font-weight-medium">
+            <h2 class="is-size-4 has-font-weight-medium">
                 {% if has_year %}Fiscal Year {{ to_date.year }}{% endif %}
-                {% if has_month %}{{ to_date | date:"F Y" }}{% endif %}
-                {% if has_quarter %}Q{{ quarter }} {{ year }}{% endif %}
+            </h2>
+            <h2 class="is-size-5">
+                {% if has_month %}{{ to_date | date:"F" }}{% endif %}
+                {% if has_quarter %}Q{{ quarter }}{% endif %}
                 {% if has_date %}{{ to_date | date }}{% endif %}
             </h2>
         </div>
