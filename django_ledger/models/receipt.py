@@ -560,6 +560,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
 
         commit_dict = self.staged_transaction_model.commit_dict(split_txs=False)
         ledger_model = self.ledger_model
+        staged_to_save = list()
         for je_data in commit_dict:
             _, _ = ledger_model.commit_txs(
                 je_timestamp=self.receipt_date,
@@ -569,10 +570,10 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 je_origin='migrate_receipt',
                 je_txs=je_data,
             )
-            staged_to_save = set(i['staged_tx_model'] for i in je_data)
-            for i in staged_to_save:
-                # todo: isn't the same staged txs forall txs?.. no need to save it multiple times...
-                i.save(update_fields=['transaction_model', 'updated'])
+            staged_to_save += [i['staged_tx_model'] for i in je_data]
+        staged_to_save = set(staged_to_save)
+        for i in staged_to_save:
+            i.save(update_fields=['transaction_model', 'updated'])
 
     # URL helpers
     def get_absolute_url(self) -> str:

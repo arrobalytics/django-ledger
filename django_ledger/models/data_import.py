@@ -1457,6 +1457,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         if len(commit_dict) > 0:
             with transaction.atomic():
+                staged_to_save = list()
                 for je_data in commit_dict:
                     unit_model = (
                         self.unit_model
@@ -1471,10 +1472,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                         je_posted=False,
                         force_je_retrieval=False,
                     )
-                    staged_to_save = set(i['staged_tx_model'] for i in je_data)
-                    for i in staged_to_save:
-                        # todo: isn't the same staged txs for all txs?.. no need to save it multiple times...
-                        i.save(update_fields=['transaction_model', 'updated'])
+                    staged_to_save += [i['staged_tx_model'] for i in je_data]
+                # staged_to_save = set(i['staged_tx_model'] for i in je_data)
+                # for i in staged_to_save:
+                #     i.save(update_fields=['transaction_model', 'updated'])
+                staged_to_save = set(staged_to_save)
+                for i in staged_to_save:
+                    i.save(update_fields=['transaction_model', 'updated'])
 
     def migrate_receipt(self, receipt_date: Optional[date | datetime] = None):
         if not self.can_migrate_receipt():
