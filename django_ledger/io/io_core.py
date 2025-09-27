@@ -87,36 +87,39 @@ Notes:
 - The module is designed to work seamlessly with Django's ORM and custom models through utilities provided in
   the Django Ledger framework.
 """
+
 from collections import namedtuple
 from dataclasses import dataclass
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 from itertools import groupby
 from pathlib import Path
 from random import choice
-from typing import List, Set, Union, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Set, Tuple, Union
 from zoneinfo import ZoneInfo
 
 from django.conf import settings as global_settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db.models import Sum, QuerySet, F, DecimalField, When, Case
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import transaction
+from django.db.models import Case, DecimalField, F, QuerySet, Sum, When
 from django.db.models.functions import TruncMonth
 from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
-from django.utils.timezone import make_aware, is_naive, localtime, localdate
+from django.utils.timezone import is_naive, localdate, localtime, make_aware
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
-from django_ledger.io import roles as roles_module, CREDIT, DEBIT
+from django_ledger.io import CREDIT, DEBIT
+from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import IODigestContextManager
 from django_ledger.io.io_middleware import (
-    AccountRoleIOMiddleware,
     AccountGroupIOMiddleware,
-    JEActivityIOMiddleware,
+    AccountRoleIOMiddleware,
     BalanceSheetIOMiddleware,
+    CashFlowStatementIOMiddleware,
     IncomeStatementIOMiddleware,
-    CashFlowStatementIOMiddleware
+    JEActivityIOMiddleware,
 )
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
@@ -176,7 +179,7 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     else:
         raise ValidationError('Only Dictionary or TransactionModel allowed.')
 
-    is_valid = (credits == debits)
+    is_valid = credits == debits
     diff = credits - debits
 
     if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
@@ -212,40 +215,51 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
         tolerance (with or without correction). Returns False otherwise.
     """
     if tx_data:
-
-        IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data, raise_exception=perform_correction)
+        IS_TX_MODEL, is_valid, diff = diff_tx_data(
+            tx_data, raise_exception=perform_correction
+        )
 
         if not perform_correction and abs(diff):
             return False
 
-        if not perform_correction and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+        if (
+            not perform_correction
+            and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE
+        ):
             return False
 
         while not is_valid:
             tx_type_choice = choice([DEBIT, CREDIT])
 
             if IS_TX_MODEL:
-                txs_candidates = list(tx for tx in tx_data if tx.tx_type == tx_type_choice)
+                txs_candidates = list(
+                    tx for tx in tx_data if tx.tx_type == tx_type_choice
+                )
             else:
-                txs_candidates = list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice)
+                txs_candidates = list(
+                    tx for tx in tx_data if tx['tx_type'] == tx_type_choice
+                )
 
             if len(txs_candidates) > 0:
-
                 tx = choice(txs_candidates)
 
-                if any([
-                    diff > 0 and tx_type_choice == DEBIT,
-                    diff < 0 and tx_type_choice == CREDIT
-                ]):
+                if any(
+                    [
+                        diff > 0 and tx_type_choice == DEBIT,
+                        diff < 0 and tx_type_choice == CREDIT,
+                    ]
+                ):
                     if IS_TX_MODEL:
                         tx.amount += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
                         tx['amount'] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
 
-                elif any([
-                    diff < 0 and tx_type_choice == DEBIT,
-                    diff > 0 and tx_type_choice == CREDIT
-                ]):
+                elif any(
+                    [
+                        diff < 0 and tx_type_choice == DEBIT,
+                        diff > 0 and tx_type_choice == CREDIT,
+                    ]
+                ):
                     if IS_TX_MODEL:
                         tx.amount -= settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
@@ -284,17 +298,17 @@ def get_localtime(tz=None) -> datetime:
 
 def get_localdate() -> date:
     """
-        Fetches the current local date, optionally considering time zone settings.
+    Fetches the current local date, optionally considering time zone settings.
 
-        This function retrieves the current local date. If the global settings indicate
-        the use of time zones (`USE_TZ` is True), the date is determined based on the
-        local time zone. Otherwise, the date is based on the system's local time without
-        any time zone consideration.
+    This function retrieves the current local date. If the global settings indicate
+    the use of time zones (`USE_TZ` is True), the date is determined based on the
+    local time zone. Otherwise, the date is based on the system's local time without
+    any time zone consideration.
 
-        Returns
-        -------
-        date
-            The current local date, adjusted for the time zone setting if applicable.
+    Returns
+    -------
+    date
+        The current local date, adjusted for the time zone setting if applicable.
     """
     if global_settings.USE_TZ:
         return localdate()
@@ -302,8 +316,7 @@ def get_localdate() -> date:
 
 
 def validate_io_timestamp(
-        dt: Union[str, date, datetime],
-        no_parse_localdate: bool = True
+    dt: Union[str, date, datetime], no_parse_localdate: bool = True
 ) -> Optional[Union[datetime, date]]:
     """
     Validates and processes a given date or datetime input and returns a processed
@@ -350,10 +363,7 @@ def validate_io_timestamp(
 
     if isinstance(dt, datetime):
         if is_naive(dt):
-            return make_aware(
-                value=dt,
-                timezone=ZoneInfo('UTC')
-            )
+            return make_aware(value=dt, timezone=ZoneInfo('UTC'))
         return dt
 
     elif isinstance(dt, str):
@@ -363,23 +373,21 @@ def validate_io_timestamp(
             # try to parse a datetime object from string...
             fdt = parse_datetime(dt)
             if not fdt:
-                raise InvalidDateInputError(
-                    message=f'Could not parse date from {dt}'
-                )
+                raise InvalidDateInputError(message=f'Could not parse date from {dt}')
             elif is_naive(fdt):
                 fdt = make_aware(fdt)
         if global_settings.USE_TZ:
             return make_aware(
                 datetime.combine(
-                    fdt, datetime.min.time(),
-                ))
+                    fdt,
+                    datetime.min.time(),
+                )
+            )
         return datetime.combine(fdt, datetime.min.time())
 
     elif isinstance(dt, date):
         if global_settings.USE_TZ:
-            return make_aware(
-                value=datetime.combine(dt, datetime.min.time())
-            )
+            return make_aware(value=datetime.combine(dt, datetime.min.time()))
         return datetime.combine(dt, datetime.min.time())
 
     if no_parse_localdate:
@@ -387,8 +395,8 @@ def validate_io_timestamp(
 
 
 def validate_dates(
-        from_date: Optional[Union[str, datetime, date]] = None,
-        to_date: Optional[Union[str, datetime, date]] = None
+    from_date: Optional[Union[str, datetime, date]] = None,
+    to_date: Optional[Union[str, datetime, date]] = None,
 ) -> Tuple[date, date]:
     """
     Validates and converts the input dates to date objects. This function ensures that the
@@ -454,7 +462,9 @@ def validate_activity(activity: str, raise_404: bool = False):
     JournalEntryModel = lazy_loader.get_journal_entry_model()
     valid = activity in JournalEntryModel.VALID_ACTIVITIES
     if activity and not valid:
-        exception = ValidationError(f'{activity} is invalid. Choices are {JournalEntryModel.VALID_ACTIVITIES}.')
+        exception = ValidationError(
+            f'{activity} is invalid. Choices are {JournalEntryModel.VALID_ACTIVITIES}.'
+        )
         if raise_404:
             raise Http404(exception)
         raise exception
@@ -493,6 +503,7 @@ class IOResult:
         A summary or aggregation of account balances derived from the processed
         data.
     """
+
     # DB Aggregation...
     db_from_date: Optional[date] = None
     db_to_date: Optional[date] = None
@@ -510,10 +521,12 @@ class IOResult:
 
     @property
     def is_bounded(self) -> bool:
-        return all([
-            self.ce_from_date is not None,
-            self.ce_to_date is not None,
-        ])
+        return all(
+            [
+                self.ce_from_date is not None,
+                self.ce_to_date is not None,
+            ]
+        )
 
 
 class IODatabaseMixIn:
@@ -528,16 +541,20 @@ class IODatabaseMixIn:
 
     Attributes
     ----------
-    TRANSACTION_MODEL_CLASS : NoneType or Type
+    TRANSACTION_MODEL_CLASS: NoneType or Type
         Specifies the Django model class for transactions. If None, a lazy loader
         will be used to determine the model dynamically.
-    JOURNAL_ENTRY_MODEL_CLASS : NoneType or Type
+    JOURNAL_ENTRY_MODEL_CLASS: NoneType or Type
         Specifies the Django model class for journal entries. If None, a lazy
+        loader will be used to determine the model dynamically.
+    STAGED_TRANSACTION_MODEL_CLASS: NoneType or Type
+        Specifies the Django model class for staged transactions. If None, a lazy
         loader will be used to determine the model dynamically.
     """
 
     TRANSACTION_MODEL_CLASS = None
     JOURNAL_ENTRY_MODEL_CLASS = None
+    STAGED_TRANSACTION_MODEL_CLASS = None
 
     def is_entity_model(self):
         """
@@ -595,7 +612,9 @@ class IODatabaseMixIn:
         elif self.is_entity_unit_model():
             return getattr(self, 'entity')
         raise IOValidationError(
-            message=_(f'IODatabaseMixIn not compatible with {self.__class__.__name__} model.')
+            message=_(
+                f'IODatabaseMixIn not compatible with {self.__class__.__name__} model.'
+            )
         )
 
     def get_transaction_model(self):
@@ -617,6 +636,25 @@ class IODatabaseMixIn:
             return self.TRANSACTION_MODEL_CLASS
         return lazy_loader.get_txs_model()
 
+    def get_staged_transaction_model(self):
+        """
+        Retrieve the staged transaction model class used for handling imported transactions.
+
+        The method checks whether a specific transaction model class is explicitly
+        set via the `STAGED_TRANSACTION_MODEL_CLASS` attribute. If set, it returns that
+        class as the transaction model. If not set, it falls back to a default
+        transaction model obtained from the `lazy_loader.get_txs_model()` method.
+
+        Returns
+        -------
+        type
+            The transaction model class defined in `STAGED_TRANSACTION_MODEL_CLASS` or
+            the default transaction model provided by `lazy_loader.get_staged_txs_model()`.
+        """
+        if self.STAGED_TRANSACTION_MODEL_CLASS is not None:
+            return self.STAGED_TRANSACTION_MODEL_CLASS
+        return lazy_loader.get_staged_txs_model()
+
     def get_journal_entry_model(self):
         """
         Retrieves the class model for journal entries. If the `JOURNAL_ENTRY_MODEL_CLASS`
@@ -633,23 +671,24 @@ class IODatabaseMixIn:
             return self.JOURNAL_ENTRY_MODEL_CLASS
         return lazy_loader.get_journal_entry_model()
 
-    def database_digest(self,
-                        entity_slug: Optional[str] = None,
-                        unit_slug: Optional[str] = None,
-                        user_model: Optional[UserModel] = None,
-                        from_date: Optional[Union[date, datetime]] = None,
-                        to_date: Optional[Union[date, datetime]] = None,
-                        by_activity: bool = False,
-                        by_tx_type: bool = False,
-                        by_period: bool = False,
-                        by_unit: bool = False,
-                        activity: Optional[str] = None,
-                        role: str = Optional[str],
-                        accounts: Optional[Union[str, List[str], Set[str]]] = None,
-                        posted: bool = True,
-                        exclude_zero_bal: bool = True,
-                        use_closing_entries: bool = False,
-                        **kwargs) -> IOResult:
+    def database_digest(
+        self,
+        entity_slug: Optional[str] = None,
+        unit_slug: Optional[str] = None,
+        from_date: Optional[Union[date, datetime]] = None,
+        to_date: Optional[Union[date, datetime]] = None,
+        by_activity: bool = False,
+        by_tx_type: bool = False,
+        by_period: bool = False,
+        by_unit: bool = False,
+        activity: Optional[str] = None,
+        role: str = Optional[str],
+        accounts: Optional[Union[str, List[str], Set[str]]] = None,
+        posted: bool = True,
+        exclude_zero_bal: bool = True,
+        use_closing_entry: bool = False,
+        **kwargs,
+    ) -> IOResult:
         """
         Aggregates transaction data based on the provided parameters to generate a
         digest of financial entries. This method is designed to work with various
@@ -702,7 +741,7 @@ class IODatabaseMixIn:
         exclude_zero_bal : bool
             If True, transactions with zero-balance amounts will be excluded.
             Defaults to True.
-        use_closing_entries : bool
+        use_closing_entry : bool
             Specifies whether closing entries should be used to optimize database
             aggregation. If not provided, the value is determined by the system-global
             setting.
@@ -724,10 +763,11 @@ class IODatabaseMixIn:
         if self.is_entity_model():
             if entity_slug:
                 if entity_slug != self.slug:
-                    raise IOValidationError('Inconsistent entity_slug. '
-                                            f'Provided {entity_slug} does not match actual {self.slug}')
+                    raise IOValidationError(
+                        'Inconsistent entity_slug. '
+                        f'Provided {entity_slug} does not match actual {self.slug}'
+                    )
             if unit_slug:
-
                 txs_queryset_init = TransactionModel.objects.for_entity(
                     entity_model=entity_slug or self.slug
                 ).for_unit(unit_slug=unit_slug)
@@ -739,7 +779,8 @@ class IODatabaseMixIn:
         elif self.is_entity_unit_model():
             if not entity_slug:
                 raise IOValidationError(
-                    'Calling digest from Entity Unit requires entity_slug explicitly for safety')
+                    'Calling digest from Entity Unit requires entity_slug explicitly for safety'
+                )
 
             txs_queryset_init = TransactionModel.objects.for_entity(
                 entity_model=entity_slug
@@ -748,7 +789,8 @@ class IODatabaseMixIn:
         elif self.is_ledger_model():
             if not entity_slug:
                 raise IOValidationError(
-                    'Calling digest from Ledger Model requires entity_slug explicitly for safety')
+                    'Calling digest from Ledger Model requires entity_slug explicitly for safety'
+                )
 
             txs_queryset_init = TransactionModel.objects.for_entity(
                 entity_model=entity_slug
@@ -765,8 +807,8 @@ class IODatabaseMixIn:
         txs_queryset_to_closing_entry = txs_queryset_init.none()
 
         USE_CLOSING_ENTRIES = settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES
-        if use_closing_entries is not None:
-            USE_CLOSING_ENTRIES = use_closing_entries
+        if use_closing_entry is not None:
+            USE_CLOSING_ENTRIES = use_closing_entry
 
         # use closing entries to minimize DB aggregation if possible and activated...
         if USE_CLOSING_ENTRIES:
@@ -774,18 +816,23 @@ class IODatabaseMixIn:
             entity_model = self.get_entity_model_from_io()
 
             # looking up available dates...
-            ce_from_date = entity_model.get_closing_entry_for_date(io_date=from_date, inclusive=False)
+            ce_from_date = entity_model.get_closing_entry_for_date(
+                io_date=from_date, inclusive=False
+            )
             ce_to_date = entity_model.get_closing_entry_for_date(io_date=to_date)
 
             # unbounded lookup, no date match
             # finding the closest closing entry to aggregate from if present...
             if not from_date and not ce_to_date:
-                ce_alt_from_date = entity_model.get_nearest_next_closing_entry(io_date=to_date)
+                ce_alt_from_date = entity_model.get_nearest_next_closing_entry(
+                    io_date=to_date
+                )
 
                 # if there's a suitable closing entry...
                 if ce_alt_from_date:
                     txs_queryset_from_closing_entry = txs_queryset_closing_entry.filter(
-                        journal_entry__timestamp__date=ce_alt_from_date)
+                        journal_entry__timestamp__date=ce_alt_from_date
+                    )
                     io_result.ce_match = True
                     io_result.ce_from_date = ce_alt_from_date
 
@@ -798,7 +845,8 @@ class IODatabaseMixIn:
             # unbounded lookup, exact to_date match...
             elif not from_date and ce_to_date:
                 txs_queryset_to_closing_entry = txs_queryset_closing_entry.filter(
-                    journal_entry__timestamp__date=ce_to_date)
+                    journal_entry__timestamp__date=ce_to_date
+                )
                 io_result.ce_match = True
                 io_result.ce_to_date = ce_to_date
 
@@ -810,10 +858,12 @@ class IODatabaseMixIn:
             # bounded exact from_date and to_date match...
             elif ce_from_date and ce_to_date:
                 txs_queryset_from_closing_entry = txs_queryset_closing_entry.filter(
-                    journal_entry__timestamp__date=ce_from_date)
+                    journal_entry__timestamp__date=ce_from_date
+                )
 
                 txs_queryset_to_closing_entry = txs_queryset_closing_entry.filter(
-                    journal_entry__timestamp__date=ce_to_date)
+                    journal_entry__timestamp__date=ce_to_date
+                )
 
                 io_result.ce_match = True
                 io_result.ce_from_date = ce_from_date
@@ -824,10 +874,14 @@ class IODatabaseMixIn:
                 io_result.db_to_date = None
                 txs_queryset_agg = TransactionModel.objects.none()
 
-        txs_queryset_closing_entry = txs_queryset_from_closing_entry | txs_queryset_to_closing_entry
+        txs_queryset_closing_entry = (
+            txs_queryset_from_closing_entry | txs_queryset_to_closing_entry
+        )
 
         if io_result.db_from_date:
-            txs_queryset_agg = txs_queryset_agg.from_date(from_date=io_result.db_from_date)
+            txs_queryset_agg = txs_queryset_agg.from_date(
+                from_date=io_result.db_from_date
+            )
 
         if io_result.db_to_date:
             txs_queryset_agg = txs_queryset_agg.to_date(to_date=io_result.db_to_date)
@@ -857,33 +911,42 @@ class IODatabaseMixIn:
         cleared_filter = kwargs.get('cleared')
         if cleared_filter is not None:
             if cleared_filter in [True, False]:
-                txs_queryset = txs_queryset.is_cleared() if cleared_filter else txs_queryset.not_cleared()
+                txs_queryset = (
+                    txs_queryset.is_cleared()
+                    if cleared_filter
+                    else txs_queryset.not_cleared()
+                )
             else:
                 raise IOValidationError(
                     message=f'Invalid value for cleared filter: {cleared_filter}. '
-                            f'Valid values are True, False'
+                    f'Valid values are True, False'
                 )
 
         # Reconciled transaction filter via KWARGS....
         reconciled_filter = kwargs.get('reconciled')
         if reconciled_filter is not None:
             if reconciled_filter in [True, False]:
-                txs_queryset = txs_queryset.is_reconciled() if reconciled_filter else txs_queryset.not_reconciled()
+                txs_queryset = (
+                    txs_queryset.is_reconciled()
+                    if reconciled_filter
+                    else txs_queryset.not_reconciled()
+                )
             else:
                 raise IOValidationError(
                     message=f'Invalid value for reconciled filter: {reconciled_filter}. '
-                            f'Valid values are True, False'
+                    f'Valid values are True, False'
                 )
 
         if io_result.is_bounded:
             txs_queryset = txs_queryset.annotate(
                 amount_io=Case(
                     When(
-                        journal_entry__timestamp__date=ce_from_date,
-                        then=-F('amount')),
+                        journal_entry__timestamp__date=ce_from_date, then=-F('amount')
+                    ),
                     default=F('amount'),
-                    output_field=DecimalField()
-                ))
+                    output_field=DecimalField(),
+                )
+            )
 
         VALUES = [
             'account__uuid',
@@ -907,7 +970,10 @@ class IODatabaseMixIn:
 
         if by_unit:
             ORDER_BY.append('journal_entry__entity_unit__uuid')
-            VALUES += ['journal_entry__entity_unit__uuid', 'journal_entry__entity_unit__name']
+            VALUES += [
+                'journal_entry__entity_unit__uuid',
+                'journal_entry__entity_unit__name',
+            ]
 
         if by_period:
             ORDER_BY.append('journal_entry__timestamp')
@@ -921,27 +987,30 @@ class IODatabaseMixIn:
             ORDER_BY.append('tx_type')
             VALUES.append('tx_type')
 
-        io_result.txs_queryset = txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
+        io_result.txs_queryset = (
+            txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
+        )
         return io_result
 
-    def python_digest(self,
-                      user_model: Optional[UserModel] = None,
-                      entity_slug: Optional[str] = None,
-                      unit_slug: Optional[str] = None,
-                      to_date: Optional[Union[date, datetime, str]] = None,
-                      from_date: Optional[Union[date, datetime, str]] = None,
-                      equity_only: bool = False,
-                      activity: str = None,
-                      role: Optional[Union[Set[str], List[str]]] = None,
-                      accounts: Optional[Union[Set[str], List[str]]] = None,
-                      signs: bool = True,
-                      by_unit: bool = False,
-                      by_activity: bool = False,
-                      by_tx_type: bool = False,
-                      by_period: bool = False,
-                      use_closing_entries: bool = False,
-                      force_queryset_sorting: bool = False,
-                      **kwargs) -> IOResult:
+    def python_digest(
+        self,
+        entity_slug: Optional[str] = None,
+        unit_slug: Optional[str] = None,
+        to_date: Optional[Union[date, datetime, str]] = None,
+        from_date: Optional[Union[date, datetime, str]] = None,
+        equity_only: bool = False,
+        activity: str = None,
+        role: Optional[Union[Set[str], List[str]]] = None,
+        accounts: Optional[Union[Set[str], List[str]]] = None,
+        signs: bool = True,
+        by_unit: bool = False,
+        by_activity: bool = False,
+        by_tx_type: bool = False,
+        by_period: bool = False,
+        use_closing_entry: bool = False,
+        force_queryset_sorting: bool = False,
+        **kwargs,
+    ) -> IOResult:
         """
         Computes and returns the digest of transactions for a given entity, unit,
         and optional filters such as date range, account role, and activity. The
@@ -980,7 +1049,7 @@ class IODatabaseMixIn:
             Whether to group the results by transaction type. Defaults to False.
         by_period : bool
             Whether to group the results by period (year and month). Defaults to False.
-        use_closing_entries : bool
+        use_closing_entry : bool
             Whether to include closing entries in the computation. Defaults  to False.
         force_queryset_sorting : bool
             Whether to force sorting of the transaction queryset. Defaults to  False.
@@ -998,7 +1067,6 @@ class IODatabaseMixIn:
             role = roles_module.GROUP_EARNINGS
 
         io_result = self.database_digest(
-            user_model=user_model,
             entity_slug=entity_slug,
             unit_slug=unit_slug,
             to_date=to_date,
@@ -1010,10 +1078,9 @@ class IODatabaseMixIn:
             activity=activity,
             role=role,
             accounts=accounts,
-            use_closing_entries=use_closing_entries,
-            **kwargs)
-
-        TransactionModel = self.get_transaction_model()
+            use_closing_entry=use_closing_entry,
+            **kwargs,
+        )
 
         for tx_model in io_result.txs_queryset:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
@@ -1040,15 +1107,26 @@ class IODatabaseMixIn:
 
         if signs:
             for acc in accounts_digest:
-                if any([
-                    all([acc['role_bs'] == roles_module.BS_ASSET_ROLE,
-                         acc['balance_type'] == CREDIT]),
-                    all([acc['role_bs'] in (
-                            roles_module.BS_LIABILITIES_ROLE,
-                            roles_module.BS_EQUITY_ROLE
-                    ),
-                         acc['balance_type'] == DEBIT])
-                ]):
+                if any(
+                    [
+                        all(
+                            [
+                                acc['role_bs'] == roles_module.BS_ASSET_ROLE,
+                                acc['balance_type'] == CREDIT,
+                            ]
+                        ),
+                        all(
+                            [
+                                acc['role_bs']
+                                in (
+                                    roles_module.BS_LIABILITIES_ROLE,
+                                    roles_module.BS_EQUITY_ROLE,
+                                ),
+                                acc['balance_type'] == DEBIT,
+                            ]
+                        ),
+                    ]
+                ):
                     acc['balance'] = -acc['balance']
 
         io_result.accounts_digest = accounts_digest
@@ -1113,30 +1191,31 @@ class IODatabaseMixIn:
             'balance': sum(a['balance'] for a in gl),
         }
 
-    def digest(self,
-               entity_slug: Optional[str] = None,
-               unit_slug: Optional[str] = None,
-               to_date: Optional[Union[date, datetime, str]] = None,
-               from_date: Optional[Union[date, datetime, str]] = None,
-               user_model: Optional[UserModel] = None,
-               accounts: Optional[Union[Set[str], List[str]]] = None,
-               role: Optional[Union[Set[str], List[str]]] = None,
-               activity: Optional[str] = None,
-               signs: bool = True,
-               process_roles: bool = False,
-               process_groups: bool = False,
-               process_ratios: bool = False,
-               process_activity: bool = False,
-               equity_only: bool = False,
-               by_period: bool = False,
-               by_unit: bool = False,
-               by_activity: bool = False,
-               by_tx_type: bool = False,
-               balance_sheet_statement: bool = False,
-               income_statement: bool = False,
-               cash_flow_statement: bool = False,
-               use_closing_entry: Optional[bool] = None,
-               **kwargs) -> IODigestContextManager:
+    def digest(
+        self,
+        entity_slug: Optional[str] = None,
+        unit_slug: Optional[str] = None,
+        to_date: Optional[Union[date, datetime, str]] = None,
+        from_date: Optional[Union[date, datetime, str]] = None,
+        accounts: Optional[Union[Set[str], List[str]]] = None,
+        role: Optional[Union[Set[str], List[str]]] = None,
+        activity: Optional[str] = None,
+        signs: bool = True,
+        process_roles: bool = False,
+        process_groups: bool = False,
+        process_ratios: bool = False,
+        process_activity: bool = False,
+        equity_only: bool = False,
+        by_period: bool = False,
+        by_unit: bool = False,
+        by_activity: bool = False,
+        by_tx_type: bool = False,
+        balance_sheet_statement: bool = False,
+        income_statement: bool = False,
+        cash_flow_statement: bool = False,
+        use_closing_entry: Optional[bool] = None,
+        **kwargs,
+    ) -> IODigestContextManager:
         """
         Processes financial data and generates various financial statements, ratios, or activity digests
         based on the provided arguments. The method applies specific processing pipelines, such as role
@@ -1226,7 +1305,6 @@ class IODatabaseMixIn:
         io_state['by_tx_type'] = by_tx_type
 
         io_result: IOResult = self.python_digest(
-            user_model=user_model,
             accounts=accounts,
             role=role,
             activity=activity,
@@ -1241,7 +1319,7 @@ class IODatabaseMixIn:
             by_activity=by_activity,
             by_tx_type=by_tx_type,
             use_closing_entry=use_closing_entry,
-            **kwargs
+            **kwargs,
         )
 
         io_state['io_result'] = io_result
@@ -1251,40 +1329,43 @@ class IODatabaseMixIn:
 
         if process_roles:
             roles_mgr = AccountRoleIOMiddleware(
-                io_data=io_state,
-                by_period=by_period,
-                by_unit=by_unit
+                io_data=io_state, by_period=by_period, by_unit=by_unit
             )
 
             io_state = roles_mgr.digest()
 
-        if any([
-            process_groups,
-            balance_sheet_statement,
-            income_statement,
-            cash_flow_statement
-        ]):
+        if any(
+            [
+                process_groups,
+                balance_sheet_statement,
+                income_statement,
+                cash_flow_statement,
+            ]
+        ):
             group_mgr = AccountGroupIOMiddleware(
-                io_data=io_state,
-                by_period=by_period,
-                by_unit=by_unit
+                io_data=io_state, by_period=by_period, by_unit=by_unit
             )
             io_state = group_mgr.digest()
 
             # todo: migrate this to group manager...
             io_state['group_account']['GROUP_ASSETS'].sort(
-                key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role']))
+                key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role'])
+            )
             io_state['group_account']['GROUP_LIABILITIES'].sort(
-                key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role']))
+                key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role'])
+            )
             io_state['group_account']['GROUP_CAPITAL'].sort(
-                key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role']))
+                key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role'])
+            )
 
         if process_ratios:
             ratio_gen = FinancialRatioManager(io_data=io_state)
             io_state = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = JEActivityIOMiddleware(io_data=io_state, by_unit=by_unit, by_period=by_period)
+            activity_manager = JEActivityIOMiddleware(
+                io_data=io_state, by_unit=by_unit, by_period=by_period
+            )
             activity_manager.digest()
 
         if balance_sheet_statement:
@@ -1301,16 +1382,18 @@ class IODatabaseMixIn:
 
         return IODigestContextManager(io_state=io_state)
 
-    def commit_txs(self,
-                   je_timestamp: Union[str, datetime, date],
-                   je_txs: List[Dict],
-                   je_posted: bool = False,
-                   je_ledger_model=None,
-                   je_unit_model=None,
-                   je_desc=None,
-                   je_origin=None,
-                   force_je_retrieval: bool = False,
-                   **kwargs):
+    def commit_txs(
+        self,
+        je_timestamp: Union[str, datetime, date],
+        je_txs: List[Dict],
+        je_posted: bool = False,
+        je_ledger_model=None,
+        je_unit_model=None,
+        je_desc=None,
+        je_origin=None,
+        force_je_retrieval: bool = False,
+        **kwargs,
+    ):
         """
         Commits a set of financial transactions to a journal entry, after performing
         validation checks. Validations include ensuring balanced transactions, ensuring
@@ -1362,107 +1445,133 @@ class IODatabaseMixIn:
         """
         TransactionModel = self.get_transaction_model()
         JournalEntryModel = self.get_journal_entry_model()
+        StagedTransactionModel = self.get_staged_transaction_model()
 
-        # Validates that credits/debits balance.
-        check_tx_balance(je_txs, perform_correction=False)
-        je_timestamp = validate_io_timestamp(dt=je_timestamp)
+        with transaction.atomic():
+            # Validates that credits/debits balance.
+            check_tx_balance(je_txs, perform_correction=False)
+            je_timestamp = validate_io_timestamp(dt=je_timestamp)
 
-        entity_model = self.get_entity_model_from_io()
+            entity_model = self.get_entity_model_from_io()
 
-        if entity_model.last_closing_date:
-            if isinstance(je_timestamp, datetime):
-                if entity_model.last_closing_date >= je_timestamp.date():
-                    raise IOValidationError(
-                        message=_(
-                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
-                    )
-            elif isinstance(je_timestamp, date):
-                if entity_model.last_closing_date >= je_timestamp:
-                    raise IOValidationError(
-                        message=_(
-                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
-                    )
-
-        if self.is_ledger_model():
-            if self.is_locked():
-                raise IOValidationError(
-                    message=_('Cannot commit on locked ledger')
-                )
-
-        # if calling from EntityModel must pass an instance of LedgerModel...
-        if all([
-            isinstance(self, lazy_loader.get_entity_model()),
-            je_ledger_model is None
-        ]):
-            raise IOValidationError('Committing from EntityModel requires an instance of LedgerModel')
-
-        # Validates that the provided LedgerModel id valid...
-        if all([
-            isinstance(self, lazy_loader.get_entity_model()),
-            je_ledger_model is not None,
-        ]):
-            if je_ledger_model.entity_id != self.uuid:
-                raise IOValidationError(f'LedgerModel {je_ledger_model} does not belong to {self}')
-
-        # Validates that the provided EntityUnitModel id valid...
-        if all([
-            isinstance(self, lazy_loader.get_entity_model()),
-            je_unit_model is not None,
-        ]):
-            if je_unit_model.entity_id != self.uuid:
-                raise IOValidationError(f'EntityUnitModel {je_unit_model} does not belong to {self}')
-
-        if not je_ledger_model:
-            je_ledger_model = self
-
-        if force_je_retrieval:
-            try:
-                if isinstance(je_timestamp, (datetime, str)):
-                    je_model = je_ledger_model.journal_entries.get(timestamp__exact=je_timestamp)
+            if entity_model.last_closing_date:
+                if isinstance(je_timestamp, datetime):
+                    if entity_model.last_closing_date >= je_timestamp.date():
+                        raise IOValidationError(
+                            message=_(
+                                f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.'
+                            )
+                        )
                 elif isinstance(je_timestamp, date):
-                    je_model = je_ledger_model.journal_entries.get(timestamp__date__exact=je_timestamp)
-                else:
-                    raise IOValidationError(message=_(f'Invalid timestamp type {type(je_timestamp)}'))
-            except ObjectDoesNotExist:
+                    if entity_model.last_closing_date >= je_timestamp:
+                        raise IOValidationError(
+                            message=_(
+                                f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.'
+                            )
+                        )
+
+            if self.is_ledger_model():
+                if self.is_locked():
+                    raise IOValidationError(message=_('Cannot commit on locked ledger'))
+
+            # if calling from EntityModel must pass an instance of LedgerModel...
+            if all(
+                [
+                    isinstance(self, lazy_loader.get_entity_model()),
+                    je_ledger_model is None,
+                ]
+            ):
                 raise IOValidationError(
-                    message=_(f'Unable to retrieve Journal Entry model with Timestamp {je_timestamp}')
+                    'Committing from EntityModel requires an instance of LedgerModel'
                 )
-        else:
-            je_model = JournalEntryModel(
-                ledger=je_ledger_model,
-                entity_unit=je_unit_model,
-                description=je_desc,
-                timestamp=je_timestamp,
-                origin=je_origin,
-                posted=False,
-                locked=False
-            )
-            je_model.save(verify=False)
 
-        # todo: add method to process list of transaction models...
-        txs_models = [
-            (
-                TransactionModel(
-                    account=txm_kwargs['account'],
-                    amount=txm_kwargs['amount'],
-                    tx_type=txm_kwargs['tx_type'],
-                    description=txm_kwargs['description'],
-                    journal_entry=je_model,
-                ), txm_kwargs) for txm_kwargs in je_txs
-        ]
+            # Validates that the provided LedgerModel id valid...
+            if all(
+                [
+                    isinstance(self, lazy_loader.get_entity_model()),
+                    je_ledger_model is not None,
+                ]
+            ):
+                if je_ledger_model.entity_id != self.uuid:
+                    raise IOValidationError(
+                        f'LedgerModel {je_ledger_model} does not belong to {self}'
+                    )
 
-        for tx, txm_kwargs in txs_models:
-            if not getattr(tx, 'ledger_id', None):
-                tx.ledger_id = je_model.ledger_id
-            if not getattr(tx, 'timestamp', None):
-                tx.timestamp = je_model.timestamp
-            staged_tx_model = txm_kwargs.get('staged_tx_model')
-            if staged_tx_model:
-                staged_tx_model.transaction_model = tx
+            # Validates that the provided EntityUnitModel id valid...
+            if all(
+                [
+                    isinstance(self, lazy_loader.get_entity_model()),
+                    je_unit_model is not None,
+                ]
+            ):
+                if je_unit_model.entity_id != self.uuid:
+                    raise IOValidationError(
+                        f'EntityUnitModel {je_unit_model} does not belong to {self}'
+                    )
 
-        txs_models = TransactionModel.objects.bulk_create(i[0] for i in txs_models)
-        je_model.save(verify=True, post_on_verify=je_posted)
-        return je_model, txs_models
+            if not je_ledger_model:
+                je_ledger_model = self
+
+            if force_je_retrieval:
+                try:
+                    if isinstance(je_timestamp, (datetime, str)):
+                        je_model = je_ledger_model.journal_entries.get(
+                            timestamp__exact=je_timestamp
+                        )
+                    elif isinstance(je_timestamp, date):
+                        je_model = je_ledger_model.journal_entries.get(
+                            timestamp__date__exact=je_timestamp
+                        )
+                    else:
+                        raise IOValidationError(
+                            message=_(f'Invalid timestamp type {type(je_timestamp)}')
+                        )
+                except ObjectDoesNotExist:
+                    raise IOValidationError(
+                        message=_(
+                            f'Unable to retrieve Journal Entry model with Timestamp {je_timestamp}'
+                        )
+                    )
+            else:
+                je_model = JournalEntryModel(
+                    ledger=je_ledger_model,
+                    entity_unit=je_unit_model,
+                    description=je_desc,
+                    timestamp=je_timestamp,
+                    origin=je_origin,
+                    posted=False,
+                    locked=False,
+                )
+                je_model.save(verify=False)
+
+            # todo: add method to process list of transaction models...
+            txs_models = [
+                (
+                    TransactionModel(
+                        account=txm_kwargs['account'],
+                        amount=txm_kwargs['amount'],
+                        tx_type=txm_kwargs['tx_type'],
+                        description=txm_kwargs['description'],
+                        journal_entry=je_model,
+                    ),
+                    txm_kwargs,
+                )
+                for txm_kwargs in je_txs
+            ]
+
+            for tx, txm_kwargs in txs_models:
+                if not getattr(tx, 'ledger_id', None):
+                    tx.ledger_id = je_model.ledger_id
+                if not getattr(tx, 'timestamp', None):
+                    tx.timestamp = je_model.timestamp
+                staged_tx_model = txm_kwargs.get('staged_tx_model')
+
+                if staged_tx_model:
+                    staged_tx_model.transaction_model = tx
+
+            txs_models = TransactionModel.objects.bulk_create(i[0] for i in txs_models)
+            je_model.save(verify=True, post_on_verify=je_posted)
+            return je_model, txs_models
 
 
 class IOReportMixIn:
@@ -1491,22 +1600,27 @@ class IOReportMixIn:
         `income_statement`, and `cash_flow_statement`. Each field represents a
         respective financial report.
     """
+
     PDF_REPORT_ORIENTATION = 'P'
     PDF_REPORT_MEASURE_UNIT = 'mm'
     PDF_REPORT_PAGE_SIZE = 'Letter'
 
-    ReportTuple = namedtuple('ReportTuple',
-                             field_names=[
-                                 'balance_sheet_statement',
-                                 'income_statement',
-                                 'cash_flow_statement'
-                             ])
+    ReportTuple = namedtuple(
+        'ReportTuple',
+        field_names=[
+            'balance_sheet_statement',
+            'income_statement',
+            'cash_flow_statement',
+        ],
+    )
 
-    def digest_balance_sheet(self,
-                             to_date: Union[date, datetime],
-                             user_model: Optional[UserModel] = None,
-                             txs_queryset: Optional[QuerySet] = None,
-                             **kwargs: Dict) -> IODigestContextManager:
+    def digest_balance_sheet(
+        self,
+        to_date: Union[date, datetime],
+        user_model: Optional[UserModel] = None,
+        txs_queryset: Optional[QuerySet] = None,
+        **kwargs: Dict,
+    ) -> IODigestContextManager:
         """
         Digest the balance sheet for a specific time period, user, and optionally a specific set
         of transactions. Returns a context manager for digesting the specified balance sheet data.
@@ -1541,18 +1655,19 @@ class IOReportMixIn:
             txs_queryset=txs_queryset,
             as_io_digest=True,
             signs=True,
-            **kwargs
+            **kwargs,
         )
 
-    def get_balance_sheet_statement(self,
-                                    to_date: Union[date, datetime],
-                                    subtitle: Optional[str] = None,
-                                    filepath: Optional[Path] = None,
-                                    filename: Optional[str] = None,
-                                    user_model: Optional[UserModel] = None,
-                                    save_pdf: bool = False,
-                                    **kwargs
-                                    ) -> IODigestContextManager:
+    def get_balance_sheet_statement(
+        self,
+        to_date: Union[date, datetime],
+        subtitle: Optional[str] = None,
+        filepath: Optional[Path] = None,
+        filename: Optional[str] = None,
+        user_model: Optional[UserModel] = None,
+        save_pdf: bool = False,
+        **kwargs,
+    ) -> IODigestContextManager:
         """
         Generates a balance sheet statement with an option to save it as a PDF file.
 
@@ -1599,9 +1714,7 @@ class IOReportMixIn:
         """
 
         io_digest = self.digest_balance_sheet(
-            to_date=to_date,
-            user_model=user_model,
-            **kwargs
+            to_date=to_date, user_model=user_model, **kwargs
         )
 
         BalanceSheetReport = lazy_loader.get_balance_sheet_report_class()
@@ -1610,22 +1723,26 @@ class IOReportMixIn:
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
             io_digest=io_digest,
-            report_subtitle=subtitle
+            report_subtitle=subtitle,
         )
         if save_pdf:
-            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = (
+                Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            )
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
             report.output(filepath)
         return report
 
-    def digest_income_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                user_model: Optional[UserModel] = None,
-                                txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> IODigestContextManager:
+    def digest_income_statement(
+        self,
+        from_date: Union[date, datetime],
+        to_date: Union[date, datetime],
+        user_model: Optional[UserModel] = None,
+        txs_queryset: Optional[QuerySet] = None,
+        **kwargs,
+    ) -> IODigestContextManager:
         """
         Digest the income statement within the specified date range and optionally filter
         by user and transaction queryset.
@@ -1664,20 +1781,21 @@ class IOReportMixIn:
             txs_queryset=txs_queryset,
             as_io_digest=True,
             sings=True,
-            **kwargs
+            **kwargs,
         )
 
-    def get_income_statement(self,
-                             from_date: Union[date, datetime],
-                             to_date: Union[date, datetime],
-                             subtitle: Optional[str] = None,
-                             filepath: Optional[Path] = None,
-                             filename: Optional[str] = None,
-                             user_model: Optional[UserModel] = None,
-                             txs_queryset: Optional[QuerySet] = None,
-                             save_pdf: bool = False,
-                             **kwargs
-                             ):
+    def get_income_statement(
+        self,
+        from_date: Union[date, datetime],
+        to_date: Union[date, datetime],
+        subtitle: Optional[str] = None,
+        filepath: Optional[Path] = None,
+        filename: Optional[str] = None,
+        user_model: Optional[UserModel] = None,
+        txs_queryset: Optional[QuerySet] = None,
+        save_pdf: bool = False,
+        **kwargs,
+    ):
         """
         Generates an income statement report for a specific time period and allows optional PDF
         saving functionality. The function utilizes configurations, user-provided parameters,
@@ -1728,7 +1846,7 @@ class IOReportMixIn:
             to_date=to_date,
             user_model=user_model,
             txs_queryset=txs_queryset,
-            **kwargs
+            **kwargs,
         )
         IncomeStatementReport = lazy_loader.get_income_statement_report_class()
         report = IncomeStatementReport(
@@ -1736,22 +1854,26 @@ class IOReportMixIn:
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
             io_digest=io_digest,
-            report_subtitle=subtitle
+            report_subtitle=subtitle,
         )
         if save_pdf:
-            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = (
+                Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            )
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
             report.output(filepath)
         return report
 
-    def digest_cash_flow_statement(self,
-                                   from_date: Union[date, datetime],
-                                   to_date: Union[date, datetime],
-                                   user_model: Optional[UserModel] = None,
-                                   txs_queryset: Optional[QuerySet] = None,
-                                   **kwargs) -> IODigestContextManager:
+    def digest_cash_flow_statement(
+        self,
+        from_date: Union[date, datetime],
+        to_date: Union[date, datetime],
+        user_model: Optional[UserModel] = None,
+        txs_queryset: Optional[QuerySet] = None,
+        **kwargs,
+    ) -> IODigestContextManager:
         """
         Generates a digest of the cash flow statement for a specified date range, user model,
         and optional transaction query set. This method utilizes an internal digest
@@ -1785,18 +1907,20 @@ class IOReportMixIn:
             txs_queryset=txs_queryset,
             as_io_digest=True,
             signs=True,
-            **kwargs
+            **kwargs,
         )
 
-    def get_cash_flow_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                subtitle: Optional[str] = None,
-                                filepath: Optional[Path] = None,
-                                filename: Optional[str] = None,
-                                user_model: Optional[UserModel] = None,
-                                save_pdf: bool = False,
-                                **kwargs):
+    def get_cash_flow_statement(
+        self,
+        from_date: Union[date, datetime],
+        to_date: Union[date, datetime],
+        subtitle: Optional[str] = None,
+        filepath: Optional[Path] = None,
+        filename: Optional[str] = None,
+        user_model: Optional[UserModel] = None,
+        save_pdf: bool = False,
+        **kwargs,
+    ):
         """
         Generates a cash flow statement report within a specified date range and provides
         an option to save the report as a PDF file. The method retrieves financial data, processes
@@ -1837,10 +1961,7 @@ class IOReportMixIn:
         """
 
         io_digest = self.digest_cash_flow_statement(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            **kwargs
+            from_date=from_date, to_date=to_date, user_model=user_model, **kwargs
         )
 
         CashFlowStatementReport = lazy_loader.get_cash_flow_statement_report_class()
@@ -1849,21 +1970,25 @@ class IOReportMixIn:
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
             io_digest=io_digest,
-            report_subtitle=subtitle
+            report_subtitle=subtitle,
         )
         if save_pdf:
-            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = (
+                Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            )
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
             report.output(filepath)
         return report
 
-    def digest_financial_statements(self,
-                                    from_date: Union[date, datetime],
-                                    to_date: Union[date, datetime],
-                                    user_model: Optional[UserModel] = None,
-                                    **kwargs) -> IODigestContextManager:
+    def digest_financial_statements(
+        self,
+        from_date: Union[date, datetime],
+        to_date: Union[date, datetime],
+        user_model: Optional[UserModel] = None,
+        **kwargs,
+    ) -> IODigestContextManager:
         """
         Digest financial statements within a given date range, allowing optional
         customization through `kwargs`. The method processes and provides access
@@ -1906,17 +2031,19 @@ class IOReportMixIn:
             income_statement=True,
             cash_flow_statement=True,
             as_io_digest=True,
-            **kwargs
+            **kwargs,
         )
 
-    def get_financial_statements(self,
-                                 from_date: Union[date, datetime],
-                                 to_date: Union[date, datetime],
-                                 dt_strfmt: str = '%Y%m%d',
-                                 user_model: Optional[UserModel] = None,
-                                 save_pdf: bool = False,
-                                 filepath: Optional[Path] = None,
-                                 **kwargs) -> ReportTuple:
+    def get_financial_statements(
+        self,
+        from_date: Union[date, datetime],
+        to_date: Union[date, datetime],
+        dt_strfmt: str = '%Y%m%d',
+        user_model: Optional[UserModel] = None,
+        save_pdf: bool = False,
+        filepath: Optional[Path] = None,
+        **kwargs,
+    ) -> ReportTuple:
         """
         Generates financial statements for a specified date range, optionally saving them as
         PDF files. This method consolidates the balance sheet, income statement, and cash flow
@@ -1956,10 +2083,7 @@ class IOReportMixIn:
             Raised if PDF support is not enabled in the application configuration.
         """
         io_digest = self.digest_financial_statements(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            **kwargs
+            from_date=from_date, to_date=to_date, user_model=user_model, **kwargs
         )
 
         BalanceSheetReport = lazy_loader.get_balance_sheet_report_class()
@@ -1967,45 +2091,54 @@ class IOReportMixIn:
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest
+            io_digest=io_digest,
         )
         IncomeStatementReport = lazy_loader.get_income_statement_report_class()
         is_report = IncomeStatementReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest
+            io_digest=io_digest,
         )
         CashFlowStatementReport = lazy_loader.get_cash_flow_statement_report_class()
         cfs_report = CashFlowStatementReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest
+            io_digest=io_digest,
         )
 
         if save_pdf:
-            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = (
+                Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
+            )
             bs_report.create_pdf_report()
-            bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename(dt_strfmt=dt_strfmt)))
+            bs_report.output(
+                base_dir.joinpath(bs_report.get_pdf_filename(dt_strfmt=dt_strfmt))
+            )
 
             is_report.create_pdf_report()
-            is_report.output(base_dir.joinpath(is_report.get_pdf_filename(from_dt=from_date, dt_strfmt=dt_strfmt)))
+            is_report.output(
+                base_dir.joinpath(
+                    is_report.get_pdf_filename(from_dt=from_date, dt_strfmt=dt_strfmt)
+                )
+            )
 
             cfs_report.create_pdf_report()
-            cfs_report.output(base_dir.joinpath(cfs_report.get_pdf_filename(from_dt=from_date, dt_strfmt=dt_strfmt)))
+            cfs_report.output(
+                base_dir.joinpath(
+                    cfs_report.get_pdf_filename(from_dt=from_date, dt_strfmt=dt_strfmt)
+                )
+            )
 
         return self.ReportTuple(
             balance_sheet_statement=bs_report,
             income_statement=is_report,
-            cash_flow_statement=cfs_report
+            cash_flow_statement=cfs_report,
         )
 
 
-class IOMixIn(
-    IODatabaseMixIn,
-    IOReportMixIn
-):
+class IOMixIn(IODatabaseMixIn, IOReportMixIn):
     """
     Provides input and output functionalities by mixing in database and
     reporting environments.

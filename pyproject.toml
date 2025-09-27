@@ -1,6 +1,6 @@
 [project]
 name = "django-ledger"
-version = "0.8.0"
+version = "0.8.1"
 readme = "README.md"
 requires-python = ">=3.11"
 description = "Double entry accounting system built on the Django Web Framework."
@@ -73,3 +73,9 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.format]
+quote-style = "single"

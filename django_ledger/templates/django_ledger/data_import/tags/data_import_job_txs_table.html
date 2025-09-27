@@ -5,9 +5,9 @@
 <form method="post">
 
     {{ staged_txs_formset.non_form_errors }}
-    {% if staged_txs_formset.errors %}
-        {{ staged_txs_formset.errors }}
-    {% endif %}
+    {#    {% if staged_txs_formset.errors %}#}
+    {#        {{ staged_txs_formset.errors }}#}
+    {#    {% endif %}#}
     {{ staged_txs_formset.management_form }}
 
     {% csrf_token %}
@@ -23,9 +23,11 @@
                 <th>Split Amount</th>
                 <th>Map To</th>
                 <th>Unit</th>
+                <th>Receipt Type</th>
+                <th>Customer/Vendor</th>
                 <th>Import</th>
-                <th>Bundle Split</th>
-                <th>Add Split</th>
+                <th>Bundle</th>
+                <th>Split</th>
                 <th>Delete</th>
             </tr>
             </thead>
@@ -33,7 +35,7 @@
             <tbody>
 
             {% for txf in staged_txs_formset %}
-                <tr class="{% if txf.instance.is_children %}has-background-primary{% elif txf.instance.has_children %}has-background-primary-light{% endif %}">
+                <tr id="staged-tx-{{ txf.instance.uuid }}" class="{% if txf.instance.is_children %}has-background-primary{% elif txf.instance.has_children %}has-background-primary-light{% endif %}">
                     <td>{{ forloop.counter }}</td>
                     {% for hidden_field in txf.hidden_fields %}{{ hidden_field }}{% endfor %}
                     {% if txf.instance.is_children %}
@@ -54,16 +56,30 @@
 
                     <td>
                         {% if txf.instance.get_prospect_je_activity_display %}
+                            <span class="has-text-success">{% icon 'lets-icons:check-fill' 16 %}</span>
                             <span class="is-italic">{% trans 'Transaction Activity' %}:</span>
                             <span class="has-text-weight-bold">
-                            {{ txf.instance.get_prospect_je_activity_display }}
+                             {{ txf.instance.get_prospect_je_activity_display }}
                         </span>
+                        {% elif not txf.instance.is_children %}
+                            <span class="has-text-danger">{% icon 'ooui:block' 16 %}</span>
+                            <span>Invalid or Pending Account Mapping.</span>
                         {% endif %}
                         {{ txf.account_model }}
+                        {% if txf.errors %}
+                            {% for i,err in txf.errors.items %}
+                                <span class="has-text-danger">{{ err }}</span>
+                            {% endfor %}
+                        {% endif %}
                     </td>
-                    <td>{{ txf.unit_model }}{% if txf.instance.is_children %}
-                        <span class="content is-small">{{ txf.instance.unit_model.name }}</span>
-                    {% endif %}
+                    <td>{{ txf.unit_model }}</td>
+                    <td>{{ txf.receipt_type }}</td>
+                    <td class="has-text-centered">
+                        {% if txf.SHOW_CUSTOMER_FIELD %}
+                            {{ txf.customer_model }}
+                        {% elif txf.SHOW_VENDOR_FIELD %}
+                            {{ txf.vendor_model }}
+                        {% endif %}
                     </td>
                     <td class="has-text-centered">{{ txf.tx_import }}</td>
                     <td class="has-text-centered">{{ txf.bundle_split }}</td>

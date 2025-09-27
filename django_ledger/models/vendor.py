@@ -10,23 +10,29 @@ Vendors can be flagged as active/inactive or hidden. Vendors who no longer condu
 whether temporarily or indefinitely may be flagged as inactive (i.e. active is False). Hidden Vendors will not show up
 as an option in the UI, but can still be used programmatically (via API).
 """
+
 import os
 import warnings
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F, QuerySet, Manager
+from django.db import IntegrityError, models, transaction
+from django.db.models import F, Manager, Q, QuerySet
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
-from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, FinancialAccountInfoMixin, TaxInfoMixIn
+from django_ledger.models.mixins import (
+    ContactInfoMixIn,
+    CreateUpdateMixIn,
+    FinancialAccountInfoMixin,
+    TaxInfoMixIn,
+)
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
     DJANGO_LEDGER_VENDOR_NUMBER_PREFIX,
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 )
 
 
@@ -52,8 +58,8 @@ class VendorModelQuerySet(QuerySet):
         if user_model.is_superuser:
             return self
         return self.filter(
-            Q(entity_model__admin=user_model) |
-            Q(entity_model__managers__in=[user_model])
+            Q(entity_model__admin=user_model)
+            | Q(entity_model__managers__in=[user_model])
         )
 
     def active(self) -> 'VendorModelQuerySet':
@@ -102,9 +108,7 @@ class VendorModelQuerySet(QuerySet):
         VendorModelQuerySet
             A QuerySet of visible Vendors.
         """
-        return self.filter(
-            Q(hidden=False) & Q(active=True)
-        )
+        return self.filter(Q(hidden=False) & Q(active=True))
 
 
 class VendorModelManager(Manager):
@@ -116,34 +120,36 @@ class VendorModelManager(Manager):
     """
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> VendorModelQuerySet:
+    def for_entity(
+        self, entity_model: 'EntityModel | str | UUID' = None, **kwargs
+    ) -> VendorModelQuerySet:
         """
-            Filters the queryset for a given entity model.
+        Filters the queryset for a given entity model.
 
-            This method modifies the queryset to include only those records
-            associated with the specified entity model. The entity model can
-            be provided in various formats such as an instance of `EntityModel`,
-            a string representing the entity's slug, or its UUID.
+        This method modifies the queryset to include only those records
+        associated with the specified entity model. The entity model can
+        be provided in various formats, such as an instance of `EntityModel`,
+        a string representing the entity's slug, or its UUID.
 
-            If a deprecated parameter `user_model` is provided, it will issue
-            a warning and may alter the behavior if the deprecated behavior flag
-            `DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR` is set.
+        If a deprecated parameter `user_model` is provided, it will issue
+        a warning and may alter the behavior if the deprecated behavior flag
+        `DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR` is set.
 
-            Parameters
-            ----------
-            entity_model : EntityModel | str | UUID
-                The entity model or its identifier (slug or UUID) to filter the
-                queryset by.
+        Parameters
+        ----------
+        entity_model : EntityModel | str | UUID
+            The entity model or its identifier (slug or UUID) to filter the
+            queryset by.
 
-            **kwargs
-                Additional parameters for optional functionality. The parameter
-                `user_model` is supported for backward compatibility but is
-                deprecated and should be avoided.
+        **kwargs
+            Additional parameters for optional functionality. The parameter
+            `user_model` is supported for backward compatibility but is
+            deprecated and should be avoided.
 
-            Returns
-            -------
-            VendorModelQuerySet
-                A queryset filtered for the given entity model.
+        Returns
+        -------
+        VendorModelQuerySet
+            A queryset filtered for the given entity model.
         """
         EntityModel = lazy_loader.get_entity_model()
 
@@ -153,7 +159,7 @@ class VendorModelManager(Manager):
                 'user_model parameter is deprecated and will be removed in a future release. '
                 'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
@@ -172,10 +178,9 @@ class VendorModelManager(Manager):
         return qs
 
 
-class VendorModelAbstract(ContactInfoMixIn,
-                          FinancialAccountInfoMixin,
-                          TaxInfoMixIn,
-                          CreateUpdateMixIn):
+class VendorModelAbstract(
+    ContactInfoMixIn, FinancialAccountInfoMixin, TaxInfoMixIn, CreateUpdateMixIn
+):
     """
     This is the main abstract class which the VendorModel database will inherit from.
     The VendorModel inherits functionality from the following MixIns:
@@ -214,28 +219,33 @@ class VendorModelAbstract(ContactInfoMixIn,
 
 
     """
+
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     vendor_code = models.SlugField(
-        max_length=50,
+        max_length=50, null=True, blank=True, verbose_name='User defined vendor code.'
+    )
+    vendor_number = models.CharField(
+        max_length=30,
         null=True,
         blank=True,
-        verbose_name='User defined vendor code.'
+        editable=False,
+        verbose_name=_('Vendor Number'),
+        help_text='System generated vendor number.',
     )
-    vendor_number = models.CharField(max_length=30,
-                                     null=True,
-                                     blank=True,
-                                     editable=False,
-                                     verbose_name=_('Vendor Number'), help_text='System generated vendor number.')
     vendor_name = models.CharField(max_length=100)
 
-    entity_model = models.ForeignKey('django_ledger.EntityModel',
-                                     on_delete=models.CASCADE,
-                                     verbose_name=_('Vendor Entity'),
-                                     editable=False)
+    entity_model = models.ForeignKey(
+        'django_ledger.EntityModel',
+        on_delete=models.CASCADE,
+        verbose_name=_('Vendor Entity'),
+        editable=False,
+    )
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
-    picture = models.ImageField(upload_to=vendor_picture_upload_to, null=True, blank=True)
+    picture = models.ImageField(
+        upload_to=vendor_picture_upload_to, null=True, blank=True
+    )
 
     additional_info = models.JSONField(null=True, blank=True, default=dict)
 
@@ -251,15 +261,27 @@ class VendorModelAbstract(ContactInfoMixIn,
             models.Index(fields=['active']),
             models.Index(fields=['hidden']),
         ]
-        unique_together = [
-            ('entity_model', 'vendor_number')
-        ]
+        unique_together = [('entity_model', 'vendor_number')]
         abstract = True
 
     def __str__(self):
         if not self.vendor_number:
             f'Unknown Vendor: {self.vendor_name}'
         return f'{self.vendor_number}: {self.vendor_name}'
+
+    def validate_for_entity(self, entity_model: 'EntityModel | str | UUID'):
+        EntityModel = lazy_loader.get_entity_model()
+        if isinstance(entity_model, str):
+            is_valid = entity_model == self.entity_model.slug
+        elif isinstance(entity_model, EntityModel):
+            is_valid = entity_model == self.entity_model
+        elif isinstance(entity_model, UUID):
+            is_valid = entity_model == self.entity_model_id
+
+        if not is_valid:
+            raise VendorModelValidationError(
+                'EntityModel does not belong to this Vendor'
+            )
 
     def can_generate_vendor_number(self) -> bool:
         """
@@ -271,10 +293,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         bool
             True if the vendor number can be generated, else False.
         """
-        return all([
-            self.entity_model_id,
-            not self.vendor_number
-        ])
+        return all([self.entity_model_id, not self.vendor_number])
 
     def _get_next_state_model(self, raise_exception: bool = True):
         """
@@ -296,10 +315,12 @@ class VendorModelAbstract(ContactInfoMixIn,
         try:
             LOOKUP = {
                 'entity_model_id__exact': self.entity_model_id,
-                'key__exact': EntityStateModel.KEY_VENDOR
+                'key__exact': EntityStateModel.KEY_VENDOR,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(
+                **LOOKUP
+            ).select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
@@ -307,13 +328,12 @@ class VendorModelAbstract(ContactInfoMixIn,
 
             return state_model
         except ObjectDoesNotExist:
-
             LOOKUP = {
                 'entity_model_id': self.entity_model_id,
                 'entity_unit_id': None,
                 'fiscal_year': None,
                 'key': EntityStateModel.KEY_VENDOR,
-                'sequence': 1
+                'sequence': 1,
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
             return state_model
@@ -338,7 +358,6 @@ class VendorModelAbstract(ContactInfoMixIn,
         """
         if self.can_generate_vendor_number():
             with transaction.atomic(durable=True):
-
                 state_model = None
                 while not state_model:
                     state_model = self._get_next_state_model(raise_exception=False)

@@ -1,0 +1,89 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-8">
+            <div class="card">
+                <div class="card-content">
+                    <h2 class="title has-text-weight-light">{% trans 'Receipt' %} {{ receipt.receipt_number }}</h2>
+                    <p><strong>{% trans 'Date' %}:</strong> {{ receipt.receipt_date }}</p>
+                    <p><strong>{% trans 'Type' %}:</strong> {{ receipt.get_receipt_type_display }}</p>
+
+                    {# CUSTOMER INFO #}
+                    {% if receipt.customer_model %}
+                        <p><strong>{% trans 'Customer' %}:</strong>
+                            <a href="{{ receipt.get_customer_list_url }}">{{ receipt.customer_model.customer_name }}</a>
+                            <span class="is-size-7 has-text-grey"> ·
+                        <a href="{{ receipt.get_customer_report_url }}">{% trans 'Report' %}</a>
+                    </span>
+                        </p>
+                    {% endif %}
+
+                    {# VENDOR INFO #}
+                    {% if receipt.vendor_model %}
+                        <p><strong>{% trans 'Vendor' %}:</strong>
+                            <a href="{{ receipt.get_vendor_list_url }}">{{ receipt.vendor_model.vendor_name }}</a>
+                            <span class="is-size-7 has-text-grey"> ·
+                        <a href="{{ receipt.get_vendor_report_url }}">{% trans 'Report' %}</a>
+                    </span>
+                        </p>
+                    {% endif %}
+
+                    <p><strong>{% trans 'Ledger' %}:</strong>
+                        <a href="{{ receipt.ledger_model.get_absolute_url }}">{{ receipt.ledger_model.name }}</a>
+                    </p>
+
+                </div>
+                <div class="card-content">
+                    <h3 class="title is-5 has-text-weight-light">{% trans 'Transaction Journal' %}</h3>
+                    {% if tx_list %}
+                        <table class="table is-fullwidth is-striped is-narrow">
+                            <thead>
+                            <tr>
+                                <th>{% trans 'Date/Time' %}</th>
+                                <th>{% trans 'Journal Entry' %}</th>
+                                <th>{% trans 'Account' %}</th>
+                                <th class="has-text-right">{% trans 'Debit' %}</th>
+                                <th class="has-text-right">{% trans 'Credit' %}</th>
+                                <th>{% trans 'Unit' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for tx in tx_list %}
+                                <tr>
+                                    <td>{{ tx.journal_entry.timestamp }}</td>
+                                    <td>
+                                        <a href="{{ tx.get_journal_entry_detail_url }}">{{ tx.journal_entry.description|default:'—' }}</a>
+                                    </td>
+                                    <td>{{ tx.account.code }} - {{ tx.account.name }}</td>
+                                    <td class="has-text-right">{% if tx.is_debit %}{{ tx.amount }}{% endif %}</td>
+                                    <td class="has-text-right">{% if tx.is_credit %}{{ tx.amount }}{% endif %}</td>
+                                    <td>{{ tx.journal_entry.entity_unit.name|default:'—' }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="has-text-grey">{% trans 'No transactions found for this receipt.' %}</p>
+                    {% endif %}
+                    {% if import_job %}
+                        <p class="mt-4">
+                            <strong>{% trans 'Imported From' %}:</strong>
+                            <a href="{{ receipt.get_import_job_url }}">
+                                {% trans 'Bank Feed Job' %} — {{ import_job.description|default:import_job.uuid }}
+                            </a>
+                        </p>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <a href="{{ receipt.get_list_url }}"
+                       class="button is-primary is-outlined">{% trans 'Back to Receipts' %}</a>
+                    <a href="{{ receipt.get_delete_url }}"
+                       class="button is-danger is-outlined">{% trans 'Undo/Delete' %}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

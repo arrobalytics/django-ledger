@@ -1,0 +1,86 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+{% block view_content %}
+
+    <div class="box">
+        <div class="columns">
+            <div class="column is-one-third">
+                {% include 'django_ledger/vendor/includes/card_vendor.html' with vendor=vendor %}
+            </div>
+            <div class="column">
+                <div class="content">
+                    <h3 class="title is-4">
+                        <span class="icon is-small">{% icon 'mdi:receipt-text' 24 %}</span>
+                        {% trans 'Receipts' %}
+                    </h3>
+                    {% if receipts %}
+                        <div class="table-container">
+                            <table class="table is-fullwidth is-narrow is-striped is-bordered">
+                                <thead>
+                                <tr>
+                                    <th class="has-text-centered">{% trans 'Receipt Number' %}</th>
+                                    <th class="has-text-centered">{% trans 'Date' %}</th>
+                                    <th class="has-text-centered">{% trans 'Type' %}</th>
+                                    <th class="has-text-centered">{% trans 'Actions' %}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for receipt in receipts %}
+                                    <tr class="has-text-centered">
+                                        <td>
+                                            <a href="{{ receipt.get_absolute_url }}">{{ receipt.receipt_number }}</a>
+                                        </td>
+                                        <td>{{ receipt.receipt_date }}</td>
+                                        <td>{{ receipt.receipt_type|title }}</td>
+                                        <td>
+                                            {% if receipt.get_import_job_url %}
+                                                <a class="button is-small is-primary"
+                                                   href="{{ receipt.get_import_job_url }}">{% trans 'Bank Feed Job' %}</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="has-text-grey">{% trans 'No receipts found for this vendor.' %}</p>
+                    {% endif %}
+
+                    <hr>
+
+                    <h3 class="title is-4">
+                        <span class="icon is-small">{% icon 'mdi:file-document-edit' 24 %}</span>
+                        {% trans 'Bills' %}
+                    </h3>
+                    {% if bills %}
+                        <div class="table-container">
+                            <table class="table is-fullwidth is-narrow is-striped is-bordered">
+                                <thead>
+                                <tr>
+                                    <th class="has-text-centered">{% trans 'Bill Number' %}</th>
+                                    <th class="has-text-centered">{% trans 'Status' %}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for bill in bills %}
+                                    <tr class="has-text-centered">
+                                        <td><a href="{{ bill.get_absolute_url }}">{{ bill.bill_number }}</a></td>
+                                        <td>{{ bill.get_bill_status_display }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="has-text-grey">{% trans 'No bills found for this vendor.' %}</p>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

@@ -8,21 +8,25 @@ created before it can be assigned to the InvoiceModel. Only customers who are ac
 
 import os
 import warnings
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F, QuerySet, Manager
+from django.db import IntegrityError, models, transaction
+from django.db.models import F, Manager, Q, QuerySet
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
-from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
+from django_ledger.models.mixins import (
+    ContactInfoMixIn,
+    CreateUpdateMixIn,
+    TaxCollectionMixIn,
+)
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
-    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
     DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX,
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
 )
 
 
@@ -67,8 +71,8 @@ class CustomerModelQueryset(QuerySet):
         if user_model.is_superuser:
             return self
         return self.filter(
-            Q(entity_model__admin=user_model) |
-            Q(entity_model__managers__in=[user_model])
+            Q(entity_model__admin=user_model)
+            | Q(entity_model__managers__in=[user_model])
         )
 
     def active(self) -> QuerySet:
@@ -117,9 +121,7 @@ class CustomerModelQueryset(QuerySet):
         CustomerModelQueryset
             A QuerySet of visible Customers.
         """
-        return self.filter(
-            Q(hidden=False) & Q(active=True)
-        )
+        return self.filter(Q(hidden=False) & Q(active=True))
 
 
 class CustomerModelManager(Manager):
@@ -129,7 +131,9 @@ class CustomerModelManager(Manager):
     """
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> CustomerModelQueryset:
+    def for_entity(
+        self, entity_model: 'EntityModel | str | UUID' = None, **kwargs
+    ) -> CustomerModelQueryset:
         """
         Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -151,7 +155,7 @@ class CustomerModelManager(Manager):
                 'user_model parameter is deprecated and will be removed in a future release. '
                 'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
                 qs = qs.for_user(kwargs['user_model'])
@@ -176,7 +180,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
         1. :func:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
         2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
-    
+
     Attributes
     __________
     uuid : UUID
@@ -210,19 +214,27 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         unique=True,
         null=True,
         blank=True,
-        verbose_name='User defined customer code'
+        verbose_name='User defined customer code',
     )
     customer_name = models.CharField(max_length=100)
-    customer_number = models.CharField(max_length=30, editable=False, verbose_name=_('Customer Number'),
-                                       help_text='System generated customer number.')
-    entity_model = models.ForeignKey('django_ledger.EntityModel',
-                                     editable=False,
-                                     on_delete=models.CASCADE,
-                                     verbose_name=_('Customer Entity'))
+    customer_number = models.CharField(
+        max_length=30,
+        editable=False,
+        verbose_name=_('Customer Number'),
+        help_text='System generated customer number.',
+    )
+    entity_model = models.ForeignKey(
+        'django_ledger.EntityModel',
+        editable=False,
+        on_delete=models.CASCADE,
+        verbose_name=_('Customer Entity'),
+    )
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
-    picture = models.ImageField(upload_to=customer_picture_upload_to, null=True, blank=True)
+    picture = models.ImageField(
+        upload_to=customer_picture_upload_to, null=True, blank=True
+    )
 
     additional_info = models.JSONField(null=True, blank=True, default=dict)
 
@@ -238,9 +250,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
             models.Index(fields=['active']),
             models.Index(fields=['hidden']),
         ]
-        unique_together = [
-            ('entity_model', 'customer_number')
-        ]
+        unique_together = [('entity_model', 'customer_number')]
 
     def __str__(self):
         if not self.customer_number:
@@ -257,10 +267,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         bool
             True if customer model can be generated, else False.
         """
-        return all([
-            self.entity_model_id,
-            not self.customer_number
-        ])
+        return all([self.entity_model_id, not self.customer_number])
 
     def _get_next_state_model(self, raise_exception: bool = True):
         """
@@ -282,10 +289,12 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         try:
             LOOKUP = {
                 'entity_model_id__exact': self.entity_model_id,
-                'key__exact': EntityStateModel.KEY_CUSTOMER
+                'key__exact': EntityStateModel.KEY_CUSTOMER,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(
+                **LOOKUP
+            ).select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
@@ -293,13 +302,12 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
             return state_model
         except ObjectDoesNotExist:
-
             LOOKUP = {
                 'entity_model_id': self.entity_model_id,
                 'entity_unit_id': None,
                 'fiscal_year': None,
                 'key': EntityStateModel.KEY_CUSTOMER,
-                'sequence': 1
+                'sequence': 1,
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
             return state_model
@@ -324,7 +332,6 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         """
         if self.can_generate_customer_number():
             with transaction.atomic(durable=True):
-
                 state_model = None
                 while not state_model:
                     state_model = self._get_next_state_model(raise_exception=False)
@@ -336,6 +343,12 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
                 self.save(update_fields=['customer_number', 'updated'])
 
         return self.customer_number
+
+    def validate_for_entity(self, entity_model: 'EntityModel'):
+        if entity_model.uuid != self.entity_model_id:
+            raise CustomerModelValidationError(
+                'EntityModel does not belong to this Vendor'
+            )
 
     def clean(self):
         """

@@ -1,0 +1,30 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+{% block view_content %}
+<div class="columns is-centered">
+    <div class="column is-6">
+        <form action="{{ receipt.get_delete_url }}"
+              method="post">
+            {% csrf_token %}
+            <div class="card">
+                <div class="card-content has-text-centered">
+                    <p class="title has-text-weight-light">{% trans 'Are you sure you want to delete' %}
+                        {% trans 'Receipt' %} {{ receipt.receipt_number }}?</p>
+                </div>
+                <div class="card-content has-text-centered">
+                    <p class="subtitle">{% trans 'All transactions posted by this receipt will be removed from its ledger if deletion is allowed.' %}</p>
+                </div>
+                <div class="card-content has-text-centered">
+                    <a href="{{ receipt.get_absolute_url }}"
+                       class="button is-primary">{% trans 'Go Back' %}</a>
+                    <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
