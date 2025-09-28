@@ -4,16 +4,8 @@
     "chart.js": "^4.5.0"
   },
   "devDependencies": {
-    "css-loader": "^7.1.2",
-    "file-loader": "^6.2.0",
-    "less": "^4.4.1",
-    "less-loader": "^12.3.0",
-    "sass": "^1.88.0",
-    "sass-loader": "^16.0.5",
-    "style-loader": "^4.0.0",
     "ts-loader": "^9.5.2",
     "typescript": "^5.9.2",
-    "url-loader": "^4.1.1",
     "webpack": "^5.99.8",
     "webpack-cli": "^6.0.1"
   },
