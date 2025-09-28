@@ -54,6 +54,11 @@ Default Chart of Accounts
 .. automodule:: django_ledger.models.coa_default
     :members:
 
+Receipt Model
+-------------
+.. automodule:: django_ledger.models.receipt
+    :members:
+
 Item Model
 -----------
 .. automodule:: django_ledger.models.items

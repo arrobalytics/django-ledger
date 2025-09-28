@@ -407,7 +407,10 @@ dependencies = [
 dev = [
     { name = "django-debug-toolbar" },
     { name = "jupyterlab" },
+    { name = "myst-parser" },
     { name = "notebook" },
+    { name = "renku-sphinx-theme" },
+    { name = "sphinx" },
 ]
 readthedocs = [
     { name = "myst-parser" },
@@ -430,7 +433,10 @@ requires-dist = [
 dev = [
     { name = "django-debug-toolbar", specifier = ">=6.0.0" },
     { name = "jupyterlab", specifier = ">=3.5.3" },
+    { name = "myst-parser", specifier = ">=4.0.1" },
     { name = "notebook", specifier = ">=6.5.7" },
+    { name = "renku-sphinx-theme", specifier = ">=0.5.0" },
+    { name = "sphinx", specifier = ">=8.2.3" },
 ]
 readthedocs = [
     { name = "myst-parser", specifier = ">=4.0.1" },

@@ -45,7 +45,10 @@ text = "GPLv3 License"
 dev = [
     "django-debug-toolbar>=6.0.0",
     "jupyterlab>=3.5.3",
+    "myst-parser>=4.0.1",
     "notebook>=6.5.7",
+    "renku-sphinx-theme>=0.5.0",
+    "sphinx>=8.2.3",
 ]
 readthedocs = [
     "myst-parser>=4.0.1",
