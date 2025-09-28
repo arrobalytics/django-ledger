@@ -432,9 +432,9 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "django-debug-toolbar", specifier = ">=6.0.0" },
-    { name = "jupyterlab", specifier = ">=3.5.3" },
+    { name = "jupyterlab", specifier = ">=4.4.9" },
     { name = "myst-parser", specifier = ">=4.0.1" },
-    { name = "notebook", specifier = ">=6.5.7" },
+    { name = "notebook", specifier = ">=7.4.7" },
     { name = "renku-sphinx-theme", specifier = ">=0.5.0" },
     { name = "sphinx", specifier = ">=8.2.3" },
 ]
