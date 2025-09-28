@@ -44,8 +44,6 @@ from django_ledger.io.io_core import (
 )
 from django_ledger.models.utils import lazy_loader
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-
 
 class SlugNameMixIn(models.Model):
     """

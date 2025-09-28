@@ -6,20 +6,8 @@
  */
 
 /*!
- * Chart.js v4.4.9
+ * Chart.js v4.5.0
  * https://www.chartjs.org
  * (c) 2025 Chart.js Contributors
  * Released under the MIT License
  */
-
-/**
-* (c) Iconify
-*
-* For the full copyright and license information, please view the license.txt
-* files at https://github.com/iconify/iconify
-*
-* Licensed under MIT.
-*
-* @license MIT
-* @version 2.3.0
-*/

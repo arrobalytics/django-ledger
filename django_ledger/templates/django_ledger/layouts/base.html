@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{% static 'django_ledger/css/djl_styles.css' %}">
     <link rel="stylesheet"
           href="https://cdn.rawgit.com/jenil/bulmaswatch/gh-pages/{{ DJANGO_LEDGER_THEME }}/bulmaswatch.min.css">
+    <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
 
     <link rel="shortcut icon" type="image/jpg" href="{% static 'django_ledger/logo/favicon.png' %}">
 
@@ -42,6 +43,7 @@
 
 {% block script_bottom %}
     <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
+
 
     <script>
         {% if entity_slug %}

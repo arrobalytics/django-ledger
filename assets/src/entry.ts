@@ -1,6 +1,5 @@
 import {DjangoLedgerApp} from "./DjangoLedgerApp";
 import {NetPayablesChart, NetReceivablesChart, PnLChart} from "./AppCharts";
-import 'iconify-icon'
 
 
 let app = new DjangoLedgerApp();

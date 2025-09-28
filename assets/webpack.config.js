@@ -4,13 +4,11 @@ module.exports = {
     mode: "production",
     entry: {
         djetler: "./src/entry",
-        styles: "./src/styles"
     },
     output: {
         filename: "[name].bundle.js",
         path: path.resolve(__dirname, '../django_ledger/static/django_ledger/bundle/'),
         library: "djLedger",
-        // libraryTarget: "umd"
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js"],
