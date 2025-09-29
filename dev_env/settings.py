@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -7,7 +11,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     SECRET_KEY = 'djangoledger1234!DoNotUse!BadIdea!VeryInsecure!'
 
-DEBUG = False
+DEBUG = True
+if DEBUG:
+    logger.setLevel(logging.DEBUG)
+    logger.warning('DEBUG MODE ON. Do NOT use this Development Environment!')
 
 ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
 CSRF_TRUSTED_ORIGINS = ['https://*.preview.app.github.dev']
@@ -28,7 +35,7 @@ if DEBUG:
     ]
 
     INTERNAL_IPS = [
-        "127.0.0.1",
+        '127.0.0.1',
     ]
 
 MIDDLEWARE = [
@@ -59,7 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django_ledger.context.django_ledger_context'
+                'django_ledger.context.django_ledger_context',
             ],
         },
     },
