@@ -281,9 +281,8 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
         ]
 
         self.unit_model_qs = entity_model.entityunitmodel_set.all()
-        self.UNIT_MODEL_CHOICES = [
-            (u.uuid, u) if i > 0 else (None, '----')
-            for i, u in enumerate(self.unit_model_qs)
+        self.UNIT_MODEL_CHOICES = [(None, '----')] + [
+            (u.uuid, u) for i, u in enumerate(self.unit_model_qs)
         ]
 
         self.VENDOR_MODEL_QS = entity_model.vendormodel_set.visible()
