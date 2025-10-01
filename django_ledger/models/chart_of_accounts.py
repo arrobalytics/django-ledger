@@ -265,7 +265,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             return getattr(self, 'configured')
         except AttributeError:
             pass
-        account_qs = self.accountmodel_set.filter(role__in=[ROOT_GROUP])
+        account_qs = self.accountmodel_set.filter(role__in=ROOT_GROUP)
         self.configured = len(account_qs) == len(ROOT_GROUP)
         return self.configured
 
