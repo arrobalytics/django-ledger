@@ -39,13 +39,13 @@ roles to create comprehensive financial statements.
 This structure ensures a clear and organized approach to financial management within Django Ledger, facilitating
 accurate record-keeping and reporting.
 """
+
 import warnings
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Optional, Union, Dict
 from uuid import uuid4, UUID
 
-from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -56,9 +56,16 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import (
-    ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
-    ROOT_LIABILITIES, ROOT_CAPITAL,
-    ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES, ROOT_GROUP
+    ROOT_COA,
+    ROOT_GROUP_LEVEL_2,
+    ROOT_GROUP_META,
+    ROOT_ASSETS,
+    ROOT_LIABILITIES,
+    ROOT_CAPITAL,
+    ROOT_INCOME,
+    ROOT_COGS,
+    ROOT_EXPENSES,
+    ROOT_GROUP,
 )
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
@@ -70,15 +77,12 @@ UserModel = get_user_model()
 
 SLUG_SUFFIX = ascii_lowercase + digits
 
-app_config = apps.get_app_config('django_ledger')
-
 
 class ChartOfAccountsModelValidationError(ValidationError):
     pass
 
 
 class ChartOfAccountModelQuerySet(QuerySet):
-
     def active(self) -> 'ChartOfAccountModelQuerySet':
         """
         QuerySet method to retrieve active items.
@@ -113,10 +117,7 @@ class ChartOfAccountModelQuerySet(QuerySet):
             return self
 
         return self.filter(
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
+            (Q(entity__admin=user_model) | Q(entity__managers__in=[user_model]))
         )
 
 
@@ -128,49 +129,56 @@ class ChartOfAccountModelManager(Manager):
 
     def get_queryset(self) -> ChartOfAccountModelQuerySet:
         qs = ChartOfAccountModelQuerySet(self.model, using=self._db)
-        return qs.annotate(
-            _entity_slug=F('entity__slug'),
-            accountmodel_total__count=Count(
-                'accountmodel',
-                # excludes coa root accounts...
-                filter=Q(accountmodel__depth__gt=2)
-            ),
-            accountmodel_locked__count=Count(
-                'accountmodel',
-                # excludes coa root accounts...
-                filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__locked=True)
-            ),
-            accountmodel_active__count=Count(
-                'accountmodel',
-                # excludes coa root accounts...
-                filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__active=True)
-            ),
-            # Root-group presence and uniqueness checks:
-            accountmodel_rootgroup__count=Count(
-                'accountmodel',
-                filter=Q(accountmodel__role__in=ROOT_GROUP)
-            ),
-            accountmodel_rootgroup_roles__distinct_count=Count(
-                'accountmodel__role',
-                filter=Q(accountmodel__role__in=ROOT_GROUP_META),
-                distinct=True
-            ),
-        ).annotate(
-            configured=models.Case(
-                models.When(
-                    Q(accountmodel_rootgroup__count__gte=1) &
-                    Q(accountmodel_rootgroup__count=F('accountmodel_rootgroup_roles__distinct_count')),
-                    then=Value(True, output_field=BooleanField()),
+        return (
+            qs.annotate(
+                _entity_slug=F('entity__slug'),
+                accountmodel_total__count=Count(
+                    'accountmodel',
+                    # excludes coa root accounts...
+                    filter=Q(accountmodel__depth__gt=2),
                 ),
-                default=Value(False, output_field=BooleanField()),
-                output_field=BooleanField()
+                accountmodel_locked__count=Count(
+                    'accountmodel',
+                    # excludes coa root accounts...
+                    filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__locked=True),
+                ),
+                accountmodel_active__count=Count(
+                    'accountmodel',
+                    # excludes coa root accounts...
+                    filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__active=True),
+                ),
+                # Root-group presence and uniqueness checks:
+                accountmodel_rootgroup__count=Count(
+                    'accountmodel', filter=Q(accountmodel__role__in=ROOT_GROUP)
+                ),
+                accountmodel_rootgroup_roles__distinct_count=Count(
+                    'accountmodel__role',
+                    filter=Q(accountmodel__role__in=ROOT_GROUP_META),
+                    distinct=True,
+                ),
             )
-        ).select_related('entity')
+            .annotate(
+                configured=models.Case(
+                    models.When(
+                        Q(accountmodel_rootgroup__count__gte=1)
+                        & Q(
+                            accountmodel_rootgroup__count=F(
+                                'accountmodel_rootgroup_roles__distinct_count'
+                            )
+                        ),
+                        then=Value(True, output_field=BooleanField()),
+                    ),
+                    default=Value(False, output_field=BooleanField()),
+                    output_field=BooleanField(),
+                )
+            )
+            .select_related('entity')
+        )
 
     @deprecated_entity_slug_behavior
-    def for_entity(self,
-                   entity_model: Union['EntityModel | str | UUID'] = None,
-                   **kwargs) -> ChartOfAccountModelQuerySet:
+    def for_entity(
+        self, entity_model: 'Union[EntityModel | str | UUID]' = None, **kwargs
+    ) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -195,7 +203,7 @@ class ChartOfAccountModelManager(Manager):
                 'user_model parameter is deprecated and will be removed in a future release. '
                 'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
                 qs = qs.for_user(kwargs['user_model'])
@@ -232,21 +240,23 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               verbose_name=_('Entity'),
-                               on_delete=models.CASCADE)
+    entity = models.ForeignKey(
+        'django_ledger.EntityModel', verbose_name=_('Entity'), on_delete=models.CASCADE
+    )
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
-    description = models.TextField(verbose_name=_('CoA Description'), null=True, blank=True)
-    objects = ChartOfAccountModelManager.from_queryset(queryset_class=ChartOfAccountModelQuerySet)()
+    description = models.TextField(
+        verbose_name=_('CoA Description'), null=True, blank=True
+    )
+    objects = ChartOfAccountModelManager.from_queryset(
+        queryset_class=ChartOfAccountModelQuerySet
+    )()
 
     class Meta:
         abstract = True
         ordering = ['-created']
         verbose_name = _('Chart of Account')
         verbose_name_plural = _('Chart of Accounts')
-        indexes = [
-            models.Index(fields=['entity'])
-        ]
+        indexes = [models.Index(fields=['entity'])]
 
     def __str__(self):
         if self.name is not None:
@@ -289,7 +299,9 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
             if len(existing_root_roles) > 0:
                 if raise_exception:
-                    raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
+                    raise ChartOfAccountsModelValidationError(
+                        message=f'Root Nodes already Exist in CoA {self.uuid}...'
+                    )
                 return
 
             if ROOT_COA not in existing_root_roles:
@@ -305,12 +317,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     role_default=True,
                     active=False,
                     locked=True,
-                    balance_type=role_meta['balance_type']
+                    balance_type=role_meta['balance_type'],
                 )
                 AccountModel.add_root(instance=root_account)
 
                 # must retrieve root model after added pero django-treebeard documentation...
-                coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
+                coa_root_account_model = AccountModel.objects.get(
+                    uuid__exact=account_pk
+                )
 
                 for root_role in ROOT_GROUP_LEVEL_2:
                     if root_role not in existing_root_roles:
@@ -326,8 +340,9 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                                 role_default=True,
                                 active=False,
                                 locked=True,
-                                balance_type=role_meta['balance_type']
-                            ))
+                                balance_type=role_meta['balance_type'],
+                            )
+                        )
                 self.configured = True
 
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
@@ -350,10 +365,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         qs = self.get_coa_root_accounts_qs()
         return qs.get(role__exact=ROOT_COA)
 
-    def get_account_root_node(self,
-                              account_model: AccountModel,
-                              root_account_qs: Optional[AccountModelQuerySet] = None,
-                              as_queryset: bool = False) -> AccountModel:
+    def get_account_root_node(
+        self,
+        account_model: AccountModel,
+        root_account_qs: Optional[AccountModelQuerySet] = None,
+        as_queryset: bool = False,
+    ) -> AccountModel:
         """
         Fetches the root node of the ChartOfAccountModel instance. The root node is the highest level of the CoA
         hierarchy. It can be used to traverse the hierarchy of the CoA structure downstream.
@@ -381,7 +398,9 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
         if account_model.coa_model_id != self.uuid:
             raise ChartOfAccountsModelValidationError(
-                message=_(f'The account model {account_model} is not part of the chart of accounts {self.name}.'),
+                message=_(
+                    f'The account model {account_model} is not part of the chart of accounts {self.name}.'
+                ),
             )
 
         # Chart of Accounts hasn't been configured...
@@ -389,26 +408,39 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             self.configure(raise_exception=True)
 
         if not account_model.is_root_account():
-
             if not root_account_qs:
                 root_account_qs = self.get_coa_root_accounts_qs()
 
             if account_model.is_asset():
-                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_ASSETS]['code'])
+                qs = root_account_qs.filter(
+                    code__exact=ROOT_GROUP_META[ROOT_ASSETS]['code']
+                )
             elif account_model.is_liability():
-                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_LIABILITIES]['code'])
+                qs = root_account_qs.filter(
+                    code__exact=ROOT_GROUP_META[ROOT_LIABILITIES]['code']
+                )
             elif account_model.is_capital():
-                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_CAPITAL]['code'])
+                qs = root_account_qs.filter(
+                    code__exact=ROOT_GROUP_META[ROOT_CAPITAL]['code']
+                )
             elif account_model.is_income():
-                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_INCOME]['code'])
+                qs = root_account_qs.filter(
+                    code__exact=ROOT_GROUP_META[ROOT_INCOME]['code']
+                )
             elif account_model.is_cogs():
-                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_COGS]['code'])
+                qs = root_account_qs.filter(
+                    code__exact=ROOT_GROUP_META[ROOT_COGS]['code']
+                )
             elif account_model.is_expense():
-                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_EXPENSES]['code'])
+                qs = root_account_qs.filter(
+                    code__exact=ROOT_GROUP_META[ROOT_EXPENSES]['code']
+                )
             else:
-                raise ChartOfAccountsModelValidationError(message=f'Unable to locate Balance Sheet'
-                                                                  ' root node for account code: '
-                                                                  f'{account_model.code} {account_model.name}')
+                raise ChartOfAccountsModelValidationError(
+                    message=f'Unable to locate Balance Sheet'
+                    ' root node for account code: '
+                    f'{account_model.code} {account_model.name}'
+                )
             if as_queryset:
                 return qs
             return qs.get()
@@ -490,15 +522,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=_(f'CoA {self.uuid} already has a slug')
                 )
             return
-        self.slug = f'coa-{self.entity.slug[-5:]}-' + ''.join(choices(SLUG_SUFFIX, k=15))
+        self.slug = f'coa-{self.entity.slug[-5:]}-' + ''.join(
+            choices(SLUG_SUFFIX, k=15)
+        )
 
         if commit:
-            self.save(
-                update_fields=[
-                    'slug',
-                    'updated'
-                ]
-            )
+            self.save(update_fields=['slug', 'updated'])
 
     def is_default(self) -> bool:
         """
@@ -549,9 +578,11 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=f'Invalid root queryset for CoA {self.name}'
                 )
 
-    def insert_account(self,
-                       account_model: AccountModel,
-                       root_account_qs: Optional[AccountModelQuerySet] = None):
+    def insert_account(
+        self,
+        account_model: AccountModel,
+        root_account_qs: Optional[AccountModelQuerySet] = None,
+    ):
         """
         This method inserts the given account model into the chart of accounts (COA) instance.
         It first verifies if the account model's COA model ID matches the COA's UUID. If not, it
@@ -599,21 +630,22 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             self.validate_account_model_qs(root_account_qs)
 
         account_root_node: AccountModel = self.get_account_root_node(
-            account_model=account_model,
-            root_account_qs=root_account_qs
+            account_model=account_model, root_account_qs=root_account_qs
         )
 
         account_root_node.add_child(instance=account_model)
         coa_accounts_qs = self.get_non_root_coa_accounts_qs()
         return coa_accounts_qs.get(uuid__exact=account_model.uuid)
 
-    def create_account(self,
-                       code: str,
-                       role: str,
-                       name: str,
-                       balance_type: str,
-                       active: bool,
-                       root_account_qs: Optional[AccountModelQuerySet] = None):
+    def create_account(
+        self,
+        code: str,
+        role: str,
+        name: str,
+        balance_type: str,
+        active: bool,
+        root_account_qs: Optional[AccountModelQuerySet] = None,
+    ):
         """
         Proper method for inserting a new Account Model into a CoA.
         Use this in liu of the direct instantiation of the AccountModel of using the django related manager.
@@ -644,13 +676,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             role=role,
             active=active,
             balance_type=balance_type,
-            coa_model=self
+            coa_model=self,
         )
         account_model.clean()
 
         account_model = self.insert_account(
-            account_model=account_model,
-            root_account_qs=root_account_qs
+            account_model=account_model, root_account_qs=root_account_qs
         )
         return account_model
 
@@ -666,7 +697,9 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         account_qs.update(locked=False)
         return account_qs
 
-    def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+    def mark_as_default(
+        self, commit: bool = False, raise_exception: bool = False, **kwargs
+    ):
         """
         Marks the current Chart of Accounts instances as default for the EntityModel.
 
@@ -686,24 +719,18 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         if not self.can_mark_as_default():
             if raise_exception:
                 raise ChartOfAccountsModelValidationError(
-                    message=_(f'The Chart of Accounts {self.slug} cannot be marked as default')
+                    message=_(
+                        f'The Chart of Accounts {self.slug} cannot be marked as default'
+                    )
                 )
             return
         self.entity.default_coa_id = self.uuid
         self.clean()
         if commit:
-            self.entity.save(
-                update_fields=[
-                    'default_coa_id',
-                    'updated'
-                ]
-            )
+            self.entity.save(update_fields=['default_coa_id', 'updated'])
 
     def can_mark_as_default(self):
-        return all([
-            self.is_active(),
-            not self.is_default()
-        ])
+        return all([self.is_active(), not self.is_default()])
 
     def can_activate(self) -> bool:
         """
@@ -723,12 +750,11 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         -------
             True if the object can be deactivated, False otherwise.
         """
-        return all([
-            self.is_active(),
-            not self.is_default()
-        ])
+        return all([self.is_active(), not self.is_default()])
 
-    def mark_as_active(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+    def mark_as_active(
+        self, commit: bool = False, raise_exception: bool = False, **kwargs
+    ):
         """
         Marks the current Chart of Accounts as Active.
 
@@ -749,13 +775,11 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         self.active = True
         self.clean()
         if commit:
-            self.save(
-                update_fields=[
-                    'active',
-                    'updated'
-                ])
+            self.save(update_fields=['active', 'updated'])
 
-    def mark_as_inactive(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+    def mark_as_inactive(
+        self, commit: bool = False, raise_exception: bool = False, **kwargs
+    ):
         """
         Marks the current Chart of Accounts as Active.
 
@@ -776,11 +800,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         self.active = False
         self.clean()
         if commit:
-            self.save(
-                update_fields=[
-                    'active',
-                    'updated'
-                ])
+            self.save(update_fields=['active', 'updated'])
 
     # URLS....
     def mark_as_default_url(self) -> str:
@@ -794,10 +814,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         return reverse(
             viewname='django_ledger:coa-action-mark-as-default',
-            kwargs={
-                'entity_slug': self.entity_slug,
-                'coa_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.slug},
         )
 
     def mark_as_active_url(self) -> str:
@@ -811,10 +828,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         return reverse(
             viewname='django_ledger:coa-action-mark-as-active',
-            kwargs={
-                'entity_slug': self.entity_slug,
-                'coa_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.slug},
         )
 
     def mark_as_inactive_url(self) -> str:
@@ -828,74 +842,51 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         return reverse(
             viewname='django_ledger:coa-action-mark-as-inactive',
-            kwargs={
-                'entity_slug': self.entity_slug,
-                'coa_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.slug},
         )
 
     def get_coa_list_url(self):
         return reverse(
-            viewname='django_ledger:coa-list',
-            kwargs={
-                'entity_slug': self.entity_slug
-            }
+            viewname='django_ledger:coa-list', kwargs={'entity_slug': self.entity_slug}
         )
 
     def get_coa_list_inactive_url(self):
         return reverse(
             viewname='django_ledger:coa-list-inactive',
-            kwargs={
-                'entity_slug': self.entity_slug
-            }
+            kwargs={'entity_slug': self.entity_slug},
         )
 
     def get_coa_create_url(self):
         return reverse(
             viewname='django_ledger:coa-create',
-            kwargs={
-                'entity_slug': self.entity_slug
-            }
+            kwargs={'entity_slug': self.entity_slug},
         )
 
     def get_absolute_url(self) -> str:
         return reverse(
             viewname='django_ledger:coa-detail',
-            kwargs={
-                'entity_slug': self.entity_slug,
-                'coa_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.slug},
         )
 
     def get_update_url(self) -> str:
         return reverse(
             viewname='django_ledger:coa-update',
-            kwargs={
-                'entity_slug': self.entity_slug,
-                'coa_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.slug},
         )
 
     def get_account_list_url(self):
-
         if not self.slug:
             self.generate_slug(commit=True)
 
         return reverse(
             viewname='django_ledger:account-list',
-            kwargs={
-                'entity_slug': self.entity_slug,
-                'coa_slug': self.slug
-            }
+            kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.slug},
         )
 
     def get_create_coa_account_url(self):
         return reverse(
             viewname='django_ledger:account-create',
-            kwargs={
-                'coa_slug': self.slug,
-                'entity_slug': self.entity_slug
-            }
+            kwargs={'coa_slug': self.slug, 'entity_slug': self.entity_slug},
         )
 
     def clean(self):
