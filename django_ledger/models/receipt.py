@@ -264,7 +264,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
     receipt_number = models.CharField(_('Receipt Number'), max_length=255)
     receipt_date = models.DateField(_('Receipt Date'))
     receipt_type = models.CharField(
-        choices=RECEIPT_TYPES, verbose_name=_('Receipt Type')
+        choices=RECEIPT_TYPES, verbose_name=_('Receipt Type'), max_length=255
     )
 
     ledger_model = models.ForeignKey(
