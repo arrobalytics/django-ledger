@@ -33,6 +33,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
@@ -159,9 +160,7 @@ class ImportJobModelManager(Manager):
         )
 
     @deprecated_entity_slug_behavior
-    def for_entity(
-        self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs
-    ) -> ImportJobModelQuerySet:
+    def for_entity(self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs) -> ImportJobModelQuerySet:
         qs = self.get_queryset()
         if 'user_model' in kwargs:
             warnings.warn(
@@ -211,12 +210,6 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         Indicates whether the import job has been completed.
     objects : ImportJobModelManager
         The default manager for the model.
-
-    Meta
-    ----
-    This class is abstract and serves as a base for other models.
-    It includes additional metadata such as field verbose names
-    and database indexing.
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -234,9 +227,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         null=True,
         blank=True,
     )
-    completed = models.BooleanField(
-        default=False, verbose_name=_('Import Job Completed')
-    )
+    completed = models.BooleanField(default=False, verbose_name=_('Import Job Completed'))
     objects = ImportJobModelManager()
 
     class Meta:
@@ -304,9 +295,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
             True if both `ledger_model_id` and `bank_account_model_id` attributes
             are set (not None), otherwise False.
         """
-        return all(
-            [self.ledger_model_id is not None, self.bank_account_model_id is not None]
-        )
+        return all([self.ledger_model_id is not None, self.bank_account_model_id is not None])
 
     def configure(self, commit: bool = True):
         """
@@ -323,14 +312,30 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         """
         if not self.is_configured():
             if self.ledger_model_id is None:
-                self.ledger_model = self.bank_account_model.entity_model.create_ledger(
-                    name=self.description
-                )
+                self.ledger_model = self.bank_account_model.entity_model.create_ledger(name=self.description)
             if commit:
                 self.save(update_fields=['ledger_model'])
 
     def get_delete_message(self) -> str:
         return _(f'Are you sure you want to delete Import Job {self.description}?')
+
+    def get_data_import_url(self) -> str:
+        return reverse(
+            'django_ledger:data-import-job-txs',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'job_pk': self.uuid,
+            },
+        )
+
+    def get_data_import_reset_url(self) -> str:
+        return reverse(
+            'django_ledger:data-import-job-txs-undo',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'job_pk': self.uuid,
+            },
+        )
 
 
 class StagedTransactionModelValidationError(ValidationError):
@@ -355,6 +360,71 @@ class StagedTransactionModelQuerySet(QuerySet):
     on certain conditions specific to the staged transaction model's state or
     relationships.
     """
+
+    def for_entity(self, entity_model: 'Union[EntityModel, UUID, str]') -> 'StagedTransactionModelQuerySet':
+        """
+        Filters the queryset based on the type of the provided entity model.
+
+        The method accepts entity identifiers of varying formats including instances
+        of `EntityModel`, UUIDs, or string slugs and filters the query accordingly.
+        If an invalid type is provided, a validation error is raised.
+
+        Parameters
+        ----------
+        entity_model : Union[EntityModel, UUID, str]
+            The entity identifier used to filter the queryset. Can be an `EntityModel` instance,
+            a UUID, or a string representing the slug of the entity.
+
+        Returns
+        -------
+        StagedTransactionModelQuerySet
+            A filtered queryset of staged transactions based on the provided entity model.
+
+        Raises
+        ------
+        StagedTransactionModelValidationError
+            If the `entity_model` provided is not an instance of `EntityModel`, UUID, or string.
+        """
+        if isinstance(entity_model, UUID):
+            return self.filter(import_job__ledger_model__entity_id=entity_model)
+        elif isinstance(entity_model, str):
+            return self.filter(import_job__ledger_model__entity__slug__exact=entity_model)
+        elif isinstance(entity_model, EntityModel):
+            return self.filter(import_job__ledger_model__entity=entity_model)
+        raise StagedTransactionModelValidationError(
+            message=f'Must pass an instance of EntityMode, UUID or str. Got {entity_model.__class__.__name__}'
+        )
+
+    def for_import_job(self, import_job_model: 'Union[ImportJobModel | UUID]') -> 'StagedTransactionModelQuerySet':
+        """
+        Filters the queryset based on the provided import job model or UUID.
+
+        This method evaluates whether the argument is an instance of ImportJobModel or
+        UUID and filters the queryset accordingly. If the argument is neither of these
+        types, it raises a validation error.
+
+        Parameters
+        ----------
+        import_job_model : Union[ImportJobModel, UUID]
+            The import job model instance or UUID to filter the queryset by.
+
+        Returns
+        -------
+        StagedTransactionModelQuerySet
+            A queryset filtered by the given import job model or UUID.
+
+        Raises
+        ------
+        StagedTransactionModelValidationError
+            If the provided argument is not an instance of ImportJobModel or UUID.
+        """
+        if isinstance(import_job_model, ImportJobModel):
+            return self.filter(import_job=import_job_model)
+        elif isinstance(import_job_model, UUID):
+            return self.filter(import_job_id=import_job_model)
+        raise StagedTransactionModelValidationError(
+            message=f'Must pass an instance of ImportJobModel, UUID. Got {import_job_model.__class__.__name__}'
+        )
 
     def is_pending(self):
         """
@@ -438,7 +508,7 @@ class StagedTransactionModelManager(Manager):
         Fetch and annotate the queryset with related fields and calculated annotations.
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> StagedTransactionModelQuerySet:
         """
         Fetch and annotate the queryset for staged transaction models to include additional
         related fields and calculated annotations for further processing and sorting.
@@ -471,15 +541,13 @@ class StagedTransactionModelManager(Manager):
                 'parent',
                 'parent__account_model',
                 'parent__unit_model',
+                'receiptmodel',
             )
             .annotate(
-                entity_slug=F('import_job__bank_account_model__entity_model__slug'),
+                _entity_slug=F('import_job__bank_account_model__entity_model__slug'),
                 entity_unit=F('transaction_model__journal_entry__entity_unit__name'),
-                _receipt_uuid=F('receiptmodel__uuid'),
                 children_count=Count('split_transaction_set'),
-                children_mapped_count=Count(
-                    'split_transaction_set__account_model__uuid'
-                ),
+                children_mapped_count=Count('split_transaction_set__account_model__uuid'),
                 total_amount_split=Coalesce(
                     Sum('split_transaction_set__amount_split'),
                     Value(value=0.00, output_field=DecimalField()),
@@ -488,10 +556,10 @@ class StagedTransactionModelManager(Manager):
                     When(parent_id__isnull=True, then=F('uuid')),
                     When(parent_id__isnull=False, then=F('parent_id')),
                 ),
+                _receipt_uuid=F('receiptmodel__uuid'),
             )
             .annotate(
-                children_mapping_pending_count=F('children_count')
-                - F('children_mapped_count'),
+                children_mapping_pending_count=F('children_count') - F('children_mapped_count'),
             )
             .annotate(
                 children_mapping_done=Case(
@@ -504,6 +572,8 @@ class StagedTransactionModelManager(Manager):
                     When(
                         condition=(
                             Q(children_count__exact=0)
+                            & Q(bundle_split=True)
+                            & Q(parent__isnull=True)
                             & Q(account_model__isnull=False)
                             & Q(parent__isnull=True)
                             & Q(transaction_model__isnull=True)
@@ -515,18 +585,18 @@ class StagedTransactionModelManager(Manager):
                                     & Q(customer_model__isnull=True)
                                 )
                                 | (
-                                    # transaction with receipt...
+                                    # sales/expense transaction...
                                     Q(receipt_type__isnull=False)
                                     & (
-                                        (
-                                            Q(vendor_model__isnull=False)
-                                            & Q(customer_model__isnull=True)
-                                        )
-                                        | (
-                                            Q(vendor_model__isnull=True)
-                                            & Q(customer_model__isnull=False)
-                                        )
+                                        (Q(vendor_model__isnull=False) & Q(customer_model__isnull=True))
+                                        | (Q(vendor_model__isnull=True) & Q(customer_model__isnull=False))
                                     )
+                                )
+                                | (
+                                    # sales/expense transaction...
+                                    Q(receipt_type__exact=ReceiptModel.TRANSFER_RECEIPT)
+                                    & Q(vendor_model__isnull=True)
+                                    & Q(customer_model__isnull=True)
                                 )
                             )
                         ),
@@ -539,29 +609,42 @@ class StagedTransactionModelManager(Manager):
                             # will import the transaction as is...
                             (
                                 Q(children_count__gt=0)
+                                & Q(bundle_split=True)
                                 & Q(receipt_type__isnull=True)
                                 & Q(children_count=F('children_mapped_count'))
                                 & Q(total_amount_split__exact=F('amount'))
                                 & Q(parent__isnull=True)
                                 & Q(transaction_model__isnull=True)
+                                & Q(customer_model__isnull=True)
+                                & Q(vendor_model__isnull=False)
                             )
-                            # receipt type is assigned... at least a customer or vendor is selected...
+                            # BUNDLED...
+                            # a receipt type is assigned... at least a customer or vendor is selected...
                             | (
                                 Q(children_count__gt=0)
+                                & Q(parent__isnull=True)
+                                & Q(bundle_split=True)
                                 & Q(receipt_type__isnull=False)
                                 & (
-                                    (
-                                        Q(vendor_model__isnull=False)
-                                        & Q(customer_model__isnull=True)
-                                    )
-                                    | (
-                                        Q(vendor_model__isnull=True)
-                                        & Q(customer_model__isnull=False)
-                                    )
+                                    (Q(vendor_model__isnull=False) & Q(customer_model__isnull=True))
+                                    | (Q(vendor_model__isnull=True) & Q(customer_model__isnull=False))
                                 )
                                 & Q(children_count=F('children_mapped_count'))
                                 & Q(total_amount_split__exact=F('amount'))
                                 & Q(parent__isnull=True)
+                                & Q(transaction_model__isnull=True)
+                            )
+                            # NOT BUNDLED...
+                            # a receipt type is assigned... at least a customer or vendor is selected...
+                            | (
+                                Q(children_count__gt=0)
+                                & Q(parent__isnull=True)
+                                & Q(bundle_split=False)
+                                & Q(receipt_type__isnull=True)
+                                & Q(vendor_model__isnull=True)
+                                & Q(customer_model__isnull=True)
+                                & Q(children_count=F('children_mapped_count'))
+                                & Q(total_amount_split__exact=F('amount'))
                                 & Q(transaction_model__isnull=True)
                             )
                         ),
@@ -664,14 +747,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         related_name='split_transaction_set',
         verbose_name=_('Parent Transaction'),
     )
-    import_job = models.ForeignKey(
-        'django_ledger.ImportJobModel', on_delete=models.CASCADE
-    )
+    import_job = models.ForeignKey('django_ledger.ImportJobModel', on_delete=models.CASCADE)
     fit_id = models.CharField(max_length=100)
     date_posted = models.DateField(verbose_name=_('Date Posted'))
-    bundle_split = models.BooleanField(
-        default=True, verbose_name=_('Bundle Split Transactions')
-    )
+    bundle_split = models.BooleanField(default=True, verbose_name=_('Bundle Split Transactions'))
     activity = models.CharField(
         choices=JournalEntryModel.ACTIVITIES,
         max_length=20,
@@ -679,18 +758,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         blank=True,
         verbose_name=_('Proposed Activity'),
     )
-    amount = models.DecimalField(
-        decimal_places=2, max_digits=15, editable=False, null=True, blank=True
-    )
-    amount_split = models.DecimalField(
-        decimal_places=2, max_digits=15, null=True, blank=True
-    )
+    amount = models.DecimalField(decimal_places=2, max_digits=15, editable=False, null=True, blank=True)
+    amount_split = models.DecimalField(decimal_places=2, max_digits=15, null=True, blank=True)
     name = models.CharField(max_length=200, blank=True, null=True)
     memo = models.CharField(max_length=200, blank=True, null=True)
 
-    account_model = models.ForeignKey(
-        'django_ledger.AccountModel', on_delete=models.RESTRICT, null=True, blank=True
-    )
+    account_model = models.ForeignKey('django_ledger.AccountModel', on_delete=models.RESTRICT, null=True, blank=True)
 
     unit_model = models.ForeignKey(
         'django_ledger.EntityUnitModel',
@@ -731,7 +804,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         help_text=_('The Customer associated with the transaction.'),
     )
 
-    objects = StagedTransactionModelManager()
+    objects = StagedTransactionModelManager.from_queryset(queryset_class=StagedTransactionModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -823,9 +896,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                     'amount': abs(child_txs_model.amount_split),
                     'amount_staged': child_txs_model.amount_split,
                     'unit_model': child_txs_model.unit_model,
-                    'tx_type': CREDIT
-                    if not child_txs_model.amount_split < 0.00
-                    else DEBIT,
+                    'tx_type': CREDIT if not child_txs_model.amount_split < 0.00 else DEBIT,
                     'description': child_txs_model.name,
                     'staged_tx_model': child_txs_model,
                 }
@@ -892,7 +963,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return self.amount
 
     def is_sales(self) -> bool:
-        if self.is_children():
+        if self.is_children() and self.is_bundled():
             return self.parent.is_sales()
         return any(
             [
@@ -902,7 +973,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         )
 
     def is_expense(self) -> bool:
-        if self.is_children():
+        if self.is_children() and self.is_bundled():
             return self.parent.is_expense()
         return any(
             [
@@ -910,6 +981,14 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 self.receipt_type == ReceiptModel.EXPENSE_REFUND,
             ]
         )
+
+    def is_transfer(self) -> bool:
+        return self.receipt_type == ReceiptModel.TRANSFER_RECEIPT
+
+    def is_debt_payment(self) -> bool:
+        if self.is_children() and self.is_bundled():
+            return self.parent.is_debt_payment()
+        return self.receipt_type == ReceiptModel.DEBT_PAYMENT
 
     def is_imported(self) -> bool:
         """
@@ -962,21 +1041,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         return self.account_model_id is not None
 
-    def is_single(self) -> bool:
-        """
-        Checks whether the current instance represents a single entry.
-
-        This method determines if the current object qualifies as a single entry
-        by ensuring that it both does not have children and is not considered a
-        child of any other entry. The result is a boolean value indicating
-        whether the entry meets these criteria.
-
-        Returns
-        -------
-        bool
-            True if the entry is a single, standalone entry; False otherwise.
-        """
-        return all([not self.is_children(), not self.has_children()])
+    def is_parent(self) -> bool:
+        return self.parent_id is None
 
     def is_children(self) -> bool:
         """
@@ -991,11 +1057,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             True if the object has a valid `parent_id`, indicating it is a child entity;
             False otherwise.
         """
-        return all(
-            [
-                self.parent_id is not None,
-            ]
-        )
+        return self.parent_id is not None
+
+    def is_bundled(self) -> bool:
+        if not self.parent_id:
+            return self.bundle_split is True
+        return self.parent.is_bundled()
 
     def has_activity(self) -> bool:
         """
@@ -1032,25 +1099,198 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             return False
         return getattr(self, 'children_count') > 0
 
+    # TX Cases...
+
+    def is_single(self) -> bool:
+        """
+        Determine if the current object is an original import.
+
+        This method checks whether the current object is neither a child nor
+        has any children associated with it. If both checks return False,
+        the object is considered original.
+
+        Returns
+        -------
+        bool
+            True if the object is original, otherwise False.
+        """
+        return all([not self.is_children(), not self.has_children()])
+
+    def is_single_no_receipt(self) -> bool:
+        return all(
+            [
+                self.is_single(),
+                not self.has_receipt(),
+            ]
+        )
+
+    def is_single_has_receipt(self) -> bool:
+        return all(
+            [
+                self.is_single(),
+                self.has_receipt(),
+            ]
+        )
+
+    def is_parent_is_bundled_no_receipt(self) -> bool:
+        return all(
+            [
+                self.is_parent(),
+                self.has_children(),
+                self.is_bundled(),
+                not self.has_receipt(),
+            ]
+        )
+
+    def is_parent_is_bundled_has_receipt(self) -> bool:
+        return all(
+            [
+                self.is_parent(),
+                self.has_children(),
+                self.is_bundled(),
+                self.has_receipt(),
+            ]
+        )
+
+    def is_parent_not_bundled_has_receipt(self) -> bool:
+        return all(
+            [
+                self.is_parent(),
+                self.has_children(),
+                not self.is_bundled(),
+                self.has_receipt(),
+            ]
+        )
+
+    def is_parent_not_bundled_no_receipt(self) -> bool:
+        return all(
+            [
+                self.is_parent(),
+                self.has_children(),
+                not self.is_bundled(),
+                not self.has_receipt(),
+            ]
+        )
+
+    def is_child_is_bundled_no_receipt(self) -> bool:
+        return all(
+            [
+                self.is_children(),
+                self.is_bundled(),
+                not self.has_receipt(),
+            ]
+        )
+
+    def is_child_is_bundled_has_receipt(self) -> bool:
+        return all(
+            [
+                self.is_children(),
+                self.is_bundled(),
+                self.has_receipt(),
+            ]
+        )
+
+    def is_child_not_bundled_has_receipt(self) -> bool:
+        return all(
+            [
+                self.is_children(),
+                not self.is_bundled(),
+                self.has_receipt(),
+            ]
+        )
+
+    def is_child_not_bundled_no_receipt(self) -> bool:
+        return all(
+            [
+                self.is_children(),
+                not self.is_bundled(),
+                not self.has_receipt(),
+            ]
+        )
+
+    @property
+    def entity_slug(self) -> str:
+        return getattr(self, '_entity_slug')
+
     @property
     def receipt_uuid(self):
         try:
             return getattr(self, '_receipt_uuid')
         except AttributeError:
             pass
-        return self.receiptmodel.uuid
+        return None
 
-    def can_migrate_receipt(self) -> bool:
-        if self.is_children():
-            return self.parent.receipt_type is not None
-        return self.receipt_type is not None
+    # Data Import Field Visibility...
+
+    def can_have_amount_split(self):
+        if self.is_transfer():
+            return False
+        return self.is_children()
+
+    def can_have_bundle_split(self):
+        if self.is_transfer():
+            return False
+        return all([self.is_parent()])
+
+    def can_have_receipt(self) -> bool:
+        if any(
+            [
+                self.is_single_no_receipt(),
+                self.is_single_has_receipt(),
+                self.is_parent_is_bundled_no_receipt(),
+                self.is_parent_is_bundled_has_receipt(),
+                self.is_child_not_bundled_no_receipt(),
+                self.is_child_not_bundled_has_receipt(),
+            ]
+        ):
+            return True
+        return False
+
+    def can_have_vendor(self) -> bool:
+        if self.is_transfer():
+            return False
+        if all(
+            [
+                any(
+                    [
+                        self.is_expense(),
+                        self.is_debt_payment(),
+                    ]
+                ),
+                any(
+                    [
+                        self.is_single_has_receipt(),
+                        self.is_parent_is_bundled_has_receipt(),
+                        self.is_child_not_bundled_has_receipt(),
+                    ]
+                ),
+            ]
+        ):
+            return True
+        return False
+
+    def can_have_customer(self) -> bool:
+        if self.is_transfer():
+            return False
+        if all(
+            [
+                self.is_sales(),
+                any(
+                    [
+                        self.is_single_has_receipt(),
+                        self.is_parent_is_bundled_has_receipt(),
+                        self.is_child_not_bundled_has_receipt(),
+                    ]
+                ),
+            ]
+        ):
+            return True
+        return False
 
     def has_receipt(self) -> bool:
-        if self.is_children():
-            return all(
-                [self.parent.receipt_type is not None, self.receipt_uuid is not None]
-            )
-        return all([self.receipt_type is not None, self.receipt_uuid is not None])
+        # if self.is_children() and self.is_bundled():
+        #     return self.parent.receipt_type is not None
+        return self.receipt_type is not None
 
     def has_mapped_receipt(self) -> bool:
         if all(
@@ -1077,6 +1317,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             return True
         return False
 
+    def can_unbundle(self) -> bool:
+        if any([
+            not self.is_single()
+        ]):
+            return True
+        return False
+
     def can_split(self) -> bool:
         """
         Determines if the current object can be split based on its child status.
@@ -1090,7 +1337,15 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             `True` if the object has no children and can be split, otherwise
             `False`.
         """
-        return all([not self.has_children(), not self.has_receipt()])
+        if any(
+            [
+                self.is_single(),
+                self.is_parent_is_bundled_has_receipt(),
+                self.is_parent_is_bundled_no_receipt()
+            ]
+        ):
+            return True
+        return False
 
     def can_have_unit(self) -> bool:
         """
@@ -1151,7 +1406,24 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return not self.has_children()
 
     def can_have_activity(self) -> bool:
-        return self.account_model_id is not None
+        if self.is_transfer():
+            return False
+        if all(
+            [
+                self.is_mapped(),
+                any(
+                    [
+                        self.is_single(),
+                        self.is_parent_is_bundled_has_receipt(),
+                        self.is_parent_is_bundled_no_receipt(),
+                        self.is_child_not_bundled_has_receipt(),
+                        self.is_child_not_bundled_no_receipt(),
+                    ]
+                ),
+            ]
+        ):
+            return True
+        return False
 
     def can_migrate(self, as_split: bool = False) -> bool:
         """
@@ -1179,13 +1451,33 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             otherwise False.
         """
         ready_to_import = getattr(self, 'ready_to_import')
+
         if not ready_to_import:
             return False
+
+        if ready_to_import:
+            is_role_valid = self.is_role_mapping_valid(raise_exception=False)
+            if is_role_valid:
+                return True
 
         can_split_into_je = getattr(self, 'can_split_into_je')
         if can_split_into_je and as_split:
             return True
-        return all([self.is_role_mapping_valid(raise_exception=False)])
+
+        return False
+
+    def can_migrate_receipt(self) -> bool:
+        if self.has_receipt():
+            ready_to_import = getattr(self, 'ready_to_import')
+            if ready_to_import:
+                if self.is_transfer():
+                    return True
+                if any([
+                    self.is_single_has_receipt(),
+                    self.is_parent_is_bundled_has_receipt()
+                ]):
+                    return True
+        return False
 
     def can_import(self) -> bool:
         return self.can_migrate()
@@ -1218,9 +1510,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_split():
             if raise_exception:
-                raise ImportJobModelValidationError(
-                    message=_(f'Staged Transaction {self.uuid} already split.')
-                )
+                raise ImportJobModelValidationError(message=_(f'Staged Transaction {self.uuid} already split.'))
             return
 
         if not self.has_children():
@@ -1294,20 +1584,16 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         if self.is_single() and self.is_mapped():
             return {self.account_model.role}
-        if self.has_children():
+        if self.is_children() and not self.is_bundled() and self.is_mapped():
+            return {self.account_model.role}
+        if self.has_children() and self.is_bundled():
             split_txs_qs = self.split_transaction_set.all()
             if all([txs.is_mapped() for txs in split_txs_qs]):
-                return set(
-                    [
-                        txs.account_model.role
-                        for txs in split_txs_qs
-                        if txs.account_model.role != ASSET_CA_CASH
-                    ]
-                )
+                return set([txs.account_model.role for txs in split_txs_qs if txs.account_model.role != ASSET_CA_CASH])
         return set()
 
     def get_prospect_je_activity_try(
-        self, raise_exception: bool = True, force_update: bool = False
+        self, raise_exception: bool = True, force_update: bool = False, commit: bool = True
     ) -> Optional[str]:
         """
         Retrieve or attempt to fetch the journal entry activity for the current prospect object.
@@ -1333,15 +1619,17 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             The journal entry activity if successfully retrieved or updated; otherwise,
             returns the existing activity or None if no activity is present.
         """
-        ready_to_import = getattr(self, 'ready_to_import')
-        if (not self.has_activity() and ready_to_import) or force_update:
+        if (
+            force_update
+            or all([self.is_children() and self.parent.has_activity(), not self.is_bundled(), not self.has_activity()])
+            or all([not self.has_activity(), getattr(self, 'ready_to_import')])
+        ):
             role_set = self.get_import_role_set()
             if role_set is not None:
                 try:
-                    self.activity = JournalEntryModel.get_activity_from_roles(
-                        role_set=role_set
-                    )
-                    self.save(update_fields=['activity'])
+                    self.activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
+                    if commit:
+                        self.save(update_fields=['activity'])
                     return self.activity
                 except ValidationError as e:
                     if raise_exception:
@@ -1362,6 +1650,14 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         Optional[str]
             The activity of the prospect journal entry if available, otherwise `None`.
         """
+        if all(
+            [
+                self.is_parent(),
+                not self.is_bundled(),
+                self.has_children(),
+            ]
+        ):
+            return None
         return self.get_prospect_je_activity_try(raise_exception=False)
 
     def get_prospect_je_activity_display(self) -> Optional[str]:
@@ -1405,9 +1701,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         if not self.has_activity():
             try:
-                activity = self.get_prospect_je_activity_try(
-                    raise_exception=raise_exception
-                )
+                activity = self.get_prospect_je_activity_try(raise_exception=raise_exception)
                 if activity is None:
                     return False
                 self.activity = activity
@@ -1447,9 +1741,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 'Migrate transactions can only be performed on non-receipt transactions. Use migrate_receipt() instead.'
             )
         if not self.can_migrate():
-            raise StagedTransactionModelValidationError(
-                f'Transaction {self.uuid} is not ready to be migrated'
-            )
+            raise StagedTransactionModelValidationError(f'Transaction {self.uuid} is not ready to be migrated')
 
         commit_dict = self.commit_dict(split_txs=split_txs)
         import_job = self.import_job
@@ -1459,11 +1751,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             with transaction.atomic():
                 staged_to_save = list()
                 for je_data in commit_dict:
-                    unit_model = (
-                        self.unit_model
-                        if not split_txs
-                        else commit_dict[0][1]['unit_model']
-                    )
+                    unit_model = self.unit_model if not split_txs else commit_dict[0][1]['unit_model']
                     _, _ = ledger_model.commit_txs(
                         je_timestamp=self.date_posted,
                         je_unit_model=unit_model,
@@ -1486,19 +1774,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 'Migrate receipts can only be performed on receipt transactions. Use migrate_transactions() instead.'
             )
         if not self.can_migrate():
-            raise StagedTransactionModelValidationError(
-                f'Transaction {self.uuid} is not ready to be migratedd'
-            )
+            raise StagedTransactionModelValidationError(f'Transaction {self.uuid} is not ready to be migratedd')
 
         with transaction.atomic():
-            receipt_model: ReceiptModel = self.generate_receipt_model(
-                receipt_date=receipt_date, commit=True
-            )
+            receipt_model: ReceiptModel = self.generate_receipt_model(receipt_date=receipt_date, commit=True)
             receipt_model.migrate_receipt()
 
-    def generate_receipt_model(
-        self, receipt_date: Optional[date] = None, commit: bool = False
-    ) -> ReceiptModel:
+    def generate_receipt_model(self, receipt_date: Optional[date] = None, commit: bool = False) -> ReceiptModel:
         if receipt_date:
             if isinstance(receipt_date, datetime):
                 receipt_date = receipt_date.date()
@@ -1512,15 +1794,21 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 amount=abs(self.amount),
                 unit_model=self.unit_model,
                 receipt_type=self.receipt_type,
-                vendor_model=self.vendor_model if self.is_expense() else None,
+                vendor_model=self.vendor_model if self.is_expense() or self.is_debt_payment() else None,
                 customer_model=self.customer_model if self.is_sales() else None,
                 charge_account=self.get_coa_account_model(),
-                receipt_account=self.account_model,
+                receipt_account=self.account_model if self.is_mapped() else None,
                 staged_transaction_model=self,
                 commit=True,
             )
 
         return receipt_model
+
+    def can_undo_import(self):
+        if all([self.is_children(), self.is_bundled()]):
+            return False
+
+        return True
 
     # UNDO
     def undo_import(self, raise_exception: bool = True):
@@ -1536,6 +1824,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             If there is no receipt model or transaction model to undo.
 
         """
+        if not self.can_undo_import():
+            if raise_exception:
+                raise StagedTransactionModelValidationError(
+                    message='Cannot undo children bundled import. Must undo the parent import.'
+                )
+
         with transaction.atomic():
             # Receipt import case...
             try:
@@ -1555,15 +1849,18 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             if self.transaction_model_id:
                 tx_model = self.transaction_model
                 journal_entry_model = tx_model.journal_entry
-                journal_entry_model.delete()
+
+                if journal_entry_model.can_unlock() and journal_entry_model.can_unpost():
+                    journal_entry_model.unlock(raise_exception=False)
+                    journal_entry_model.unpost(raise_exception=False)
+                    journal_entry_model.delete()
+
                 self.transaction_model = None
                 self.save(update_fields=['transaction_model', 'updated'])
                 return
 
         if raise_exception:
-            raise StagedTransactionModelValidationError(
-                message=_('Nothing to undo for this staged transaction.')
-            )
+            raise StagedTransactionModelValidationError(message=_('Nothing to undo for this staged transaction.'))
 
     def clean(self, verify: bool = False):
         if self.has_children():
@@ -1579,14 +1876,26 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if not self.can_have_activity():
             self.activity = None
 
-        if self.is_children():
+        if self.is_sales():
+            self.vendor_model = None
+
+        if self.is_expense():
+            self.customer_model = None
+
+        if self.is_children() and self.is_bundled():
             self.vendor_model = None
             self.customer_model = None
 
-        if all([self.has_children(), self.has_receipt(), not self.bundle_split]):
-            raise StagedTransactionModelValidationError(
-                'Receipt transactions cannot be split into multiple receipts.'
-            )
+        if self.is_children():
+            self.bundle_split = self.parent.bundle_split
+
+        if all([self.is_parent(), not self.is_bundled()]):
+            self.vendor_model = None
+            self.customer_model = None
+
+        if self.is_transfer():
+            self.vendor_model = None
+            self.customer_model = None
 
         if verify:
             self.is_role_mapping_valid(raise_exception=True)
@@ -1632,14 +1941,9 @@ def importjobmodel_presave(instance: ImportJobModel, **kwargs):
         entity ID of the Ledger Model.
     """
     if instance.is_configured():
-        if (
-            instance.bank_account_model.entity_model_id
-            != instance.ledger_model.entity_id
-        ):
+        if instance.bank_account_model.entity_model_id != instance.ledger_model.entity_id:
             raise ImportJobModelValidationError(
-                message=_(
-                    'Invalid Bank Account for LedgerModel. No matching Entity Model found.'
-                )
+                message=_('Invalid Bank Account for LedgerModel. No matching Entity Model found.')
             )
 
 
