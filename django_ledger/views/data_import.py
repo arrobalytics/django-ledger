@@ -55,9 +55,7 @@ class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
     form_class = ImportJobModelCreateForm
 
     def get_form(self, form_class=None, **kwargs):
-        return self.form_class(
-            entity_model=self.get_authorized_entity_instance(), **self.get_form_kwargs()
-        )
+        return self.form_class(entity_model=self.get_authorized_entity_instance(), **self.get_form_kwargs())
 
     def get_success_url(self):
         return reverse(
@@ -74,9 +72,7 @@ class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
         txs_to_stage = ofx_manager.get_account_txs()
         staged_txs_model_list = [
             StagedTransactionModel(
-                date_posted=make_aware(
-                    value=datetime.combine(date=tx.dtposted.date(), time=time.min)
-                ),
+                date_posted=make_aware(value=datetime.combine(date=tx.dtposted.date(), time=time.min)),
                 fit_id=tx.fitid,
                 amount=tx.trnamt,
                 import_job=import_job,
@@ -166,21 +162,19 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
             'import_job_model': self.get_object(),
         }
 
-    def get_context_data(
-        self, txs_formset: Optional[StagedTransactionModelFormSet] = None, **kwargs
-    ):
+    def get_context_data(self, txs_formset: Optional[StagedTransactionModelFormSet] = None, **kwargs):
         context = super().get_context_data(**kwargs)
-        job_model: ImportJobModel = self.object
+        import_job_model: ImportJobModel = self.object
 
-        context['page_title'] = job_model.description
+        context['page_title'] = import_job_model.description
         context['header_title'] = self.PAGE_TITLE
-        context['header_subtitle'] = job_model.description
+        context['header_subtitle'] = import_job_model.description
         context['header_subtitle_icon'] = 'tabler:table-import'
 
         staged_txs_formset = (
             StagedTransactionModelFormSet(
                 entity_model=self.get_authorized_entity_instance(),
-                import_job_model=job_model,
+                import_job_model=import_job_model,
             )
             if not txs_formset
             else txs_formset
@@ -195,19 +189,27 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
         import_job_model: ImportJobModel = self.object
 
         txs_formset = StagedTransactionModelFormSet(
-            entity_model=self.get_authorized_entity_instance(),
+            entity_model=self.AUTHORIZED_ENTITY_MODEL,
             import_job_model=import_job_model,
             data=request.POST,
         )
 
         if txs_formset.has_changed():
+            for tx_form in txs_formset:
+                if any(
+                    [
+                        'account_model' in tx_form.changed_data,
+                        'tx_split' in tx_form.changed_data,
+                    ]
+                ):
+                    staged_transaction_model: StagedTransactionModel = tx_form.instance
+                    staged_transaction_model.activity = None
+
             if txs_formset.is_valid():
                 txs_formset.save()
                 for tx_form in txs_formset:
                     if tx_form.has_changed():
-                        staged_transaction_model: StagedTransactionModel = (
-                            tx_form.instance
-                        )
+                        staged_transaction_model: StagedTransactionModel = tx_form.instance
                         is_split = tx_form.cleaned_data['tx_split'] is True
                         if is_split:
                             staged_transaction_model.add_split()
@@ -221,9 +223,7 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
                                     receipt_date=staged_transaction_model.date_posted
                                 )
                             else:
-                                staged_transaction_model.migrate_transactions(
-                                    split_txs=not is_bundled
-                                )
+                                staged_transaction_model.migrate_transactions(split_txs=not is_bundled)
             else:
                 context = self.get_context_data(txs_formset=txs_formset, **kwargs)
                 return self.render_to_response(context)
@@ -236,7 +236,7 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
         )
 
         context = self.get_context_data(**kwargs)
-        return self.render_to_response(context)
+        return self.render_to_response(context=context)
 
 
 class StagedTransactionUndoView(ImportJobModelViewBaseView, View):
@@ -267,4 +267,20 @@ class StagedTransactionUndoView(ImportJobModelViewBaseView, View):
                 'django_ledger:data-import-job-txs',
                 kwargs={'entity_slug': entity_slug, 'job_pk': job_pk},
             )
+        )
+
+
+class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
+    pk_url_kwarg = 'job_pk'
+    http_method_names = ['post']
+
+    def post(self, request, **kwargs):
+        import_job_model: ImportJobModel = self.get_object()
+        imported_staged_txs = import_job_model.stagedtransactionmodel_set.is_imported()
+        for staged_tx in imported_staged_txs:
+            staged_tx.undo_import(raise_exception=False)
+
+        return redirect(
+            to=import_job_model.get_data_import_url(),
+            permanent=False,
         )
