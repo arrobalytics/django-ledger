@@ -78,7 +78,7 @@ publish-url = "https://test.pypi.org/legacy/"
 explicit = true
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 
 [tool.ruff.format]
 quote-style = "single"
