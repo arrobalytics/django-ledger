@@ -109,6 +109,7 @@ Default Chart of Accounts Table
   4050  in_other                    credit          Other Income                                                   root_income
   4020  in_passive                  credit          Investing Income                                               root_income
   2010  lia_cl_acc_payable          credit          Accounts Payable                                               root_liabilities
+  2015  lia_cl_credit_line          credit          Accounts Payable                                               root_liabilities
   2060  lia_cl_def_rev              credit          Deferred Revenues                                              root_liabilities
   2030  lia_cl_int_payable          credit          Interest Payable                                               root_liabilities
   2050  lia_cl_ltd_mat              credit          Current Maturities LT Debt                                     root_liabilities

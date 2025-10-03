@@ -54,7 +54,7 @@ class CustomerModelQueryset(QuerySet):
     reports.
     """
 
-    def for_user(self, user_model):
+    def for_user(self, user_model) -> 'CustomerModelQueryset':
         """
         Fetches a QuerySet of BillModels that the UserModel as access to.
         May include BillModels from multiple Entities.
@@ -70,12 +70,9 @@ class CustomerModelQueryset(QuerySet):
         """
         if user_model.is_superuser:
             return self
-        return self.filter(
-            Q(entity_model__admin=user_model)
-            | Q(entity_model__managers__in=[user_model])
-        )
+        return self.filter(Q(entity_model__admin=user_model) | Q(entity_model__managers__in=[user_model]))
 
-    def active(self) -> QuerySet:
+    def active(self) -> 'CustomerModelQueryset':
         """
         Active customers can be assigned to new Invoices and show on dropdown menus and views.
 
@@ -86,7 +83,7 @@ class CustomerModelQueryset(QuerySet):
         """
         return self.filter(active=True)
 
-    def inactive(self) -> QuerySet:
+    def inactive(self) -> 'CustomerModelQueryset':
         """
         Active customers can be assigned to new Invoices and show on dropdown menus and views.
         Marking CustomerModels as inactive can help reduce Database load to populate select inputs and also inactivate
@@ -100,7 +97,7 @@ class CustomerModelQueryset(QuerySet):
         """
         return self.filter(active=False)
 
-    def hidden(self) -> QuerySet:
+    def hidden(self) -> 'CustomerModelQueryset':
         """
         Hidden customers do not show on dropdown menus, but may be used via APIs or any other method that does not
         involve the UI.
@@ -112,7 +109,7 @@ class CustomerModelQueryset(QuerySet):
         """
         return self.filter(hidden=True)
 
-    def visible(self) -> QuerySet:
+    def visible(self) -> 'CustomerModelQueryset':
         """
         Visible customers show on dropdown menus and views. Visible customers are active and not hidden.
 
@@ -130,10 +127,11 @@ class CustomerModelManager(Manager):
     CustomerModel.
     """
 
+    def get_queryset(self) -> CustomerModelQueryset:
+        return CustomerModelQueryset(self.model, using=self._db)
+
     @deprecated_entity_slug_behavior
-    def for_entity(
-        self, entity_model: 'EntityModel | str | UUID' = None, **kwargs
-    ) -> CustomerModelQueryset:
+    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> CustomerModelQueryset:  # noqa: F821
         """
         Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -161,16 +159,15 @@ class CustomerModelManager(Manager):
                 qs = qs.for_user(kwargs['user_model'])
 
         if isinstance(entity_model, EntityModel):
-            qs = qs.filter(entity_model=entity_model)
+            return qs.filter(entity_model=entity_model)
         elif isinstance(entity_model, str):
-            qs = qs.filter(entity_model__slug__exact=entity_model)
+            return qs.filter(entity_model__slug__exact=entity_model)
         elif isinstance(entity_model, UUID):
-            qs = qs.filter(entity_model_id=entity_model)
+            return qs.filter(entity_model_id=entity_model)
         else:
             raise CustomerModelValidationError(
                 message='Must pass EntityModel, slug or EntityModel UUID',
             )
-        return qs
 
 
 class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
@@ -232,9 +229,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
-    picture = models.ImageField(
-        upload_to=customer_picture_upload_to, null=True, blank=True
-    )
+    picture = models.ImageField(upload_to=customer_picture_upload_to, null=True, blank=True)
 
     additional_info = models.JSONField(null=True, blank=True, default=dict)
 
@@ -292,9 +287,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
                 'key__exact': EntityStateModel.KEY_CUSTOMER,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(
-                **LOOKUP
-            ).select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
@@ -344,11 +337,9 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
         return self.customer_number
 
-    def validate_for_entity(self, entity_model: 'EntityModel'):
+    def validate_for_entity(self, entity_model: 'EntityModel'):  # noqa: F821
         if entity_model.uuid != self.entity_model_id:
-            raise CustomerModelValidationError(
-                'EntityModel does not belong to this Vendor'
-            )
+            raise CustomerModelValidationError('EntityModel does not belong to this Vendor')
 
     def clean(self):
         """
