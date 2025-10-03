@@ -53,6 +53,7 @@ ASSET_ADJUSTMENTS = 'asset_adjustment'
 
 # Current Liabilities
 LIABILITY_CL_ACC_PAYABLE = 'lia_cl_acc_payable'
+LIABILITY_CL_CREDIT_LINE = 'lia_cl_credit_line'
 LIABILITY_CL_WAGES_PAYABLE = 'lia_cl_wages_payable'
 LIABILITY_CL_TAXES_PAYABLE = 'lia_cl_taxes_payable'
 LIABILITY_CL_INTEREST_PAYABLE = 'lia_cl_int_payable'
@@ -100,59 +101,16 @@ ROOT_INCOME = 'root_income'
 ROOT_COGS = 'root_cogs'
 ROOT_EXPENSES = 'root_expenses'
 
-ROOT_GROUP = [
-    ROOT_COA,
-    ROOT_ASSETS,
-    ROOT_LIABILITIES,
-    ROOT_CAPITAL,
-    ROOT_INCOME,
-    ROOT_COGS,
-    ROOT_EXPENSES
-]
-ROOT_GROUP_LEVEL_2 = [
-    ROOT_ASSETS,
-    ROOT_LIABILITIES,
-    ROOT_CAPITAL,
-    ROOT_INCOME,
-    ROOT_COGS,
-    ROOT_EXPENSES
-]
+ROOT_GROUP = [ROOT_COA, ROOT_ASSETS, ROOT_LIABILITIES, ROOT_CAPITAL, ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES]
+ROOT_GROUP_LEVEL_2 = [ROOT_ASSETS, ROOT_LIABILITIES, ROOT_CAPITAL, ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES]
 ROOT_GROUP_META = {
-    ROOT_COA: {
-        'code': '00000000',
-        'title': 'CoA Root Node',
-        'balance_type': DEBIT
-    },
-    ROOT_ASSETS: {
-        'code': '01000000',
-        'title': 'Asset Accounts Root Node',
-        'balance_type': DEBIT
-    },
-    ROOT_LIABILITIES: {
-        'code': '02000000',
-        'title': 'Liability Accounts Root Node',
-        'balance_type': CREDIT
-    },
-    ROOT_CAPITAL: {
-        'code': '03000000',
-        'title': 'Capital Accounts Root Node',
-        'balance_type': CREDIT
-    },
-    ROOT_INCOME: {
-        'code': '04000000',
-        'title': 'Income Accounts Root Node',
-        'balance_type': CREDIT
-    },
-    ROOT_COGS: {
-        'code': '05000000',
-        'title': 'COGS Accounts Root Node',
-        'balance_type': DEBIT
-    },
-    ROOT_EXPENSES: {
-        'code': '06000000',
-        'title': 'Expense Accounts Root Node',
-        'balance_type': DEBIT
-    },
+    ROOT_COA: {'code': '00000000', 'title': 'CoA Root Node', 'balance_type': DEBIT},
+    ROOT_ASSETS: {'code': '01000000', 'title': 'Asset Accounts Root Node', 'balance_type': DEBIT},
+    ROOT_LIABILITIES: {'code': '02000000', 'title': 'Liability Accounts Root Node', 'balance_type': CREDIT},
+    ROOT_CAPITAL: {'code': '03000000', 'title': 'Capital Accounts Root Node', 'balance_type': CREDIT},
+    ROOT_INCOME: {'code': '04000000', 'title': 'Income Accounts Root Node', 'balance_type': CREDIT},
+    ROOT_COGS: {'code': '05000000', 'title': 'COGS Accounts Root Node', 'balance_type': DEBIT},
+    ROOT_EXPENSES: {'code': '06000000', 'title': 'Expense Accounts Root Node', 'balance_type': DEBIT},
 }
 # ------> ROLE GROUPS <-------#
 
@@ -160,10 +118,7 @@ GROUP_ASSETS = list()
 GROUP_ASSETS.append(ROOT_ASSETS)
 
 # ASSET GROUPS...
-GROUP_QUICK_ASSETS = [
-    ASSET_CA_CASH,
-    ASSET_CA_MKT_SECURITIES
-]
+GROUP_QUICK_ASSETS = [ASSET_CA_CASH, ASSET_CA_MKT_SECURITIES]
 GROUP_ASSETS += GROUP_QUICK_ASSETS
 
 GROUP_CURRENT_ASSETS = [
@@ -173,7 +128,7 @@ GROUP_CURRENT_ASSETS = [
     ASSET_CA_RECEIVABLES,
     ASSET_CA_PREPAID,
     ASSET_CA_UNCOLLECTIBLES,
-    ASSET_CA_OTHER
+    ASSET_CA_OTHER,
 ]
 GROUP_ASSETS += GROUP_CURRENT_ASSETS
 
@@ -189,7 +144,7 @@ GROUP_NON_CURRENT_ASSETS = [
     ASSET_PPE_PLANT_ACCUM_DEPRECIATION,
     ASSET_INTANGIBLE_ASSETS,
     ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION,
-    ASSET_ADJUSTMENTS
+    ASSET_ADJUSTMENTS,
 ]
 
 GROUP_ASSETS += GROUP_NON_CURRENT_ASSETS
@@ -201,13 +156,14 @@ GROUP_LIABILITIES.append(ROOT_LIABILITIES)
 
 GROUP_CURRENT_LIABILITIES = [
     LIABILITY_CL_ACC_PAYABLE,
+    LIABILITY_CL_CREDIT_LINE,
     LIABILITY_CL_DEFERRED_REVENUE,
     LIABILITY_CL_INTEREST_PAYABLE,
     LIABILITY_CL_LTD_MATURITIES,
     LIABILITY_CL_OTHER,
     LIABILITY_CL_ST_NOTES_PAYABLE,
     LIABILITY_CL_WAGES_PAYABLE,
-    LIABILITY_CL_TAXES_PAYABLE
+    LIABILITY_CL_TAXES_PAYABLE,
 ]
 GROUP_LIABILITIES += GROUP_CURRENT_LIABILITIES
 
@@ -228,7 +184,7 @@ GROUP_CAPITAL = [
     EQUITY_COMMON_STOCK,
     EQUITY_PREFERRED_STOCK,
     EQUITY_DIVIDENDS,
-    EQUITY_ADJUSTMENT
+    EQUITY_ADJUSTMENT,
 ]
 
 GROUP_INCOME = [
@@ -237,13 +193,22 @@ GROUP_INCOME = [
     INCOME_PASSIVE,
     INCOME_INTEREST,
     INCOME_CAPITAL_GAIN_LOSS,
-    INCOME_OTHER
+    INCOME_OTHER,
 ]
 
-GROUP_COGS = [
-    ROOT_COGS,
-    COGS
+GROUP_TRANSFERS = [
+    ASSET_CA_CASH,
 ]
+
+GROUP_DEBT_PAYMENT = [
+    LIABILITY_CL_CREDIT_LINE,
+    LIABILITY_LTL_NOTES_PAYABLE,
+    LIABILITY_LTL_MORTGAGE_PAYABLE,
+    EXPENSE_INTEREST_ST,
+    EXPENSE_INTEREST_LT
+]
+
+GROUP_COGS = [ROOT_COGS, COGS]
 
 GROUP_EXPENSES = [
     ROOT_EXPENSES,
@@ -254,38 +219,22 @@ GROUP_EXPENSES = [
     EXPENSE_CAPITAL,
     EXPENSE_DEPRECIATION,
     EXPENSE_AMORTIZATION,
-    EXPENSE_OTHER
+    EXPENSE_OTHER,
 ]
 
-GROUP_NET_PROFIT = [
-    INCOME_OPERATIONAL,
-    INCOME_PASSIVE,
-    INCOME_INTEREST,
-    INCOME_CAPITAL_GAIN_LOSS,
-    INCOME_OTHER,
-    COGS
-]
+GROUP_NET_PROFIT = [INCOME_OPERATIONAL, INCOME_PASSIVE, INCOME_INTEREST, INCOME_CAPITAL_GAIN_LOSS, INCOME_OTHER, COGS]
 
-GROUP_GROSS_PROFIT = [
-    INCOME_OPERATIONAL,
-    COGS
-]
+GROUP_GROSS_PROFIT = [INCOME_OPERATIONAL, COGS]
 
-GROUP_NET_SALES = [
-    INCOME_OPERATIONAL,
-    INCOME_PASSIVE
-]
+GROUP_NET_SALES = [INCOME_OPERATIONAL, INCOME_PASSIVE]
 
 GROUP_PPE_ACCUM_DEPRECIATION = [
     ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION,
     ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION,
-    ASSET_PPE_PLANT_ACCUM_DEPRECIATION
+    ASSET_PPE_PLANT_ACCUM_DEPRECIATION,
 ]
 
-GROUP_EXPENSE_DEP_AND_AMT = [
-    EXPENSE_DEPRECIATION,
-    EXPENSE_AMORTIZATION
-]
+GROUP_EXPENSE_DEP_AND_AMT = [EXPENSE_DEPRECIATION, EXPENSE_AMORTIZATION]
 
 GROUP_EARNINGS = GROUP_INCOME + GROUP_COGS + GROUP_EXPENSES
 GROUP_EQUITY = GROUP_CAPITAL + GROUP_EARNINGS
@@ -302,12 +251,7 @@ GROUP_IC_OPERATING_COGS = [COGS]
 GROUP_IC_OPERATING_EXPENSES = [EXPENSE_OPERATIONAL]
 
 # ---> OTHER REV/EXP (unusual OR infrequent) <---- #
-GROUP_IC_OTHER_REVENUES = [
-    INCOME_PASSIVE,
-    INCOME_INTEREST,
-    INCOME_CAPITAL_GAIN_LOSS,
-    INCOME_OTHER
-]
+GROUP_IC_OTHER_REVENUES = [INCOME_PASSIVE, INCOME_INTEREST, INCOME_CAPITAL_GAIN_LOSS, INCOME_OTHER]
 GROUP_IC_OTHER_EXPENSES = [
     EXPENSE_INTEREST_ST,
     EXPENSE_INTEREST_LT,
@@ -315,7 +259,7 @@ GROUP_IC_OTHER_EXPENSES = [
     EXPENSE_CAPITAL,
     EXPENSE_DEPRECIATION,
     EXPENSE_AMORTIZATION,
-    EXPENSE_OTHER
+    EXPENSE_OTHER,
 ]
 
 # ############# CASH FLOW STATEMENT GROUPS ############
@@ -323,29 +267,14 @@ GROUP_CFS_NET_INCOME = GROUP_EARNINGS
 
 # ---> OPERATING ACTIVITIES (INDIRECT) <---- #
 # Non-Cash/Non-Current...
-GROUP_CFS_OP_DEPRECIATION_AMORTIZATION = [
-    EXPENSE_DEPRECIATION,
-    EXPENSE_AMORTIZATION
-]
-GROUP_CFS_OP_INVESTMENT_GAINS = [
-    INCOME_CAPITAL_GAIN_LOSS
-]
+GROUP_CFS_OP_DEPRECIATION_AMORTIZATION = [EXPENSE_DEPRECIATION, EXPENSE_AMORTIZATION]
+GROUP_CFS_OP_INVESTMENT_GAINS = [INCOME_CAPITAL_GAIN_LOSS]
 
 # Non-Cash/Current...
-GROUP_CFS_OP_ACCOUNTS_RECEIVABLE = [
-    ASSET_CA_RECEIVABLES
-]
-GROUP_CFS_OP_INVENTORY = [
-    ASSET_CA_INVENTORY
-]
-GROUP_CFS_OP_ACCOUNTS_PAYABLE = [
-    LIABILITY_CL_ACC_PAYABLE
-]
-GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT = [
-    ASSET_CA_PREPAID,
-    ASSET_CA_UNCOLLECTIBLES,
-    ASSET_CA_OTHER
-]
+GROUP_CFS_OP_ACCOUNTS_RECEIVABLE = [ASSET_CA_RECEIVABLES]
+GROUP_CFS_OP_INVENTORY = [ASSET_CA_INVENTORY]
+GROUP_CFS_OP_ACCOUNTS_PAYABLE = [LIABILITY_CL_ACC_PAYABLE, LIABILITY_CL_CREDIT_LINE]
+GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT = [ASSET_CA_PREPAID, ASSET_CA_UNCOLLECTIBLES, ASSET_CA_OTHER]
 GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT = [
     LIABILITY_CL_WAGES_PAYABLE,
     LIABILITY_CL_INTEREST_PAYABLE,
@@ -355,16 +284,20 @@ GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT = [
     LIABILITY_CL_OTHER,
 ]
 
-GROUP_CFS_OPERATING = list(chain.from_iterable([
-    GROUP_CFS_NET_INCOME,
-    GROUP_CFS_OP_DEPRECIATION_AMORTIZATION,
-    GROUP_CFS_OP_INVESTMENT_GAINS,
-    GROUP_CFS_OP_ACCOUNTS_RECEIVABLE,
-    GROUP_CFS_OP_INVENTORY,
-    GROUP_CFS_OP_ACCOUNTS_PAYABLE,
-    GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT,
-    GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT
-]))
+GROUP_CFS_OPERATING = list(
+    chain.from_iterable(
+        [
+            GROUP_CFS_NET_INCOME,
+            GROUP_CFS_OP_DEPRECIATION_AMORTIZATION,
+            GROUP_CFS_OP_INVESTMENT_GAINS,
+            GROUP_CFS_OP_ACCOUNTS_RECEIVABLE,
+            GROUP_CFS_OP_INVENTORY,
+            GROUP_CFS_OP_ACCOUNTS_PAYABLE,
+            GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT,
+            GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT,
+        ]
+    )
+)
 
 # ---> FINANCING ACTIVITIES <---- #
 GROUP_CFS_FIN_ISSUING_EQUITY = [EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK]
@@ -373,13 +306,14 @@ GROUP_CFS_FIN_DIVIDENDS = [EQUITY_DIVIDENDS]
 GROUP_CFS_FIN_ST_DEBT_PAYMENTS = [
     LIABILITY_CL_ST_NOTES_PAYABLE,
     LIABILITY_CL_ACC_PAYABLE,
-    EXPENSE_INTEREST_ST
+    LIABILITY_CL_CREDIT_LINE,
+    EXPENSE_INTEREST_ST,
 ]
 GROUP_CFS_FIN_LT_DEBT_PAYMENTS = [
     LIABILITY_LTL_NOTES_PAYABLE,
     LIABILITY_LTL_BONDS_PAYABLE,
     LIABILITY_LTL_MORTGAGE_PAYABLE,
-    EXPENSE_INTEREST_LT
+    EXPENSE_INTEREST_LT,
 ]
 
 GROUP_CFS_FINANCING = GROUP_CFS_FIN_ISSUING_EQUITY + GROUP_CFS_FIN_DIVIDENDS
@@ -395,7 +329,7 @@ GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE = [
     ASSET_PPE_PLANT_ACCUM_DEPRECIATION,
     ASSET_PPE_EQUIPMENT,
     ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION,
-    INCOME_CAPITAL_GAIN_LOSS
+    INCOME_CAPITAL_GAIN_LOSS,
 ]
 
 GROUP_CFS_INV_LTD_OF_PPE = [
@@ -413,13 +347,10 @@ GROUP_CFS_INV_PURCHASE_OF_SECURITIES = [
     ASSET_LTI_SECURITIES,
     INCOME_INTEREST,
     INCOME_PASSIVE,
-    INCOME_CAPITAL_GAIN_LOSS
+    INCOME_CAPITAL_GAIN_LOSS,
 ]
 
-GROUP_CFS_INV_LTD_OF_SECURITIES = [
-    LIABILITY_LTL_NOTES_PAYABLE,
-    LIABILITY_LTL_BONDS_PAYABLE
-]
+GROUP_CFS_INV_LTD_OF_SECURITIES = [LIABILITY_LTL_NOTES_PAYABLE, LIABILITY_LTL_BONDS_PAYABLE]
 GROUP_CFS_INVESTING_SECURITIES = GROUP_CFS_INV_PURCHASE_OF_SECURITIES + GROUP_CFS_INV_LTD_OF_SECURITIES
 
 GROUP_CFS_INVESTING = GROUP_CFS_INVESTING_PPE + GROUP_CFS_INVESTING_SECURITIES
@@ -432,170 +363,181 @@ BS_LIABILITIES_ROLE = 'liabilities'
 BS_EQUITY_ROLE = 'equity'
 
 ACCOUNT_ROLE_CHOICES = [
-    (BS_ASSET_ROLE.capitalize(), (
-        # CURRENT ASSETS ----
-        (ASSET_CA_CASH, _('Current Asset')),
-        (ASSET_CA_MKT_SECURITIES, _('Marketable Securities')),
-        (ASSET_CA_RECEIVABLES, _('Receivables')),
-        (ASSET_CA_INVENTORY, _('Inventory')),
-        (ASSET_CA_UNCOLLECTIBLES, _('Uncollectibles')),
-        (ASSET_CA_PREPAID, _('Prepaid')),
-        (ASSET_CA_OTHER, _('Other Liquid Assets')),
-
-        # LONG TERM INVESTMENTS ---
-        (ASSET_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
-        (ASSET_LTI_LAND, _('Land')),
-        (ASSET_LTI_SECURITIES, _('Securities')),
-
-        # PPE ...
-        (ASSET_PPE_BUILDINGS, _('Buildings')),
-        (ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION, _('Buildings - Accum. Depreciation')),
-        (ASSET_PPE_PLANT, _('Plant')),
-        (ASSET_PPE_PLANT_ACCUM_DEPRECIATION, _('Plant - Accum. Depreciation')),
-        (ASSET_PPE_EQUIPMENT, _('Equipment')),
-        (ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION, _('Equipment - Accum. Depreciation')),
-
-        # Other Assets ...
-        (ASSET_INTANGIBLE_ASSETS, _('Intangible Assets')),
-        (ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION, _('Intangible Assets - Accum. Amortization')),
-        (ASSET_ADJUSTMENTS, _('Other Assets')),
-    )),
-    (BS_LIABILITIES_ROLE.capitalize(), (
-
-        # CURRENT LIABILITIES ---
-        (LIABILITY_CL_ACC_PAYABLE, _('Accounts Payable')),
-        (LIABILITY_CL_WAGES_PAYABLE, _('Wages Payable')),
-        (LIABILITY_CL_INTEREST_PAYABLE, _('Interest Payable')),
-        (LIABILITY_CL_TAXES_PAYABLE, _('Taxes Payable')),
-        (LIABILITY_CL_ST_NOTES_PAYABLE, _('Short Term Notes Payable')),
-        (LIABILITY_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
-        (LIABILITY_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
-        (LIABILITY_CL_OTHER, _('Other Liabilities')),
-
-        # LONG TERM LIABILITIES ----
-        (LIABILITY_LTL_NOTES_PAYABLE, _('Long Term Notes Payable')),
-        (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
-        (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
-    )),
-    (BS_EQUITY_ROLE.capitalize(), (
-
-        # EQUITY ---
-        (EQUITY_CAPITAL, _('Capital')),
-        (EQUITY_COMMON_STOCK, _('Common Stock')),
-        (EQUITY_PREFERRED_STOCK, _('Preferred Stock')),
-        (EQUITY_ADJUSTMENT, _('Other Equity Adjustments')),
-        (EQUITY_DIVIDENDS, _('Dividends & Distributions to Shareholders')),
-
-        # INCOME ---
-        (INCOME_OPERATIONAL, _('Operational Income')),
-        (INCOME_PASSIVE, _('Investing/Passive Income')),
-        (INCOME_INTEREST, _('Interest Income')),
-        (INCOME_CAPITAL_GAIN_LOSS, _('Capital Gain/Loss Income')),
-        (INCOME_OTHER, _('Other Income')),
-
-        # COGS ----
-        (COGS, _('Cost of Goods Sold')),
-
-        # EXPENSES ----
-        (EXPENSE_OPERATIONAL, _('Regular Expense')),
-        (EXPENSE_INTEREST_ST, _('Interest Expense - Short Term Debt')),
-        (EXPENSE_INTEREST_LT, _('Interest Expense - Long Term Debt')),
-        (EXPENSE_TAXES, _('Tax Expense')),
-        (EXPENSE_CAPITAL, _('Capital Expense')),
-        (EXPENSE_DEPRECIATION, _('Depreciation Expense')),
-        (EXPENSE_AMORTIZATION, _('Amortization Expense')),
-        (EXPENSE_OTHER, _('Other Expense')),
-    )),
-    ('Root', (
-        (ROOT_COA, 'CoA Root Account'),
-        (ROOT_ASSETS, 'Assets Root Account'),
-        (ROOT_LIABILITIES, 'Liabilities Root Account'),
-        (ROOT_CAPITAL, 'Capital Root Account'),
-        (ROOT_INCOME, 'Income Root Account'),
-        (ROOT_COGS, 'COGS Root Account'),
-        (ROOT_EXPENSES, 'Expenses Root Account'),
-    ))
+    (
+        BS_ASSET_ROLE.capitalize(),
+        (
+            # CURRENT ASSETS ----
+            (ASSET_CA_CASH, _('Current Asset')),
+            (ASSET_CA_MKT_SECURITIES, _('Marketable Securities')),
+            (ASSET_CA_RECEIVABLES, _('Receivables')),
+            (ASSET_CA_INVENTORY, _('Inventory')),
+            (ASSET_CA_UNCOLLECTIBLES, _('Uncollectibles')),
+            (ASSET_CA_PREPAID, _('Prepaid')),
+            (ASSET_CA_OTHER, _('Other Liquid Assets')),
+            # LONG TERM INVESTMENTS ---
+            (ASSET_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
+            (ASSET_LTI_LAND, _('Land')),
+            (ASSET_LTI_SECURITIES, _('Securities')),
+            # PPE ...
+            (ASSET_PPE_BUILDINGS, _('Buildings')),
+            (ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION, _('Buildings - Accum. Depreciation')),
+            (ASSET_PPE_PLANT, _('Plant')),
+            (ASSET_PPE_PLANT_ACCUM_DEPRECIATION, _('Plant - Accum. Depreciation')),
+            (ASSET_PPE_EQUIPMENT, _('Equipment')),
+            (ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION, _('Equipment - Accum. Depreciation')),
+            # Other Assets ...
+            (ASSET_INTANGIBLE_ASSETS, _('Intangible Assets')),
+            (ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION, _('Intangible Assets - Accum. Amortization')),
+            (ASSET_ADJUSTMENTS, _('Other Assets')),
+        ),
+    ),
+    (
+        BS_LIABILITIES_ROLE.capitalize(),
+        (
+            # CURRENT LIABILITIES ---
+            (LIABILITY_CL_ACC_PAYABLE, _('Accounts Payable')),
+            (LIABILITY_CL_CREDIT_LINE, _('Credit Line')),
+            (LIABILITY_CL_WAGES_PAYABLE, _('Wages Payable')),
+            (LIABILITY_CL_INTEREST_PAYABLE, _('Interest Payable')),
+            (LIABILITY_CL_TAXES_PAYABLE, _('Taxes Payable')),
+            (LIABILITY_CL_ST_NOTES_PAYABLE, _('Short Term Notes Payable')),
+            (LIABILITY_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
+            (LIABILITY_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
+            (LIABILITY_CL_OTHER, _('Other Liabilities')),
+            # LONG TERM LIABILITIES ----
+            (LIABILITY_LTL_NOTES_PAYABLE, _('Long Term Notes Payable')),
+            (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
+            (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
+        ),
+    ),
+    (
+        BS_EQUITY_ROLE.capitalize(),
+        (
+            # EQUITY ---
+            (EQUITY_CAPITAL, _('Capital')),
+            (EQUITY_COMMON_STOCK, _('Common Stock')),
+            (EQUITY_PREFERRED_STOCK, _('Preferred Stock')),
+            (EQUITY_ADJUSTMENT, _('Other Equity Adjustments')),
+            (EQUITY_DIVIDENDS, _('Dividends & Distributions to Shareholders')),
+            # INCOME ---
+            (INCOME_OPERATIONAL, _('Operational Income')),
+            (INCOME_PASSIVE, _('Investing/Passive Income')),
+            (INCOME_INTEREST, _('Interest Income')),
+            (INCOME_CAPITAL_GAIN_LOSS, _('Capital Gain/Loss Income')),
+            (INCOME_OTHER, _('Other Income')),
+            # COGS ----
+            (COGS, _('Cost of Goods Sold')),
+            # EXPENSES ----
+            (EXPENSE_OPERATIONAL, _('Regular Expense')),
+            (EXPENSE_INTEREST_ST, _('Interest Expense - Short Term Debt')),
+            (EXPENSE_INTEREST_LT, _('Interest Expense - Long Term Debt')),
+            (EXPENSE_TAXES, _('Tax Expense')),
+            (EXPENSE_CAPITAL, _('Capital Expense')),
+            (EXPENSE_DEPRECIATION, _('Depreciation Expense')),
+            (EXPENSE_AMORTIZATION, _('Amortization Expense')),
+            (EXPENSE_OTHER, _('Other Expense')),
+        ),
+    ),
+    (
+        'Root',
+        (
+            (ROOT_COA, 'CoA Root Account'),
+            (ROOT_ASSETS, 'Assets Root Account'),
+            (ROOT_LIABILITIES, 'Liabilities Root Account'),
+            (ROOT_CAPITAL, 'Capital Root Account'),
+            (ROOT_INCOME, 'Income Root Account'),
+            (ROOT_COGS, 'COGS Root Account'),
+            (ROOT_EXPENSES, 'Expenses Root Account'),
+        ),
+    ),
 ]
 
 ACCOUNT_ROLE_CHOICES_FOR_FORMS = [
-    ('Asset', (
-        # CURRENT ASSETS ----
-        (ASSET_CA_CASH, _('Current Asset')),
-        (ASSET_CA_MKT_SECURITIES, _('Marketable Securities')),
-        (ASSET_CA_RECEIVABLES, _('Receivables')),
-        (ASSET_CA_INVENTORY, _('Inventory')),
-        (ASSET_CA_UNCOLLECTIBLES, _('Uncollectibles')),
-        (ASSET_CA_PREPAID, _('Prepaid')),
-        (ASSET_CA_OTHER, _('Other Liquid Assets')),
-
-        # LONG TERM INVESTMENTS ---
-        (ASSET_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
-        (ASSET_LTI_LAND, _('Land')),
-        (ASSET_LTI_SECURITIES, _('Securities')),
-
-        # PPE ...
-        (ASSET_PPE_BUILDINGS, _('Buildings')),
-        (ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION, _('Buildings - Accum. Depreciation')),
-        (ASSET_PPE_PLANT, _('Plant')),
-        (ASSET_PPE_PLANT_ACCUM_DEPRECIATION, _('Plant - Accum. Depreciation')),
-        (ASSET_PPE_EQUIPMENT, _('Equipment')),
-        (ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION, _('Equipment - Accum. Depreciation')),
-
-        # Other Assets ...
-        (ASSET_INTANGIBLE_ASSETS, _('Intangible Assets')),
-        (ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION, _('Intangible Assets - Accum. Amortization')),
-        (ASSET_ADJUSTMENTS, _('Other Assets')),
-    )),
-    ('Liabilities', (
-
-        # CURRENT LIABILITIES ---
-        (LIABILITY_CL_ACC_PAYABLE, _('Accounts Payable')),
-        (LIABILITY_CL_WAGES_PAYABLE, _('Wages Payable')),
-        (LIABILITY_CL_INTEREST_PAYABLE, _('Interest Payable')),
-        (LIABILITY_CL_TAXES_PAYABLE, _('Taxes Payable')),
-        (LIABILITY_CL_ST_NOTES_PAYABLE, _('Short Term Notes Payable')),
-        (LIABILITY_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
-        (LIABILITY_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
-        (LIABILITY_CL_OTHER, _('Other Liabilities')),
-
-        # LONG TERM LIABILITIES ----
-        (LIABILITY_LTL_NOTES_PAYABLE, _('Long Term Notes Payable')),
-        (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
-        (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
-    )),
-    ('Capital', (
-
-        # EQUITY ---
-        (EQUITY_CAPITAL, _('Capital')),
-        (EQUITY_COMMON_STOCK, _('Common Stock')),
-        (EQUITY_PREFERRED_STOCK, _('Preferred Stock')),
-        (EQUITY_ADJUSTMENT, _('Other Equity Adjustments')),
-        (EQUITY_DIVIDENDS, _('Dividends & Distributions to Shareholders')),
-    )),
-
-    ('Income', (
-        # INCOME ---
-        (INCOME_OPERATIONAL, _('Operational Income')),
-        (INCOME_PASSIVE, _('Investing/Passive Income')),
-        (INCOME_INTEREST, _('Interest Income')),
-        (INCOME_CAPITAL_GAIN_LOSS, _('Capital Gain/Loss Income')),
-        (INCOME_OTHER, _('Other Income')),
-    )),
-
-    ('Expense', (
-        # COGS ----
-        (COGS, _('Cost of Goods Sold')),
-
-        # EXPENSES ----
-        (EXPENSE_OPERATIONAL, _('Regular Expense')),
-        (EXPENSE_INTEREST_ST, _('Interest Expense - Short Term Debt')),
-        (EXPENSE_INTEREST_LT, _('Interest Expense - Long Term Debt')),
-        (EXPENSE_TAXES, _('Tax Expense')),
-        (EXPENSE_CAPITAL, _('Capital Expense')),
-        (EXPENSE_DEPRECIATION, _('Depreciation Expense')),
-        (EXPENSE_AMORTIZATION, _('Amortization Expense')),
-        (EXPENSE_OTHER, _('Other Expense')),
-    ))
+    (
+        'Asset',
+        (
+            # CURRENT ASSETS ----
+            (ASSET_CA_CASH, _('Current Asset')),
+            (ASSET_CA_MKT_SECURITIES, _('Marketable Securities')),
+            (ASSET_CA_RECEIVABLES, _('Receivables')),
+            (ASSET_CA_INVENTORY, _('Inventory')),
+            (ASSET_CA_UNCOLLECTIBLES, _('Uncollectibles')),
+            (ASSET_CA_PREPAID, _('Prepaid')),
+            (ASSET_CA_OTHER, _('Other Liquid Assets')),
+            # LONG TERM INVESTMENTS ---
+            (ASSET_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
+            (ASSET_LTI_LAND, _('Land')),
+            (ASSET_LTI_SECURITIES, _('Securities')),
+            # PPE ...
+            (ASSET_PPE_BUILDINGS, _('Buildings')),
+            (ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION, _('Buildings - Accum. Depreciation')),
+            (ASSET_PPE_PLANT, _('Plant')),
+            (ASSET_PPE_PLANT_ACCUM_DEPRECIATION, _('Plant - Accum. Depreciation')),
+            (ASSET_PPE_EQUIPMENT, _('Equipment')),
+            (ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION, _('Equipment - Accum. Depreciation')),
+            # Other Assets ...
+            (ASSET_INTANGIBLE_ASSETS, _('Intangible Assets')),
+            (ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION, _('Intangible Assets - Accum. Amortization')),
+            (ASSET_ADJUSTMENTS, _('Other Assets')),
+        ),
+    ),
+    (
+        'Liabilities',
+        (
+            # CURRENT LIABILITIES ---
+            (LIABILITY_CL_ACC_PAYABLE, _('Accounts Payable')),
+            (LIABILITY_CL_CREDIT_LINE, _('Credit Line')),
+            (LIABILITY_CL_WAGES_PAYABLE, _('Wages Payable')),
+            (LIABILITY_CL_INTEREST_PAYABLE, _('Interest Payable')),
+            (LIABILITY_CL_TAXES_PAYABLE, _('Taxes Payable')),
+            (LIABILITY_CL_ST_NOTES_PAYABLE, _('Short Term Notes Payable')),
+            (LIABILITY_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
+            (LIABILITY_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
+            (LIABILITY_CL_OTHER, _('Other Liabilities')),
+            # LONG TERM LIABILITIES ----
+            (LIABILITY_LTL_NOTES_PAYABLE, _('Long Term Notes Payable')),
+            (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
+            (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
+        ),
+    ),
+    (
+        'Capital',
+        (
+            # EQUITY ---
+            (EQUITY_CAPITAL, _('Capital')),
+            (EQUITY_COMMON_STOCK, _('Common Stock')),
+            (EQUITY_PREFERRED_STOCK, _('Preferred Stock')),
+            (EQUITY_ADJUSTMENT, _('Other Equity Adjustments')),
+            (EQUITY_DIVIDENDS, _('Dividends & Distributions to Shareholders')),
+        ),
+    ),
+    (
+        'Income',
+        (
+            # INCOME ---
+            (INCOME_OPERATIONAL, _('Operational Income')),
+            (INCOME_PASSIVE, _('Investing/Passive Income')),
+            (INCOME_INTEREST, _('Interest Income')),
+            (INCOME_CAPITAL_GAIN_LOSS, _('Capital Gain/Loss Income')),
+            (INCOME_OTHER, _('Other Income')),
+        ),
+    ),
+    (
+        'Expense',
+        (
+            # COGS ----
+            (COGS, _('Cost of Goods Sold')),
+            # EXPENSES ----
+            (EXPENSE_OPERATIONAL, _('Regular Expense')),
+            (EXPENSE_INTEREST_ST, _('Interest Expense - Short Term Debt')),
+            (EXPENSE_INTEREST_LT, _('Interest Expense - Long Term Debt')),
+            (EXPENSE_TAXES, _('Tax Expense')),
+            (EXPENSE_CAPITAL, _('Capital Expense')),
+            (EXPENSE_DEPRECIATION, _('Depreciation Expense')),
+            (EXPENSE_AMORTIZATION, _('Amortization Expense')),
+            (EXPENSE_OTHER, _('Other Expense')),
+        ),
+    ),
 ]
 
 ACCOUNT_CHOICES_NO_ROOT = [c for c in ACCOUNT_ROLE_CHOICES if c[0] != 'Root']
@@ -613,15 +555,7 @@ ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLE_CHO
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
 
-BS_BUCKETS = {
-    '0': 'Root',
-    '1': 'Asset',
-    '2': 'Liability',
-    '3': 'Capital',
-    '4': 'Income',
-    '5': 'COGS',
-    '6': 'Expenses'
-}
+BS_BUCKETS = {'0': 'Root', '1': 'Asset', '2': 'Liability', '3': 'Capital', '4': 'Income', '5': 'COGS', '6': 'Expenses'}
 BS_BUCKETS_ORDER = [v for _, v in BS_BUCKETS.items() if v != 'Root']
 
 ROLES_VARS = locals().keys()
@@ -660,6 +594,7 @@ def validate_roles(roles: Union[str, List[str]], raise_exception: bool = True) -
             if raise_exception:
                 raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
     return set(roles)
+
 
 VALID_PARENTS = {
     ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION: [ASSET_PPE_BUILDINGS],
