@@ -10,6 +10,12 @@
                 <h1 class="is-size-2">{% trans 'Pending Transactions' %}</h1>
                 {% data_import_job_txs_pending staged_txs_formset %}
             </div>
+            <div class="column is-12 has-text-centered">
+                <form action="{{ import_job.get_data_import_reset_url }}" method="post">
+                    {% csrf_token %}
+                    <button class="button is-warning is-large">Reset Job</button>
+                </form>
+            </div>
             <div class="column is-12">
                 <h2 class="is-size-2">{% trans 'Imported Transactions' %}</h2>
                 {% data_import_job_txs_imported import_job %}
