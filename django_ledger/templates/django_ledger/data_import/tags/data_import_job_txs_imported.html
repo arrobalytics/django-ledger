@@ -65,7 +65,7 @@
                                 <div class="dropdown-content">
                                     <a href="{% url 'django_ledger:je-detail' entity_slug=import_job_model.entity_slug ledger_pk=imported_tx.transaction_model.journal_entry.ledger_id je_pk=imported_tx.transaction_model.journal_entry_id %}"
                                        class="dropdown-item">{% trans 'View JE' %}</a>
-                                    {% if imported_tx.has_receipt %}
+                                    {% if imported_tx.receipt_uuid %}
                                         <a href="{% url 'django_ledger:receipt-detail' entity_slug=import_job_model.entity_slug receipt_pk=imported_tx.receiptmodel.uuid %}"
                                            class="dropdown-item">{% trans 'View Receipt' %}</a>
                                     {% endif %}

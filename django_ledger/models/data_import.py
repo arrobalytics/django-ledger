@@ -643,7 +643,7 @@ class StagedTransactionModelManager(Manager):
                                 & Q(receipt_type__isnull=True)
                                 & Q(vendor_model__isnull=True)
                                 & Q(customer_model__isnull=True)
-                                & Q(children_count=F('children_mapped_count'))
+                                & Q(children_mapping_done=True)
                                 & Q(total_amount_split__exact=F('amount'))
                                 & Q(transaction_model__isnull=True)
                             )
@@ -1318,9 +1318,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return False
 
     def can_unbundle(self) -> bool:
-        if any([
-            not self.is_single()
-        ]):
+        if any([not self.is_single()]):
             return True
         return False
 
@@ -1341,7 +1339,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             [
                 self.is_single(),
                 self.is_parent_is_bundled_has_receipt(),
-                self.is_parent_is_bundled_no_receipt()
+                self.is_parent_is_bundled_no_receipt(),
+                # self.is_parent_not_bundled_no_receipt(),
             ]
         ):
             return True
@@ -1452,13 +1451,15 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         ready_to_import = getattr(self, 'ready_to_import')
 
-        if not ready_to_import:
-            return False
-
         if ready_to_import:
             is_role_valid = self.is_role_mapping_valid(raise_exception=False)
-            if is_role_valid:
-                return True
+            if self.is_bundled():
+                return is_role_valid
+            else:
+                if all([self.has_children(), self.are_all_children_mapped()]):
+                    return True
+        else:
+            return False
 
         can_split_into_je = getattr(self, 'can_split_into_je')
         if can_split_into_je and as_split:
@@ -1472,10 +1473,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             if ready_to_import:
                 if self.is_transfer():
                     return True
-                if any([
-                    self.is_single_has_receipt(),
-                    self.is_parent_is_bundled_has_receipt()
-                ]):
+                if any([self.is_single_has_receipt(), self.is_parent_is_bundled_has_receipt()]):
                     return True
         return False
 
@@ -1619,11 +1617,14 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             The journal entry activity if successfully retrieved or updated; otherwise,
             returns the existing activity or None if no activity is present.
         """
-        if (
-            force_update
-            or all([self.is_children() and self.parent.has_activity(), not self.is_bundled(), not self.has_activity()])
-            or all([not self.has_activity(), getattr(self, 'ready_to_import')])
-        ):
+        if any([
+            force_update,
+            self.is_single(),
+            self.is_parent_is_bundled_no_receipt(),
+            self.is_parent_is_bundled_has_receipt(),
+            self.is_child_not_bundled_has_receipt(),
+            self.is_child_not_bundled_no_receipt(),
+        ]):
             role_set = self.get_import_role_set()
             if role_set is not None:
                 try:
