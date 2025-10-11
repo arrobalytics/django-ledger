@@ -16,7 +16,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Set, Union
 from uuid import UUID, uuid4
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import (
     BooleanField,
@@ -432,16 +432,31 @@ class StagedTransactionModelQuerySet(QuerySet):
 
         This method filters the objects in the queryset to determine whether there
         are any transactions that are pending (i.e., have a null transaction_model).
-        Pending transactions are identified by checking if the `transaction_model` is
-        null for any of the objects in the queryset.
+        Additionally, it includes parent transactions (not bundled) that have at least
+        one child transaction still pending import.
 
         Returns
         -------
         QuerySet
-            A QuerySet containing objects with a null `transaction_model`.
+            A QuerySet containing objects with a null `transaction_model`, or parent
+            transactions (not bundled) with pending children.
 
         """
-        return self.filter(transaction_model__isnull=True)
+        parents_with_pending_children = Q(
+            parent__isnull=True, bundle_split=False, children_mapping_done=False, children_import_pending_count__gt=0
+        )
+
+        return self.filter(
+            Q(
+                transaction_model__isnull=True,
+            )
+            | parents_with_pending_children
+        ).exclude(
+            bundle_split=False,
+            transaction_model__isnull=True,
+            children_count__gt=0,
+            children_import_pending_count=0
+        )
 
     def is_imported(self):
         """
@@ -449,13 +464,19 @@ class StagedTransactionModelQuerySet(QuerySet):
         related transaction model. This function checks whether the `transaction_model`
         field in the related objects is non-null.
 
+        Additionally, it includes non-bundled parent transactions only if they have at
+        least one imported child (i.e., a child with a non-null `transaction_model`).
+        This ensures a parent is not considered imported until at least one child is
+        imported.
+
         Returns
         -------
         QuerySet
-            A filtered queryset containing only objects where the `transaction_model`
-            is not null.
+            A filtered queryset containing objects where the `transaction_model` is not
+            null, plus non-bundled parents that have at least one imported child.
         """
-        return self.filter(transaction_model__isnull=False)
+        parents_with_imported_children = Q(parent__isnull=True, bundle_split=False, imported_count__gt=0)
+        return self.filter(Q(transaction_model__isnull=False) | parents_with_imported_children)
 
     def is_parent(self):
         """
@@ -548,6 +569,7 @@ class StagedTransactionModelManager(Manager):
                 entity_unit=F('transaction_model__journal_entry__entity_unit__name'),
                 children_count=Count('split_transaction_set'),
                 children_mapped_count=Count('split_transaction_set__account_model__uuid'),
+                imported_count=Count('split_transaction_set__transaction_model_id'),
                 total_amount_split=Coalesce(
                     Sum('split_transaction_set__amount_split'),
                     Value(value=0.00, output_field=DecimalField()),
@@ -560,6 +582,7 @@ class StagedTransactionModelManager(Manager):
             )
             .annotate(
                 children_mapping_pending_count=F('children_count') - F('children_mapped_count'),
+                children_import_pending_count=F('imported_count') - F('children_count'),
             )
             .annotate(
                 children_mapping_done=Case(
@@ -602,7 +625,7 @@ class StagedTransactionModelManager(Manager):
                         ),
                         then=True,
                     ),
-                    # is children, mapped and all parent amount is split...
+                    # is parent, mapped and all parent amount is split...
                     When(
                         condition=(
                             # no receipt type selected...
@@ -611,12 +634,12 @@ class StagedTransactionModelManager(Manager):
                                 Q(children_count__gt=0)
                                 & Q(bundle_split=True)
                                 & Q(receipt_type__isnull=True)
-                                & Q(children_count=F('children_mapped_count'))
+                                & Q(children_mapping_done=True)
                                 & Q(total_amount_split__exact=F('amount'))
                                 & Q(parent__isnull=True)
                                 & Q(transaction_model__isnull=True)
                                 & Q(customer_model__isnull=True)
-                                & Q(vendor_model__isnull=False)
+                                & Q(vendor_model__isnull=True)
                             )
                             # BUNDLED...
                             # a receipt type is assigned... at least a customer or vendor is selected...
@@ -643,8 +666,17 @@ class StagedTransactionModelManager(Manager):
                                 & Q(receipt_type__isnull=True)
                                 & Q(vendor_model__isnull=True)
                                 & Q(customer_model__isnull=True)
-                                & Q(children_count=F('children_mapped_count'))
+                                & Q(children_mapping_done=True)
                                 & Q(total_amount_split__exact=F('amount'))
+                                & Q(transaction_model__isnull=True)
+                            )
+                            | (
+                                Q(children_count__exact=0)
+                                & Q(parent__isnull=False)
+                                & Q(bundle_split=False)
+                                & Q(receipt_type__isnull=False)
+                                & (Q(vendor_model__isnull=False) | Q(customer_model__isnull=False))
+                                & Q(children_mapping_done=True)
                                 & Q(transaction_model__isnull=True)
                             )
                         ),
@@ -905,10 +937,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return [
             {
                 'account': self.account_model,
-                'amount': abs(self.amount),
-                'amount_staged': self.amount,
+                'amount': abs(self.amount if not self.is_children() else self.amount_split),
+                'amount_staged': self.amount if not self.is_children() else self.amount_split,
                 'unit_model': self.unit_model,
-                'tx_type': CREDIT if not self.amount < 0.00 else DEBIT,
+                'tx_type': CREDIT
+                if not (self.amount if not self.is_children() else self.amount_split) < 0.00
+                else DEBIT,
                 'description': self.name,
                 'staged_tx_model': self,
             }
@@ -996,34 +1030,57 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         properly. This method checks whether both `account_model_id` and
         `transaction_model_id` are set.
 
+        Additionally, a parent transaction that is not bundled will be considered
+        imported for listing purposes if it has at least one child transaction that is
+        still pending import. This allows a parent to appear in both imported and
+        pending states when its children are not fully imported.
+
         Returns
         -------
         bool
             True if both `account_model_id` and `transaction_model_id` are not None,
-            indicating that the models have been successfully imported. False otherwise.
+            indicating that the models have been successfully imported; or if this is a
+            non-bundled parent with at least one pending child. False otherwise.
         """
-        return all(
+        own_imported = all(
             [
                 self.account_model_id is not None,
                 self.transaction_model_id is not None,
             ]
         )
+        parent_with_imported_child = all(
+            [
+                self.is_parent(),
+                not self.is_bundled(),
+                self.split_transaction_set.filter(transaction_model__isnull=False).exists(),
+            ]
+        )
+        return own_imported or parent_with_imported_child
 
     def is_pending(self) -> bool:
         """
         Determine if the transaction is pending.
 
         A transaction is considered pending if it has not been assigned a
-        `transaction_model_id`. This function checks the attribute and returns
-        a boolean indicating the status.
+        `transaction_model_id`. Additionally, a parent transaction that is not
+        bundled is also considered pending if any of its children are still
+        pending import. This allows a parent to be both imported and pending
+        while its children are not fully imported.
 
         Returns
         -------
         bool
             True if the transaction is pending (i.e., `transaction_model_id`
-            is None), False otherwise.
+            is None), or this is a non-bundled parent with at least one pending
+            child. False otherwise.
         """
-        return self.transaction_model_id is None
+        return self.transaction_model_id is None or all(
+            [
+                self.is_parent(),
+                not self.is_bundled(),
+                self.split_transaction_set.filter(transaction_model__isnull=True).exists(),
+            ]
+        )
 
     def is_mapped(self) -> bool:
         """
@@ -1288,8 +1345,6 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return False
 
     def has_receipt(self) -> bool:
-        # if self.is_children() and self.is_bundled():
-        #     return self.parent.receipt_type is not None
         return self.receipt_type is not None
 
     def has_mapped_receipt(self) -> bool:
@@ -1318,9 +1373,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return False
 
     def can_unbundle(self) -> bool:
-        if any([
-            not self.is_single()
-        ]):
+        if any([not self.is_single()]):
             return True
         return False
 
@@ -1341,7 +1394,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             [
                 self.is_single(),
                 self.is_parent_is_bundled_has_receipt(),
-                self.is_parent_is_bundled_no_receipt()
+                self.is_parent_is_bundled_no_receipt(),
+                self.is_parent_not_bundled_no_receipt(),
             ]
         ):
             return True
@@ -1454,11 +1508,19 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         if not ready_to_import:
             return False
+        is_role_valid = self.is_role_mapping_valid(raise_exception=False)
+        if not is_role_valid:
+            return False
 
-        if ready_to_import:
-            is_role_valid = self.is_role_mapping_valid(raise_exception=False)
-            if is_role_valid:
+        if ready_to_import and is_role_valid:
+            if self.is_bundled():
                 return True
+
+            # not bundled....
+            else:
+                if any([self.is_child_not_bundled_no_receipt(), self.is_child_not_bundled_has_receipt()]):
+                    return True
+        return False
 
         can_split_into_je = getattr(self, 'can_split_into_je')
         if can_split_into_je and as_split:
@@ -1472,10 +1534,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             if ready_to_import:
                 if self.is_transfer():
                     return True
-                if any([
-                    self.is_single_has_receipt(),
-                    self.is_parent_is_bundled_has_receipt()
-                ]):
+                if any(
+                    [
+                        self.is_single_has_receipt(),
+                        self.is_parent_is_bundled_has_receipt(),
+                        self.is_child_not_bundled_has_receipt(),
+                    ]
+                ):
                     return True
         return False
 
@@ -1619,10 +1684,15 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             The journal entry activity if successfully retrieved or updated; otherwise,
             returns the existing activity or None if no activity is present.
         """
-        if (
-            force_update
-            or all([self.is_children() and self.parent.has_activity(), not self.is_bundled(), not self.has_activity()])
-            or all([not self.has_activity(), getattr(self, 'ready_to_import')])
+        if any(
+            [
+                force_update,
+                self.is_single(),
+                self.is_parent_is_bundled_no_receipt(),
+                self.is_parent_is_bundled_has_receipt(),
+                self.is_child_not_bundled_has_receipt(),
+                self.is_child_not_bundled_no_receipt(),
+            ]
         ):
             role_set = self.get_import_role_set()
             if role_set is not None:
@@ -1761,14 +1831,11 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                         force_je_retrieval=False,
                     )
                     staged_to_save += [i['staged_tx_model'] for i in je_data]
-                # staged_to_save = set(i['staged_tx_model'] for i in je_data)
-                # for i in staged_to_save:
-                #     i.save(update_fields=['transaction_model', 'updated'])
                 staged_to_save = set(staged_to_save)
                 for i in staged_to_save:
                     i.save(update_fields=['transaction_model', 'updated'])
 
-    def migrate_receipt(self, receipt_date: Optional[date | datetime] = None):
+    def migrate_receipt(self, receipt_date: Optional[date | datetime] = None, split_amount: bool = False):
         if not self.can_migrate_receipt():
             raise StagedTransactionModelValidationError(
                 'Migrate receipts can only be performed on receipt transactions. Use migrate_transactions() instead.'
@@ -1778,7 +1845,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         with transaction.atomic():
             receipt_model: ReceiptModel = self.generate_receipt_model(receipt_date=receipt_date, commit=True)
-            receipt_model.migrate_receipt()
+            receipt_model.migrate_receipt(split_amount=split_amount)
 
     def generate_receipt_model(self, receipt_date: Optional[date] = None, commit: bool = False) -> ReceiptModel:
         if receipt_date:
@@ -1791,7 +1858,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             receipt_model.configure(
                 receipt_date=receipt_date,
                 entity_model=self.entity_slug,
-                amount=abs(self.amount),
+                amount=abs(self.amount_split if self.is_children() else self.amount),
                 unit_model=self.unit_model,
                 receipt_type=self.receipt_type,
                 vendor_model=self.vendor_model if self.is_expense() or self.is_debt_payment() else None,
@@ -1805,12 +1872,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return receipt_model
 
     def can_undo_import(self):
+        if self.transaction_model_id is None:
+            return False
         if all([self.is_children(), self.is_bundled()]):
             return False
-
         return True
 
-    # UNDO
     def undo_import(self, raise_exception: bool = True):
         """
         Undo import operation for a staged transaction. This method handles the deletion
@@ -1832,10 +1899,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         with transaction.atomic():
             # Receipt import case...
-            try:
-                receipt_model = self.receiptmodel
-            except ObjectDoesNotExist:
-                receipt_model = None
+            receipt_model = getattr(self, 'receiptmodel', None)
 
             if receipt_model is not None:
                 receipt_model.delete()
@@ -1850,10 +1914,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 tx_model = self.transaction_model
                 journal_entry_model = tx_model.journal_entry
 
-                if journal_entry_model.can_unlock() and journal_entry_model.can_unpost():
-                    journal_entry_model.unlock(raise_exception=False)
-                    journal_entry_model.unpost(raise_exception=False)
-                    journal_entry_model.delete()
+                journal_entry_model.unpost(raise_exception=False)
+                journal_entry_model.unlock(raise_exception=False)
+
+                journal_entry_model.delete()
 
                 self.transaction_model = None
                 self.save(update_fields=['transaction_model', 'updated'])
@@ -1861,6 +1925,11 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         if raise_exception:
             raise StagedTransactionModelValidationError(message=_('Nothing to undo for this staged transaction.'))
+
+    def can_delete(self) -> bool:
+        if self.is_children():
+            return True
+        return False
 
     def clean(self, verify: bool = False):
         if self.has_children():
@@ -2001,3 +2070,10 @@ def stagedtransactionmodel_presave(instance: StagedTransactionModel, **kwargs):
 
 
 pre_save.connect(stagedtransactionmodel_presave, sender=StagedTransactionModel)
+
+
+def stagedtransactionmodel_predelete(instance: StagedTransactionModel, **kwargs):
+    if not instance.can_delete():
+        raise StagedTransactionModelValidationError(
+            message=_('Cannot delete parent Staged Transactions.'),
+        )

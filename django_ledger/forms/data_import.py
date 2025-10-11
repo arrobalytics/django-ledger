@@ -1,3 +1,5 @@
+from itertools import groupby
+
 from django import forms
 from django.forms import (
     ModelForm,
@@ -140,7 +142,7 @@ class StagedTransactionModelForm(ModelForm):
                 self.fields['tx_split'].disabled = True
 
             if not staged_tx_model.can_unbundle():
-                # self.fields['bundle_split'].widget = HiddenInput()
+                self.fields['bundle_split'].widget = HiddenInput()
                 self.fields['bundle_split'].disabled = True
 
     def clean_account_model(self):
@@ -160,12 +162,41 @@ class StagedTransactionModelForm(ModelForm):
     def clean_tx_import(self):
         staged_txs_model: StagedTransactionModel = self.instance
         if staged_txs_model.is_children():
-            return False
+            parent_form = self.BASE_FORMSET_INSTANCE.FORMS_BY_ID[staged_txs_model.parent_id]
+            if all(
+                [
+                    any(
+                        [
+                            staged_txs_model.is_child_not_bundled_has_receipt(),
+                            staged_txs_model.is_child_not_bundled_no_receipt(),
+                        ]
+                    ),
+                    parent_form.cleaned_data['tx_import'] is True,
+                ]
+            ):
+                return True
         return self.cleaned_data['tx_import']
+
+    def clean_bundle_split(self):
+        staged_txs_model: StagedTransactionModel = self.instance
+        if staged_txs_model.is_single():
+            return True
+        if staged_txs_model.is_children():
+            parent_form = self.BASE_FORMSET_INSTANCE.FORMS_BY_ID[staged_txs_model.parent.uuid]
+            return parent_form.cleaned_data['bundle_split']
+        return self.cleaned_data['bundle_split']
 
     def clean(self):
         if self.cleaned_data['tx_import'] and self.cleaned_data['tx_split']:
             raise ValidationError(message=_('Cannot import and split at the same time'))
+
+    def has_changed(self):
+        has_changed = super().has_changed()
+        staged_txs_model: StagedTransactionModel = self.instance
+        if not has_changed and staged_txs_model.is_children():
+            parent_form = self.BASE_FORMSET_INSTANCE.FORMS_BY_ID[staged_txs_model.parent.uuid]
+            return parent_form.has_changed()
+        return has_changed
 
     class Meta:
         model = StagedTransactionModel
@@ -244,14 +275,23 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
         self.unit_model_qs = entity_model.entityunitmodel_set.all()
         self.UNIT_MODEL_CHOICES = [(None, '----')] + [(u.uuid, u) for i, u in enumerate(self.unit_model_qs)]
 
-        self.VENDOR_MODEL_QS = entity_model.vendormodel_set.visible()
-        self.CUSTOMER_MODEL_QS = entity_model.customermodel_set.visible()
+        self.VENDOR_MODEL_QS = entity_model.vendormodel_set.visible().order_by('vendor_name')
+        self.CUSTOMER_MODEL_QS = entity_model.customermodel_set.visible().order_by('customer_name')
 
         self.VENDOR_CHOICES = [(None, '-----')] + [(str(v.uuid), v) for v in self.VENDOR_MODEL_QS]
         self.CUSTOMER_CHOICES = [(None, '-----')] + [(str(c.uuid), c) for c in self.CUSTOMER_MODEL_QS]
 
         self.VENDOR_MAP = dict(self.VENDOR_CHOICES)
         self.CUSTOMER_MAP = dict(self.CUSTOMER_CHOICES)
+
+        self.FORMS_BY_ID = {
+            f.instance.uuid: f for f in self.forms if getattr(f, 'instance', None) and getattr(f.instance, 'uuid', None)
+        }
+
+        form_children = [(f.instance.parent_id, f.instance.uuid) for f in self.forms if f.instance.parent_id]
+        form_children.sort(key=lambda f: f[0])
+
+        self.FORM_CHILDREN = {g: list(j[1] for j in p) for g, p in groupby(form_children, key=lambda i: i[0])}
 
     def get_form_kwargs(self, index):
         return {

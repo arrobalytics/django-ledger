@@ -825,7 +825,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             ]
         )
 
-    def migrate_receipt(self):
+    def migrate_receipt(self, split_amount: bool = False):
         """Post staged transactions into the ledger as journal entries.
 
         This method commits staged transactions linked to the receipt into the
@@ -846,7 +846,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 message='Must have VendorModel or CustomerModel, not both.',
             )
 
-        commit_dict = self.staged_transaction_model.commit_dict(split_txs=False)
+        commit_dict = self.staged_transaction_model.commit_dict(split_txs=split_amount)
         ledger_model = self.ledger_model
         staged_to_save = list()
         for je_data in commit_dict:
