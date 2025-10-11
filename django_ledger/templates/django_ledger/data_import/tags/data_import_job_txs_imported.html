@@ -53,36 +53,36 @@
                     <td>{{ imported_tx.account_model | default:'' }}</td>
                     <td>{{ imported_tx.transaction_model | default:'' }}</td>
                     <td class="has-text-centered">
-                        {% if not imported_tx.is_parent and not imported_tx.is_bundled %}
-                            <div class="dropdown is-hoverable is-right">
-                                <div class="dropdown-trigger">
-                                    <button class="button is-small" aria-haspopup="true"
-                                            aria-controls="actions-{{ imported_tx.uuid }}">
-                                        <span>{% trans 'Actions' %}</span>
-                                        <span class="icon is-small">{% icon 'mdi:chevron-down' 14 %}</span>
-                                    </button>
-                                </div>
-                                <div class="dropdown-menu" id="actions-{{ imported_tx.uuid }}" role="menu">
-                                    <div class="dropdown-content">
+                        <div class="dropdown is-hoverable is-right">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small" aria-haspopup="true"
+                                        aria-controls="actions-{{ imported_tx.uuid }}">
+                                    <span>{% trans 'Actions' %}</span>
+                                    <span class="icon is-small">{% icon 'mdi:chevron-down' 14 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="actions-{{ imported_tx.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    {% if not imported_tx.is_parent and not imported_tx.is_bundled %}
                                         <a href="{% url 'django_ledger:je-detail' entity_slug=import_job_model.entity_slug ledger_pk=imported_tx.transaction_model.journal_entry.ledger_id je_pk=imported_tx.transaction_model.journal_entry_id %}"
                                            class="dropdown-item">{% trans 'View JE' %}</a>
-                                        {% if imported_tx.receipt_uuid %}
-                                            <a href="{% url 'django_ledger:receipt-detail' entity_slug=import_job_model.entity_slug receipt_pk=imported_tx.receiptmodel.uuid %}"
-                                               class="dropdown-item">{% trans 'View Receipt' %}</a>
-                                        {% endif %}
-                                        <hr class="dropdown-divider">
-                                        {% if imported_tx.can_undo_import %}
-                                            <form method="post"
-                                                  action="{% url 'django_ledger:data-import-staged-tx-undo' entity_slug=import_job_model.entity_slug job_pk=import_job_model.uuid staged_tx_pk=imported_tx.uuid %}">
-                                                {% csrf_token %}
-                                                <button type="submit"
-                                                        class="dropdown-item has-text-danger">{% trans 'Undo Import' %}</button>
-                                            </form>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                                    {% endif %}
+                                    {% if imported_tx.receipt_uuid %}
+                                        <a href="{% url 'django_ledger:receipt-detail' entity_slug=import_job_model.entity_slug receipt_pk=imported_tx.receiptmodel.uuid %}"
+                                           class="dropdown-item">{% trans 'View Receipt' %}</a>
+                                    {% endif %}
+                                    <hr class="dropdown-divider">
+                                    {% if imported_tx.can_undo_import %}
+                                        <form method="post"
+                                              action="{% url 'django_ledger:data-import-staged-tx-undo' entity_slug=import_job_model.entity_slug job_pk=import_job_model.uuid staged_tx_pk=imported_tx.uuid %}">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="dropdown-item has-text-danger">{% trans 'Undo Import' %}</button>
+                                        </form>
+                                        </div>
+                                    {% endif %}
                             </div>
-                        {% endif %}
+                        </div>
                     </td>
                 </tr>
             {% endfor %}

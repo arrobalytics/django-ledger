@@ -1914,10 +1914,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 tx_model = self.transaction_model
                 journal_entry_model = tx_model.journal_entry
 
-                if journal_entry_model.can_unlock():
-                    journal_entry_model.unlock(raise_exception=False)
-                if journal_entry_model.can_unpost():
-                    journal_entry_model.unpost(raise_exception=False)
+                journal_entry_model.unpost(raise_exception=False)
+                journal_entry_model.unlock(raise_exception=False)
 
                 journal_entry_model.delete()
 
