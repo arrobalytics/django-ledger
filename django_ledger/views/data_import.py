@@ -210,17 +210,18 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
                 for tx_form in txs_formset:
                     if tx_form.has_changed():
                         staged_transaction_model: StagedTransactionModel = tx_form.instance
+
                         is_split = tx_form.cleaned_data['tx_split'] is True
+                        is_import = tx_form.cleaned_data['tx_import'] is True
+                        is_bundled = tx_form.cleaned_data['bundle_split'] is True
+
                         if is_split:
                             staged_transaction_model.add_split()
-                        # import entry was selected for import...
-                        is_import = tx_form.cleaned_data['tx_import']
-                        if is_import:
-                            # all entries in split will be going so the same journal entry... (same unit...)
-                            is_bundled = tx_form.cleaned_data['bundle_split']
+                        elif is_import:
                             if staged_transaction_model.can_migrate_receipt():
                                 staged_transaction_model.migrate_receipt(
-                                    receipt_date=staged_transaction_model.date_posted
+                                    receipt_date=staged_transaction_model.date_posted,
+                                    split_amount=not is_bundled,
                                 )
                             else:
                                 staged_transaction_model.migrate_transactions(split_txs=not is_bundled)
@@ -276,9 +277,12 @@ class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
 
     def post(self, request, **kwargs):
         import_job_model: ImportJobModel = self.get_object()
-        imported_staged_txs = import_job_model.stagedtransactionmodel_set.is_imported()
+        imported_staged_txs = import_job_model.stagedtransactionmodel_set.all()
         for staged_tx in imported_staged_txs:
             staged_tx.undo_import(raise_exception=False)
+            if staged_tx.is_children():
+                staged_tx.delete()
+
 
         return redirect(
             to=import_job_model.get_data_import_url(),

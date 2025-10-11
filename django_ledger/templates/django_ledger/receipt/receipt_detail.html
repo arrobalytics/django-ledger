@@ -58,8 +58,10 @@
                                         <a href="{{ tx.get_journal_entry_detail_url }}">{{ tx.journal_entry.description|default:'—' }}</a>
                                     </td>
                                     <td>{{ tx.account.code }} - {{ tx.account.name }}</td>
-                                    <td class="has-text-right">{% if tx.is_debit %}{{ tx.amount }}{% endif %}</td>
-                                    <td class="has-text-right">{% if tx.is_credit %}{{ tx.amount }}{% endif %}</td>
+                                    <td class="has-text-right">{% currency_symbol %}{% if tx.is_debit %}
+                                        {{ tx.amount | currency_format }}{% endif %}</td>
+                                    <td class="has-text-right">{% currency_symbol %}{% if tx.is_credit %}
+                                        {{ tx.amount | currency_format }}{% endif %}</td>
                                     <td>{{ tx.journal_entry.entity_unit.name|default:'—' }}</td>
                                 </tr>
                             {% endfor %}
