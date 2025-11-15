@@ -8,7 +8,7 @@ Contributions to this module:
 
 import sys
 from itertools import chain
-from typing import Set, List, Union
+from typing import List, Set, Union
 
 from django.utils.translation import gettext as _
 
@@ -201,6 +201,7 @@ GROUP_TRANSFERS = [
 ]
 
 GROUP_DEBT_PAYMENT = [
+    ASSET_CA_CASH,
     LIABILITY_CL_CREDIT_LINE,
     LIABILITY_LTL_NOTES_PAYABLE,
     LIABILITY_LTL_MORTGAGE_PAYABLE,
