@@ -33,7 +33,7 @@
                                             <a href="{{ receipt.get_absolute_url }}">{{ receipt.receipt_number }}</a>
                                         </td>
                                         <td>{{ receipt.receipt_date }}</td>
-                                        <td>{{ receipt.receipt_type|title }}</td>
+                                        <td>{{ receipt.get_receipt_type_display|title }}</td>
                                         <td>
                                             {% if receipt.get_import_job_url %}
                                                 <a class="button is-small is-primary"

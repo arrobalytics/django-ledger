@@ -10,7 +10,8 @@
         <div class="column is-12">
             <div class="box">
 
-                <form action="{{ view.request.path }}" method="post">
+
+                <form method="post">
                     {% csrf_token %}
 
                     <div class="columns is-multiline">
@@ -49,6 +50,8 @@
                                 {% endfor %}
 
                             </table>
+
+
                         </div>
                         <div class="column is-12 has-text-centered">
                             <button class="button is-primary is-outlined">
@@ -85,6 +88,7 @@
                         </div>
                     </div>
                 </form>
+
             </div>
         </div>
     </div>
