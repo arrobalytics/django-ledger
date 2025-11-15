@@ -11,6 +11,6 @@
         <a class="button is-dark"
            href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
             {% trans 'Back' %}</a>
-        {% data_import_job_list_table %}
+        {% import_job_list_table import_job_list %}
     </div>
 {% endblock %}

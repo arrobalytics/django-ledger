@@ -1,0 +1,211 @@
+{% load django_ledger %}
+{% load trans from i18n %}
+
+{% if not txf.instance.is_children %}
+    <div class="column is-12"
+         id="staged-tx-{{ txf.instance.uuid }}">
+        <form hx-post="{{ txf.FORM_ACTION_URL }}" hx-swap="innerHTML" method="post">
+            {% csrf_token %}
+            <div class="card stx-card {% if txf.instance.matches_found and txf.instance.matches_found > 0 %}stx-outline-info{% endif %} {% if txf.instance.is_matched %}stx-outline-success{% endif %}">
+
+                <header class="card-header">
+                    <div class="card-header-title is-block p-0">
+                        <div class="level is-mobile is-flex-wrap-wrap tx-header">
+                            <div class="level-left tx-header-left">
+                                <span class="tag is-light is-rounded mr-2 is-size-7 has-text-grey">#{{ forloop.counter }}</span>
+                                <span class="mr-3" title="{{ txf.instance.date_posted }}">
+                                        <span class="icon is-small mr-1">{% icon 'mdi:calendar' 16 %}</span>
+                                        {{ txf.instance.date_posted }}
+                                    </span>
+                                <span class="tx-header-name has-text-weight-semibold"
+                                      title="{{ txf.instance.name }}">{{ txf.instance.name }}</span>
+                            </div>
+                            <div class="level-right">
+                                    <span class="tag is-large is-rounded {% if txf.instance.amount < 0 %}is-danger is-light{% else %}is-success is-light{% endif %}">
+                                        {% currency_symbol %}{{ txf.instance.amount | currency_format }}
+                                    </span>
+                                {% if txf.instance.matches_found and txf.instance.matches_found > 0 %}
+                                    <span class="tag is-info is-light ml-2">{% trans 'Matches' %}: {{ txf.instance.matches_found }}</span>
+                                {% endif %}
+                                <span class="tag is-success is-light ml-2 is-hidden"
+                                      data-match-selected-tag>{% trans 'Match selected' %}</span>
+                                {% if txf.instance.can_import %}
+                                    <span class="tag is-success ml-2 is-light">{% trans 'Can import' %}</span>
+                                {% else %}
+                                    <span class="tag is-danger ml-2 is-light">{% trans 'Cannot import' %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <div class="card-content">
+                    <div class="content">
+
+                        {% for hidden_field in txf.hidden_fields %}{{ hidden_field }}{% endfor %}
+                        {% if txf.instance.has_children %}
+                            <p class="is-size-7 has-text-grey">
+                                {% trans 'Total Split' %}:
+                                {% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}
+                            </p>
+                        {% endif %}
+
+                        {% if txf.instance.is_transfer or txf.instance.is_debt_payment %}
+                            <div class="field">
+                                <label class="label is-small">{% trans 'Match To' %}</label>
+                                <div class="control is-flex is-align-items-center">
+                                    {{ txf.match_tx_model }}
+                                    <button type="button" class="button is-small is-text ml-2" data-clear-match>
+                                        {% trans 'Clear match' %}
+                                    </button>
+                                </div>
+                                {% if txf.instance.is_matched %}
+                                    <p class="help is-info">
+                                            <span class="tag is-info is-light">{{ txf.instance.matches_found }} match
+                                                {% if txf.instance.matches_found > 1 %}es{% endif %}</span>
+                                    </p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="field">
+                            <label class="label is-small">{% trans 'Map To Account' %}</label>
+                            <div class="control">
+                                <div class="field has-addons mb-2">
+                                    <div class="control is-expanded">
+                                        <input type="text" class="input is-small"
+                                               placeholder="{% trans 'Search accounts by name…' %}"
+                                               data-account-search>
+                                    </div>
+                                    <div class="control">
+                                        <button type="button" class="button is-small" data-clear-account-search
+                                                title="{% trans 'Clear search' %}">{% icon 'mdi:close' 16 %}</button>
+                                    </div>
+                                </div>
+                                {{ txf.account_model }}
+                            </div>
+                            {% if txf.instance.can_have_activity %}
+                                {% if txf.instance.can_have_activity and txf.instance.get_prospect_je_activity_display %}
+                                    <p class="help is-success">
+                                        {% icon 'lets-icons:check-fill' 16 %}
+                                        <span class="is-italic">{% trans 'Transaction Activity' %}:</span>
+                                        <span class="has-text-weight-bold">{{ txf.instance.get_prospect_je_activity_display }}</span>
+                                    </p>
+                                {% elif txf.instance.bundle_split %}
+                                    <p class="help is-danger">
+                                        {% icon 'ooui:block' 16 %}
+                                        <span>{% trans 'Invalid or Pending Account Mapping.' %}</span>
+                                    </p>
+                                {% endif %}
+                            {% endif %}
+                            {% if txf.errors %}
+                                {% for i,err in txf.errors.items %}
+                                    <p class="help is-danger">{{ err }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="field is-grouped is-align-items-center">
+                            <div class="control">
+                                <label class="checkbox">
+                                    {{ txf.tx_import }}
+                                    <span class="ml-1">{% trans 'Import' %}</span>
+                                </label>
+                            </div>
+                            {% if txf.instance.can_split %}
+                                <div class="control">
+                                    <label class="checkbox">
+                                        {{ txf.tx_split }}
+                                        <span class="ml-1">{% trans 'Split' %}</span>
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if txf.instance.can_unbundle %}
+                                <div class="control">
+                                    <label class="checkbox">
+                                        {{ txf.bundle_split }}
+                                        <span class="ml-1">{% trans 'Bundle' %}</span>
+                                    </label>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if txf.instance.has_children %}
+                            <div class="mt-3">
+                                <p class="has-text-weight-semibold is-size-6">{% trans 'Splits' %}</p>
+                                {% for cform in staged_txs_formset %}
+                                    {% if cform.instance.parent_id == txf.instance.uuid %}
+                                        {% for hidden_field in cform.hidden_fields %}
+                                            {{ hidden_field }}{% endfor %}
+                                        <div class="box is-shadowless has-background-white-ter mb-2">
+                                            <div class="is-flex is-justify-content-space-between is-align-items-center is-flex-wrap-wrap">
+                                                <div class="mb-2">
+                                                    <span class="tag is-primary is-light mr-2">{% trans 'Child' %}</span>
+                                                    <span class="is-size-7 has-text-grey"
+                                                          title="{{ cform.instance.name }}">{{ cform.instance.name }}</span>
+                                                </div>
+                                                <div class="field mb-0">
+                                                    <label class="label is-small mb-1">{% trans 'Split Amount' %}</label>
+                                                    <div class="control">{{ cform.amount_split }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="field mt-2">
+                                                <label class="checkbox">
+                                                    {{ cform.DELETE }}
+                                                    <span class="ml-1">{% trans 'Delete' %}</span>
+                                                </label>
+                                            </div>
+                                            {% if cform.errors %}
+                                                {% for i,err in cform.errors.items %}
+                                                    <p class="help is-danger">{{ err }}</p>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mt-2" data-meta-chips>
+                            <div class="tags are-small">
+                                    <span class="tag is-info is-light is-hidden" data-chip="customer_model"
+                                          data-label="{% trans 'Customer' %}"></span>
+                                <span class="tag is-warning is-light is-hidden" data-chip="vendor_model"
+                                      data-label="{% trans 'Vendor' %}"></span>
+                                <span class="tag is-success is-light is-hidden" data-chip="receipt_type"
+                                      data-label="{% trans 'Receipt' %}"></span>
+                            </div>
+                        </div>
+                        <details class="mt-2">
+                            <summary class="is-size-7 has-text-grey">{% trans 'More options' %}</summary>
+                            <div class="columns is-multiline mt-2">
+                                <div class="column is-12-mobile is-6-tablet">
+                                    <label class="label is-small">{% trans 'Unit' %}</label>
+                                    <div class="control">{{ txf.unit_model }}</div>
+                                </div>
+                                <div class="column is-12-mobile is-6-tablet">
+                                    <label class="label is-small">{% trans 'Receipt Type' %}</label>
+                                    <div class="control">{{ txf.receipt_type }}</div>
+                                </div>
+                                <div class="column is-12-mobile is-6-tablet">
+                                    <label class="label is-small">{% trans 'Customer' %}</label>
+                                    <div class="control">{{ txf.customer_model }}</div>
+                                </div>
+                                <div class="column is-12-mobile is-6-tablet">
+                                    <label class="label is-small">{% trans 'Vendor' %}</label>
+                                    <div class="control">{{ txf.vendor_model }}</div>
+                                </div>
+                                {% if txf.instance.can_have_amount_split %}
+                                    <div class="column is-12-mobile is-6-tablet">
+                                        <label class="label is-small">{% trans 'Split Amount' %}</label>
+                                        <div class="control">{{ txf.amount_split }}</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </details>
+
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endif %}

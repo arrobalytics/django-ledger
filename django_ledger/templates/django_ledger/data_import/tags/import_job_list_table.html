@@ -15,25 +15,25 @@
         </thead>
         <tbody>
 
-        {% for job in import_jobs %}
+        {% for import_job_model in import_jobs_qs %}
             <tr>
-                <td>{{ job.description }}</td>
-                <td>{{ job.bank_account_model }}</td>
-                <td>{{ job.created }}</td>
+                <td>{{ import_job_model.description }}</td>
+                <td>{{ import_job_model.bank_account_model }}</td>
+                <td>{{ import_job_model.created }}</td>
                 <td class="has-text-centered">
-                    {% if job.is_complete %}
+                    {% if import_job_model.is_complete %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                     {% else %}
                         <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                     {% endif %}
                 </td>
                 <td>
-                    <div class="dropdown is-right" id="customer-action-{{ job.uuid }}">
+                    <div class="dropdown is-right" id="customer-action-{{ import_job_model.uuid }}">
 
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
-                                    onclick="djLedger.toggleDropdown('customer-action-{{ job.uuid }}')"
+                                    onclick="djLedger.toggleDropdown('customer-action-{{ import_job_model.uuid }}')"
                                     aria-controls="dropdown-menu">
                                 <span>{% trans 'Actions' %}</span>
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
@@ -44,11 +44,11 @@
                              id="dropdown-menu-{{ customer.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:data-import-jobs-update' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}"
+                                <a href="{{ import_job_model.get_update_url }}"
                                    class="dropdown-item has-text-weight-bold has-text-warning">{% trans 'Update' %}</a>
-                                <a href="{% url 'django_ledger:data-import-jobs-delete' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}"
+                                <a href="{{ import_job_model.get_delete_url }}"
                                    class="dropdown-item has-text-weight-bold has-text-danger">{% trans 'Delete' %}</a>
-                                <a href="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}"
+                                <a href="{{ import_job_model.get_detail_url }}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Manage' %}</a>
                             </div>
                         </div>
