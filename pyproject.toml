@@ -1,6 +1,6 @@
 [project]
 name = "django-ledger"
-version = "0.8.2.3"
+version = "0.8.3"
 readme = "README.md"
 requires-python = ">=3.11"
 description = "Double entry accounting system built on the Django Web Framework."
