@@ -185,7 +185,7 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
         return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
 
     def get_context_data(self, txs_formset=None, **kwargs):
-        context = super(JournalEntryModelTXSDetailView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         je_model: JournalEntryModel = self.object
         if je_model.is_locked():
             messages.add_message(self.request,
@@ -242,7 +242,7 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
                                  messages.ERROR,
                                  'Hmmm, this doesn\'t add up!. Check your math!',
                                  extra_tags='is-danger')
-            return self.render_to_response(context=self.get_context_data(txs_formset=txs_formset))
+            self.render_to_response(context=self.get_context_data(txs_formset=txs_formset))
         return self.render_to_response(context=self.get_context_data())
 
 

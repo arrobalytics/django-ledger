@@ -113,7 +113,7 @@ class VendorModelDetailView(VendorModelModelBaseView, DetailView):
         receipts_qs = (
             ReceiptModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL)
             .for_vendor(vendor_model=vendor_model)
-            .order_by('-updated')
+            .order_by('-receipt_date')
         )
 
         bills_qs = (
