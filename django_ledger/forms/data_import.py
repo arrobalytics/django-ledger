@@ -1,23 +1,28 @@
 from itertools import groupby
+from typing import Optional
+from uuid import UUID
 
 from django import forms
+from django.db.models import Q
 from django.forms import (
-    ModelForm,
     BaseModelFormSet,
-    modelformset_factory,
-    Select,
-    NumberInput,
+    CheckboxInput,
     HiddenInput,
+    ModelForm,
+    NumberInput,
+    Select,
+    Textarea,
     TextInput,
     ValidationError,
+    modelformset_factory,
 )
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import GROUP_EXPENSES, GROUP_INCOME, GROUP_TRANSFERS, GROUP_DEBT_PAYMENT
+from django_ledger.io import GROUP_DEBT_PAYMENT, GROUP_EXPENSES, GROUP_INCOME, GROUP_TRANSFERS
 from django_ledger.models import (
-    StagedTransactionModel,
-    ImportJobModel,
     EntityModel,
+    ImportJobModel,
+    StagedTransactionModel,
 )
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -65,175 +70,13 @@ class ImportJobModelUpdateForm(ModelForm):
         widgets = {'description': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES})}
 
 
-class StagedTransactionModelForm(ModelForm):
-    tx_import = forms.BooleanField(initial=False, required=False)
-    tx_split = forms.BooleanField(initial=False, required=False)
-
-    def __init__(self, base_formset_instance, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.BASE_FORMSET_INSTANCE: 'BaseStagedTransactionModelFormSet' = base_formset_instance
-        self.VENDOR_CHOICES = self.BASE_FORMSET_INSTANCE.VENDOR_CHOICES
-        self.VENDOR_MAP = self.BASE_FORMSET_INSTANCE.VENDOR_MAP
-
-        self.CUSTOMER_CHOICES = self.BASE_FORMSET_INSTANCE.CUSTOMER_CHOICES
-        self.CUSTOMER_MAP = self.BASE_FORMSET_INSTANCE.CUSTOMER_MAP
-
-        self.EXPENSE_ACCOUNT_CHOICES = self.BASE_FORMSET_INSTANCE.ACCOUNT_MODEL_EXPENSES_CHOICES
-        self.SALES_ACCOUNT_CHOICES = self.BASE_FORMSET_INSTANCE.ACCOUNT_MODEL_SALES_CHOICES
-        self.TRANSFER_ACCOUNT_CHOICES = self.BASE_FORMSET_INSTANCE.ACCOUNT_MODEL_TRANSFERS_CHOICES
-        self.CC_PAYMENT_ACCOUNT_CHOICES = self.BASE_FORMSET_INSTANCE.ACCOUNT_MODEL_TRANSFERS_CC_PAYMENT
-
-        staged_tx_model: StagedTransactionModel = getattr(self, 'instance', None)
-
-        self.fields['vendor_model'].choices = self.VENDOR_CHOICES
-        self.fields['customer_model'].choices = self.CUSTOMER_CHOICES
-        self.fields['account_model'].choices = self.BASE_FORMSET_INSTANCE.ACCOUNT_MODEL_CHOICES
-
-        # avoids multiple DB queries rendering the formset...
-        self.fields['unit_model'].choices = self.BASE_FORMSET_INSTANCE.UNIT_MODEL_CHOICES
-
-        if staged_tx_model:
-            if staged_tx_model.is_sales():
-                self.fields['account_model'].choices = self.SALES_ACCOUNT_CHOICES
-
-            if staged_tx_model.is_expense():
-                self.fields['account_model'].choices = self.EXPENSE_ACCOUNT_CHOICES
-
-            if staged_tx_model.is_transfer():
-                self.fields['account_model'].choices = self.TRANSFER_ACCOUNT_CHOICES
-
-            if staged_tx_model.is_debt_payment():
-                self.fields['account_model'].choices = self.CC_PAYMENT_ACCOUNT_CHOICES
-
-            if not staged_tx_model.can_have_amount_split():
-                self.fields['amount_split'].widget = HiddenInput()
-                self.fields['amount_split'].disabled = True
-
-            if not staged_tx_model.can_have_bundle_split():
-                self.fields['bundle_split'].widget = HiddenInput()
-                self.fields['bundle_split'].disabled = True
-
-            if not staged_tx_model.can_have_receipt():
-                self.fields['receipt_type'].widget = HiddenInput()
-                self.fields['receipt_type'].disabled = True
-
-            if not staged_tx_model.can_have_account():
-                self.fields['account_model'].widget = HiddenInput()
-                self.fields['account_model'].disabled = True
-
-            if not staged_tx_model.can_have_unit():
-                self.fields['unit_model'].widget = HiddenInput()
-                self.fields['unit_model'].disabled = True
-
-            if not staged_tx_model.can_have_vendor():
-                self.fields['vendor_model'].widget = HiddenInput()
-                self.fields['vendor_model'].disabled = True
-
-            if not staged_tx_model.can_have_customer():
-                self.fields['customer_model'].widget = HiddenInput()
-                self.fields['customer_model'].disabled = True
-
-            if not staged_tx_model.can_import():
-                self.fields['tx_import'].widget = HiddenInput()
-                self.fields['tx_import'].disabled = True
-
-            if not staged_tx_model.can_split():
-                self.fields['tx_split'].widget = HiddenInput()
-                self.fields['tx_split'].disabled = True
-
-            if not staged_tx_model.can_unbundle():
-                self.fields['bundle_split'].widget = HiddenInput()
-                self.fields['bundle_split'].disabled = True
-
-    def clean_account_model(self):
-        staged_txs_model: StagedTransactionModel = self.instance
-        if staged_txs_model.has_children():
-            return None
-        return self.cleaned_data['account_model']
-
-    def clean_unit_model(self):
-        staged_txs_model: StagedTransactionModel = self.instance
-        if not staged_txs_model.can_have_unit():
-            if staged_txs_model.is_children():
-                return staged_txs_model.parent.unit_model
-            return None
-        return self.cleaned_data['unit_model']
-
-    def clean_tx_import(self):
-        staged_txs_model: StagedTransactionModel = self.instance
-        if staged_txs_model.is_children():
-            parent_form = self.BASE_FORMSET_INSTANCE.FORMS_BY_ID[staged_txs_model.parent_id]
-            if all(
-                [
-                    any(
-                        [
-                            staged_txs_model.is_child_not_bundled_has_receipt(),
-                            staged_txs_model.is_child_not_bundled_no_receipt(),
-                        ]
-                    ),
-                    parent_form.cleaned_data['tx_import'] is True,
-                ]
-            ):
-                return True
-        return self.cleaned_data['tx_import']
-
-    def clean_bundle_split(self):
-        staged_txs_model: StagedTransactionModel = self.instance
-        if staged_txs_model.is_single():
-            return True
-        if staged_txs_model.is_children():
-            parent_form = self.BASE_FORMSET_INSTANCE.FORMS_BY_ID[staged_txs_model.parent.uuid]
-            return parent_form.cleaned_data['bundle_split']
-        return self.cleaned_data['bundle_split']
-
-    def clean(self):
-        if self.cleaned_data['tx_import'] and self.cleaned_data['tx_split']:
-            raise ValidationError(message=_('Cannot import and split at the same time'))
-
-    def has_changed(self):
-        has_changed = super().has_changed()
-        staged_txs_model: StagedTransactionModel = self.instance
-        if not has_changed and staged_txs_model.is_children():
-            parent_form = self.BASE_FORMSET_INSTANCE.FORMS_BY_ID[staged_txs_model.parent.uuid]
-            return parent_form.has_changed()
-        return has_changed
-
-    class Meta:
-        model = StagedTransactionModel
-        fields = [
-            'tx_import',
-            'bundle_split',
-            'amount_split',
-            'account_model',
-            'unit_model',
-            'receipt_type',
-            'vendor_model',
-            'customer_model',
-        ]
-        widgets = {
-            'account_model': Select(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                }
-            ),
-            'unit_model': Select(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                }
-            ),
-            'amount_split': NumberInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'}),
-            'vendor_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'}),
-            'customer_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'}),
-            'receipt_type': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'}),
-        }
-
-
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
     def __init__(
         self,
         *args,
         entity_model: EntityModel,
         import_job_model: ImportJobModel,
+        staged_tx_pk: Optional[UUID | StagedTransactionModel] = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -244,17 +87,36 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
 
         self.ENTITY_MODEL = entity_model
         self.IMPORT_JOB_MODEL: ImportJobModel = import_job_model
+        self.STAGED_TX_MODEL: Optional[UUID | StagedTransactionModel] = staged_tx_pk
 
-        self.queryset = (
-            StagedTransactionModel.objects.for_entity(entity_model=entity_model)
-            .for_import_job(import_job_model=import_job_model)
-            .is_pending()
-        )
+        staged_txs_qs = self.IMPORT_JOB_MODEL.stagedtransactionmodel_set.select_related(
+            'import_job',
+            'import_job__ledger_model',
+            'import_job__ledger_model__entity',
+            'import_job__bank_account_model__account_model',
+            'vendor_model',
+            'customer_model',
+            'unit_model',
+        ).is_pending()
+
+        if self.STAGED_TX_MODEL:
+            if isinstance(self.STAGED_TX_MODEL, StagedTransactionModel):
+                staged_txs_qs = staged_txs_qs.filter(
+                    Q(uuid__exact=self.STAGED_TX_MODEL.uuid) | Q(parent__uuid__exact=self.STAGED_TX_MODEL.uuid)
+                )
+            elif isinstance(self.STAGED_TX_MODEL, UUID):
+                staged_txs_qs = staged_txs_qs.filter(
+                    Q(uuid__exact=self.STAGED_TX_MODEL) | Q(parent__uuid__exact=self.STAGED_TX_MODEL)
+                )
+            else:
+                staged_txs_qs = staged_txs_qs.none()
+
+        self.queryset = staged_txs_qs
 
         self.MAPPED_ACCOUNT_MODEL = self.IMPORT_JOB_MODEL.bank_account_model.account_model
 
         self.account_model_qs = (
-            entity_model.get_coa_accounts().available().exclude(uuid__exact=self.MAPPED_ACCOUNT_MODEL.uuid)
+            self.ENTITY_MODEL.get_coa_accounts().available().exclude(uuid__exact=self.MAPPED_ACCOUNT_MODEL.uuid)
         )
         self.ACCOUNT_MODEL_CHOICES = [(None, '----')] + [(a.uuid, a) for a in self.account_model_qs]
         self.ACCOUNT_MODEL_EXPENSES_CHOICES = [(None, '----')] + [
@@ -268,7 +130,7 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
             (a.uuid, a) for a in self.account_model_qs if a.role in GROUP_TRANSFERS
         ]
 
-        self.ACCOUNT_MODEL_TRANSFERS_CC_PAYMENT = [(None, '----')] + [
+        self.ACCOUNT_MODEL_DEBT_PAYMENT_CHOICES = [(None, '----')] + [
             (a.uuid, a) for a in self.account_model_qs if a.role in GROUP_DEBT_PAYMENT
         ]
 
@@ -296,6 +158,265 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
     def get_form_kwargs(self, index):
         return {
             'base_formset_instance': self,
+            'entity_model': self.ENTITY_MODEL,
+            'import_job_model': self.IMPORT_JOB_MODEL,
+        }
+
+
+class StagedTransactionModelForm(ModelForm):
+    tx_import = forms.BooleanField(
+        initial=False,
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                'class': 'is-checkradio',
+            }
+        ),
+        label=_('Import Transaction'),
+        help_text=_('Will import this transaction when saved...'),
+    )
+
+    tx_split = forms.BooleanField(
+        initial=False,
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                'class': 'is-checkradio',
+            }
+        ),
+        label=_('Add a Transaction Split?'),
+        help_text=_('Will split this transaction when saved...'),
+    )
+
+    account_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'data-account-search': None,
+                'placeholder': _('Search Account...'),
+            }
+        ),
+        label=_('Search Account...'),
+        help_text=_('Filters the account list...'),
+    )
+
+    def __init__(
+        self,
+        *args,
+        entity_model: EntityModel,
+        import_job_model: ImportJobModel,
+        base_formset_instance: BaseStagedTransactionModelFormSet,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.ENTITY_MODEL: EntityModel = entity_model
+        self.IMPORT_JOB_MODEL: ImportJobModel = import_job_model
+        self.BASE_FORMSET: BaseStagedTransactionModelFormSet = base_formset_instance
+
+        self.ACCOUNT_MODEL_CHOICES = self.BASE_FORMSET.ACCOUNT_MODEL_CHOICES
+        self.EXPENSE_ACCOUNT_CHOICES = self.BASE_FORMSET.ACCOUNT_MODEL_EXPENSES_CHOICES
+        self.SALES_ACCOUNT_CHOICES = self.BASE_FORMSET.ACCOUNT_MODEL_SALES_CHOICES
+        self.TRANSFER_ACCOUNT_CHOICES = self.BASE_FORMSET.ACCOUNT_MODEL_TRANSFERS_CHOICES
+        self.DEBT_PAYDOWN_ACCOUNT_CHOICES = self.BASE_FORMSET.ACCOUNT_MODEL_DEBT_PAYMENT_CHOICES
+        self.UNIT_MODEL_CHOICES = self.BASE_FORMSET.UNIT_MODEL_CHOICES
+        self.VENDOR_CHOICES = self.BASE_FORMSET.VENDOR_CHOICES
+        self.CUSTOMER_CHOICES = self.BASE_FORMSET.CUSTOMER_CHOICES
+
+        self.VENDOR_MAP = dict(self.VENDOR_CHOICES)
+        self.CUSTOMER_MAP = dict(self.CUSTOMER_CHOICES)
+
+        self.fields['vendor_model'].choices = self.VENDOR_CHOICES
+        self.fields['customer_model'].choices = self.CUSTOMER_CHOICES
+        self.fields['account_model'].choices = self.ACCOUNT_MODEL_CHOICES
+        self.fields['unit_model'].choices = self.UNIT_MODEL_CHOICES
+
+        self.fields['activity'].disabled = True
+
+        staged_tx_model: StagedTransactionModel = getattr(self, 'instance', None)
+
+        if staged_tx_model:
+            if not staged_tx_model.can_have_activity():
+                self.fields['activity'].widget = HiddenInput()
+
+            if staged_tx_model.is_sales():
+                self.fields['account_model'].choices = self.SALES_ACCOUNT_CHOICES
+            if staged_tx_model.is_expense():
+                self.fields['account_model'].choices = self.EXPENSE_ACCOUNT_CHOICES
+            if staged_tx_model.is_transfer():
+                self.fields['account_model'].choices = self.TRANSFER_ACCOUNT_CHOICES
+            if staged_tx_model.is_debt_payment():
+                self.fields['account_model'].choices = self.DEBT_PAYDOWN_ACCOUNT_CHOICES
+
+            if not staged_tx_model.can_match():
+                self.fields['matched_transaction'].widget = HiddenInput()
+                self.fields['matched_transaction'].disabled = True
+
+            candidates_qs = staged_tx_model.get_match_candidates_qs()
+
+            if any([staged_tx_model.is_transfer(), staged_tx_model.is_debt_payment()]) and candidates_qs.exists():
+                self.fields['matched_transaction_model'].queryset = candidates_qs
+                if candidates_qs.count() == 1:
+                    self.fields['matched_transaction_model'].initial = candidates_qs.first()
+            else:
+                self.fields['matched_transaction_model'].widget = HiddenInput()
+                self.fields['matched_transaction_model'].disabled = True
+
+            if staged_tx_model.has_match():
+                self.fields['account_model'].disabled = True
+                self.fields['account_search'].disabled = True
+
+                self.fields['tx_split'].widget = HiddenInput()
+                self.fields['tx_split'].disabled = True
+
+                self.fields['vendor_model'].disabled = False
+                self.fields['vendor_model'].widget = HiddenInput()
+                self.fields['customer_model'].disabled = False
+                self.fields['customer_model'].widget = HiddenInput()
+            else:
+                self.fields['matched_transaction'].disabled = False
+                self.fields['matched_transaction'].widget = HiddenInput()
+
+            if not staged_tx_model.has_children():
+                self.fields['bundle_split'].widget = HiddenInput()
+                self.fields['bundle_split'].disabled = True
+
+            if not staged_tx_model.can_have_amount_split():
+                self.fields['amount_split'].widget = HiddenInput()
+                self.fields['amount_split'].disabled = True
+
+            if not staged_tx_model.can_have_bundle_split():
+                self.fields['bundle_split'].widget = HiddenInput()
+                self.fields['bundle_split'].disabled = True
+
+            if not staged_tx_model.can_have_receipt():
+                self.fields['receipt_type'].widget = HiddenInput()
+                self.fields['receipt_type'].disabled = True
+
+            if not staged_tx_model.can_have_account():
+                self.fields['account_model'].widget = HiddenInput()
+                self.fields['account_model'].disabled = True
+
+                self.fields['account_search'].widget = HiddenInput()
+                self.fields['account_search'].disabled = True
+
+            if not staged_tx_model.can_have_unit():
+                self.fields['unit_model'].widget = HiddenInput()
+                self.fields['unit_model'].disabled = True
+
+            if not staged_tx_model.can_have_vendor():
+                self.fields['vendor_model'].widget = HiddenInput()
+                self.fields['vendor_model'].disabled = True
+
+            if not staged_tx_model.can_have_customer():
+                self.fields['customer_model'].widget = HiddenInput()
+                self.fields['customer_model'].disabled = True
+
+            if not staged_tx_model.can_import():
+                self.fields['tx_import'].widget = HiddenInput()
+                self.fields['tx_import'].disabled = True
+
+            if not staged_tx_model.can_split():
+                self.fields['tx_split'].widget = HiddenInput()
+                self.fields['tx_split'].disabled = True
+
+            if staged_tx_model.is_children():
+                if 'tx_import' in self.fields:
+                    self.fields['tx_import'].widget = HiddenInput()
+                    self.fields['tx_import'].disabled = True
+                if 'tx_split' in self.fields:
+                    self.fields['tx_split'].widget = HiddenInput()
+                    self.fields['tx_split'].disabled = True
+
+    def clean_account_model(self):
+        staged_txs_model: StagedTransactionModel = self.instance
+        if staged_txs_model.has_children():
+            return None
+        return self.cleaned_data['account_model']
+
+    def clean_unit_model(self):
+        staged_txs_model: StagedTransactionModel = self.instance
+        if not staged_txs_model.can_have_unit():
+            if staged_txs_model.is_children():
+                return staged_txs_model.parent.unit_model
+            return None
+        return self.cleaned_data['unit_model']
+
+    def clean_bundle_split(self):
+        staged_txs_model: StagedTransactionModel = self.instance
+        if staged_txs_model.is_single():
+            return True
+        if staged_txs_model.is_children():
+            return staged_txs_model.parent.bundle_split
+        return self.cleaned_data['bundle_split']
+
+    def clean_activity(self):
+        return self.instance.activity
+
+    def clean(self):
+        # Prevent conflicting actions
+        if self.cleaned_data.get('tx_import') and self.cleaned_data.get('tx_split'):
+            raise ValidationError(message=_('Cannot import and split at the same time'))
+
+        staged_txs_model: StagedTransactionModel = self.instance
+
+        # Matching validation for transfers & debt payments
+        if all(
+            [
+                self.cleaned_data.get('matched_transaction') is True,
+                any([staged_txs_model.is_transfer(), staged_txs_model.is_debt_payment()]),
+            ]
+        ):
+            candidates_qs = staged_txs_model.get_match_candidates_qs()
+            selected = self.cleaned_data.get('match_tx_model')
+            if candidates_qs.count() > 1 and selected is None:
+                raise ValidationError(message=_('Multiple matches found. Please select a transaction to match.'))
+            if candidates_qs.count() == 1 and selected is None:
+                self.cleaned_data['match_tx_model'] = candidates_qs.first()
+
+    class Meta:
+        model = StagedTransactionModel
+        fields = [
+            'activity',
+            'matched_transaction_model',
+            'account_search',
+            'account_model',
+            'amount_split',
+            'unit_model',
+            'receipt_type',
+            'vendor_model',
+            'customer_model',
+            'notes',
+            'bundle_split',
+            'matched_transaction',
+            'tx_import',
+        ]
+        labels = {
+            'bundle_split': _('Grouped Transactions'),
+            'unit_model': _('Assigned Unit or Class'),
+            'amount_split': _('Split Amount'),
+            'account_model': _('Map to Account'),
+            'matched_transaction': _('Match Transaction'),
+            'vendor_model': _('Vendor'),
+            'customer_model': _('Customer'),
+        }
+        help_texts = {
+            'bundle_split': _('If checked, maps all splits to the same unit & receipt.'),
+            'amount_split': _('All splits amount must total parent transaction amount.'),
+            'account_model': _('The CoA account where the transaction will be imported.'),
+            'matched_transaction': _('The transaction will be matched against the selected transaction.'),
+        }
+        widgets = {
+            'account_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'unit_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'amount_split': NumberInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'vendor_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'customer_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'receipt_type': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'matched_transaction_model': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'notes': Textarea(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'activity': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'bundle_split': CheckboxInput(attrs={'class': 'is-checkradio'}),
         }
 
 

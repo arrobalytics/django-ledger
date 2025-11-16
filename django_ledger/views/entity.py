@@ -172,11 +172,10 @@ class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
                                'year': loc_date.year,
                                'month': loc_date.month,
                            })
-        return reverse('django_ledger:entity-dashboard-month',
+        return reverse('django_ledger:entity-dashboard-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
-                           'year': loc_date.year,
-                           'month': loc_date.month,
+                           'year': loc_date.year
                        })
 
 

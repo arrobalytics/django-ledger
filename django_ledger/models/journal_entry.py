@@ -30,12 +30,12 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
-from typing import Set, Union, Optional, Dict, Tuple, List
-from uuid import uuid4, UUID
+from typing import Dict, List, Optional, Set, Tuple, Union
+from uuid import UUID, uuid4
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, QuerySet, F, Manager, Count
+from django.db import IntegrityError, models, transaction
+from django.db.models import Count, F, Manager, Q, QuerySet, Sum
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.urls import reverse
@@ -45,28 +45,33 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io import roles
 from django_ledger.io.io_core import get_localtime
 from django_ledger.io.roles import (
-    ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
-    GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
-    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
+    ASSET_CA_CASH,
+    GROUP_CFS_FIN_DIVIDENDS,
+    GROUP_CFS_FIN_ISSUING_EQUITY,
+    GROUP_CFS_FIN_LT_DEBT_PAYMENTS,
+    GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
+    GROUP_CFS_INVESTING_AND_FINANCING,
+    GROUP_CFS_INVESTING_PPE,
     GROUP_CFS_INVESTING_SECURITIES,
-    validate_roles
+    validate_roles,
 )
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
-from django_ledger.models.entity import EntityStateModel, EntityModel
+from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.signals import (
-    journal_entry_unlocked,
     journal_entry_locked,
     journal_entry_posted,
-    journal_entry_unposted
+    journal_entry_unlocked,
+    journal_entry_unposted,
 )
 from django_ledger.models.transactions import TransactionModelQuerySet
 from django_ledger.settings import (
-    DJANGO_LEDGER_JE_NUMBER_PREFIX,
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX, DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX,
+    DJANGO_LEDGER_JE_NUMBER_PREFIX,
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
 )
 
 
@@ -385,7 +390,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     je_number = models.SlugField(max_length=25, editable=False, verbose_name=_('Journal Entry Number'))
     timestamp = models.DateTimeField(verbose_name=_('Timestamp'), default=localtime)
-    description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
+    description = models.CharField(max_length=120, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey(
         'django_ledger.EntityUnitModel',
         on_delete=models.RESTRICT,

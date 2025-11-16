@@ -21,7 +21,7 @@ from django_ledger.forms.app_filters import ActivityFilterForm, EntityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import ROLES_ORDER_ALL
 from django_ledger.io.io_core import get_localdate, validate_activity
-from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel
+from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel, ImportJobModelQuerySet, ImportJobModel
 from django_ledger.settings import (
     DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_FINANCIAL_ANALYSIS,
@@ -151,9 +151,7 @@ def cash_flow_statement(context, io_model):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/financial_statements/tags/income_statement.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/financial_statements/tags/income_statement.html', takes_context=True)
 def income_statement_table(context, io_model, from_date=None, to_date=None):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
@@ -186,37 +184,30 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/bank_account/tags/bank_accounts_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/bank_account/tags/bank_accounts_table.html', takes_context=True)
 def bank_account_table(context, bank_account_qs):
     entity_slug = context['view'].kwargs['entity_slug']
     return {'bank_account_qs': bank_account_qs, 'entity_slug': entity_slug}
 
 
-@register.inclusion_tag(
-    'django_ledger/data_import/tags/data_import_job_list_table.html', takes_context=True
-)
-def data_import_job_list_table(context):
-    return context
-
-
-@register.inclusion_tag(
-    'django_ledger/data_import/tags/data_import_job_txs_table.html', takes_context=True
-)
-def data_import_job_txs_pending(context, staged_txs_formset):
+@register.inclusion_tag('django_ledger/data_import/tags/import_job_list_table.html', takes_context=True)
+def import_job_list_table(context, import_jobs_qs: ImportJobModelQuerySet):
     return {
-        'entity_slug': staged_txs_formset.IMPORT_JOB_MODEL.entity_slug,
-        'import_job_model': staged_txs_formset.IMPORT_JOB_MODEL,
-        'staged_txs_formset': staged_txs_formset,
+        'import_jobs_qs': import_jobs_qs,
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/data_import/tags/data_import_job_txs_imported.html',
-    takes_context=True,
-)
-def data_import_job_txs_imported(context, import_job_model):
+@register.inclusion_tag('django_ledger/data_import/tags/import_job_txs_pending.html')
+def import_job_txs_pending(import_job_model: ImportJobModel):
+    return {
+        'entity_slug': import_job_model.entity_slug,
+        'import_job_model': import_job_model,
+        'staged_pending_qs': import_job_model.stagedtransactionmodel_set.all().is_pending(),
+    }
+
+
+@register.inclusion_tag('django_ledger/data_import/tags/import_job_txs_imported.html')
+def import_job_txs_imported(import_job_model: ImportJobModel):
     return {
         'entity_slug': import_job_model.entity_slug,
         'import_job_model': import_job_model,
@@ -224,9 +215,7 @@ def data_import_job_txs_imported(context, import_job_model):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/journal_entry/tags/je_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_table.html', takes_context=True)
 def jes_table(context, journal_entry_qs, next_url=None):
     entity_slug = context['view'].kwargs['entity_slug']
     ledger_pk = context['view'].kwargs['ledger_pk']
@@ -244,28 +233,16 @@ def jes_table(context, journal_entry_qs, next_url=None):
 
 
 @register.inclusion_tag('django_ledger/transactions/tags/txs_table.html')
-def transactions_table(
-    object_type: Union[JournalEntryModel, BillModel, InvoiceModel], style='detail'
-):
+def transactions_table(object_type: Union[JournalEntryModel, BillModel, InvoiceModel], style='detail'):
     if isinstance(object_type, JournalEntryModel):
-        transaction_model_qs = (
-            object_type.transactionmodel_set.all()
-            .with_annotated_details()
-            .order_by('-timestamp')
-        )
+        transaction_model_qs = object_type.transactionmodel_set.all().with_annotated_details().order_by('-timestamp')
     elif isinstance(object_type, BillModel):
-        transaction_model_qs = object_type.get_transaction_queryset(
-            annotated=True
-        ).order_by('-timestamp')
+        transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
     elif isinstance(object_type, InvoiceModel):
-        transaction_model_qs = object_type.get_transaction_queryset(
-            annotated=True
-        ).order_by('-timestamp')
+        transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
     else:
         raise ValidationError(
-            'Cannot handle object of type {} to get transaction model queryset'.format(
-                type(object_type)
-            )
+            'Cannot handle object of type {} to get transaction model queryset'.format(type(object_type))
         )
 
     total_credits = sum(tx.amount for tx in transaction_model_qs if tx.is_credit())
@@ -280,19 +257,16 @@ def transactions_table(
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/ledger/tags/ledgers_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/ledger/tags/ledgers_table.html', takes_context=True)
 def ledgers_table(context, ledger_model_qs):
     return {
         'ledger_model_qs': ledger_model_qs,
         'entity_slug': context['view'].kwargs['entity_slug'],
+        'current_path': context['request'].get_full_path(),
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/invoice/tags/invoice_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/invoice/tags/invoice_table.html', takes_context=True)
 def invoice_table(context, invoice_qs):
     return {
         'invoices': invoice_qs,
@@ -305,9 +279,7 @@ def bill_table(context, bill_qs):
     return {'bills': bill_qs, 'entity_slug': context['view'].kwargs['entity_slug']}
 
 
-@register.inclusion_tag(
-    'django_ledger/closing_entry/tags/closing_entry_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_table.html', takes_context=True)
 def closing_entry_table(context, closing_entry_qs):
     return {
         'closing_entry_list': closing_entry_qs,
@@ -315,23 +287,17 @@ def closing_entry_table(context, closing_entry_qs):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/closing_entry/tags/closing_entry_txs_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_txs_table.html', takes_context=True)
 def closing_entry_txs_table(context, closing_entry_txs_qs):
     ce_txs_list = list(closing_entry_txs_qs)
-    ce_txs_list.sort(
-        key=lambda ce_txs: ROLES_ORDER_ALL.index(ce_txs.account_model.role)
-    )
+    ce_txs_list.sort(key=lambda ce_txs: ROLES_ORDER_ALL.index(ce_txs.account_model.role))
     return {
         'ce_txs_list': ce_txs_list,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/purchase_order/includes/po_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/purchase_order/includes/po_table.html', takes_context=True)
 def po_table(context, purchase_order_qs):
     return {
         'po_list': purchase_order_qs,
@@ -339,9 +305,7 @@ def po_table(context, purchase_order_qs):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/account/tags/accounts_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/account/tags/accounts_table.html', takes_context=True)
 def accounts_table(context, accounts_qs, title=None):
     return {
         'title': title,
@@ -350,23 +314,17 @@ def accounts_table(context, accounts_qs, title=None):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/customer/tags/customer_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/customer/tags/customer_table.html', takes_context=True)
 def customer_table(context):
     return context
 
 
-@register.inclusion_tag(
-    'django_ledger/vendor/tags/vendor_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/vendor/tags/vendor_table.html', takes_context=True)
 def vendor_table(context):
     return context
 
 
-@register.inclusion_tag(
-    'django_ledger/account/tags/account_txs_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/account/tags/account_txs_table.html', takes_context=True)
 def account_txs_table(context, txs_qs):
     return {
         'transactions': txs_qs,
@@ -391,9 +349,7 @@ def nav_breadcrumbs(context):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/components/default_entity.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/components/default_entity.html', takes_context=True)
 def default_entity(context):
     user = context['user']
     session_key = get_default_entity_session_key()
@@ -402,9 +358,7 @@ def default_entity(context):
     identity = randint(0, 1000000)
     try:
         entity_uuid = session_entity_data['entity_uuid']
-        default_entity_form = EntityFilterForm(
-            user_model=user, form_id=identity, current_entity_uuid=entity_uuid
-        )
+        default_entity_form = EntityFilterForm(user_model=user, form_id=identity, current_entity_uuid=entity_uuid)
     except TypeError or KeyError:
         default_entity_form = EntityFilterForm(
             user_model=user,
@@ -435,9 +389,7 @@ def session_entity_name(context, request=None):
 
 
 # todo: rename template to activity_form_filter.
-@register.inclusion_tag(
-    'django_ledger/components/activity_form.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/components/activity_form.html', takes_context=True)
 def activity_filter(context):
     request = context['request']
     activity = request.GET.get('activity')
@@ -543,9 +495,7 @@ def fin_ratio_threshold_class(value, ratio):
             return 'is-success'
 
 
-@register.inclusion_tag(
-    'django_ledger/components/feedback_button.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/components/feedback_button.html', takes_context=True)
 def feedback_button(
     context,
     button_size_class: str = 'is-small',
@@ -569,9 +519,7 @@ def feedback_button(
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/components/period_navigator.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/components/period_navigator.html', takes_context=True)
 def period_navigation(context, base_url: str):
     kwargs = dict()
     entity_slug = context['view'].kwargs['entity_slug']
@@ -624,9 +572,7 @@ def period_navigation(context, base_url: str):
     if 'coa_slug' in kwargs:
         KWARGS_CURRENT_MONTH['coa_slug'] = kwargs['coa_slug']
 
-    ctx['current_month_url'] = reverse(
-        f'django_ledger:{base_url}-month', kwargs=KWARGS_CURRENT_MONTH
-    )
+    ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month', kwargs=KWARGS_CURRENT_MONTH)
 
     quarter_urls = list()
     ctx['quarter'] = context.get('quarter')
@@ -742,9 +688,7 @@ def navigation_menu(context, style):
                     {
                         'type': 'link',
                         'title': 'Purchase Orders',
-                        'url': reverse(
-                            'django_ledger:po-list', kwargs={'entity_slug': ENTITY_SLUG}
-                        ),
+                        'url': reverse('django_ledger:po-list', kwargs={'entity_slug': ENTITY_SLUG}),
                         'icon': 'mdi:cart',
                     },
                     {
@@ -895,7 +839,7 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Data Import',
                         'url': reverse(
-                            'django_ledger:data-import-jobs-list',
+                            'django_ledger:import-job-list',
                             kwargs={'entity_slug': ENTITY_SLUG},
                         ),
                         'icon': 'mdi:database-import',
@@ -929,41 +873,31 @@ def navigation_menu(context, style):
     return ctx
 
 
-@register.inclusion_tag(
-    'django_ledger/product/tags/product_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/product/tags/product_table.html', takes_context=True)
 def product_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {'entity_slug': entity_slug, 'product_list': queryset}
 
 
-@register.inclusion_tag(
-    'django_ledger/service/tags/services_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/service/tags/services_table.html', takes_context=True)
 def service_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {'entity_slug': entity_slug, 'service_list': queryset}
 
 
-@register.inclusion_tag(
-    'django_ledger/expense/tags/expense_item_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/expense/tags/expense_item_table.html', takes_context=True)
 def expense_item_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {'entity_slug': entity_slug, 'expense_list': queryset}
 
 
-@register.inclusion_tag(
-    'django_ledger/inventory/tags/inventory_item_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/inventory/tags/inventory_item_table.html', takes_context=True)
 def inventory_item_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {'entity_slug': entity_slug, 'inventory_item_list': queryset}
 
 
-@register.inclusion_tag(
-    'django_ledger/invoice/tags/invoice_item_formset.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/invoice/tags/invoice_item_formset.html', takes_context=True)
 def invoice_item_formset_table(context, itemtxs_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -973,9 +907,7 @@ def invoice_item_formset_table(context, itemtxs_formset):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/bills/tags/bill_item_formset.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/bills/tags/bill_item_formset.html', takes_context=True)
 def bill_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -985,9 +917,7 @@ def bill_item_formset_table(context, item_formset):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/purchase_order/includes/po_item_formset.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/purchase_order/includes/po_item_formset.html', takes_context=True)
 def po_item_formset_table(context, po_model, itemtxs_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -1004,9 +934,7 @@ def uom_table(context, uom_queryset):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/inventory/tags/inventory_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/inventory/tags/inventory_table.html', takes_context=True)
 def inventory_table(context, queryset):
     ctx = {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -1016,16 +944,12 @@ def inventory_table(context, queryset):
     return ctx
 
 
-@register.inclusion_tag(
-    'django_ledger/estimate/includes/estimate_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/estimate/includes/estimate_table.html', takes_context=True)
 def customer_estimate_table(context, queryset):
     return {'entity_slug': context['view'].kwargs['entity_slug'], 'ce_list': queryset}
 
 
-@register.inclusion_tag(
-    'django_ledger/estimate/includes/estimate_item_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/estimate/includes/estimate_item_table.html', takes_context=True)
 def estimate_item_table(context, queryset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -1034,9 +958,7 @@ def estimate_item_table(context, queryset):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/purchase_order/tags/po_item_table.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/purchase_order/tags/po_item_table.html', takes_context=True)
 def po_item_table(context, queryset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -1045,9 +967,7 @@ def po_item_table(context, queryset):
     }
 
 
-@register.inclusion_tag(
-    'django_ledger/estimate/tags/ce_item_formset.html', takes_context=True
-)
+@register.inclusion_tag('django_ledger/estimate/tags/ce_item_formset.html', takes_context=True)
 def customer_estimate_item_formset(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],

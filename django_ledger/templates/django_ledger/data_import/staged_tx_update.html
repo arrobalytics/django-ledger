@@ -1,0 +1,588 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+
+{% block header_extra_css %}
+    <style>
+        /* === CARD STYLES === */
+        .parent-card, .child-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .parent-card {
+            border: 3px solid #6c757d;
+            background: #e9ecef; /* Slightly darker than child */
+            padding: 1.5rem;
+        }
+
+        .child-card {
+            border: 2px solid #007bff;
+            padding: 1rem;
+            background: #f8f9fa; /* Light gray – different from parent */
+        }
+
+        .child-card:hover {
+            border-color: #0056b3;
+            box-shadow: 0 6px 12px rgba(0, 123, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Color variants */
+        .child-card.is-income {
+            border-color: #28a745;
+        }
+
+        .child-card.is-expense {
+            border-color: #dc3545;
+        }
+
+        .child-card.is-transfer {
+            border-color: #6f42c1;
+        }
+
+        /* Unified header */
+        .tx-card-header {
+            grid-column: 1 / -1;
+            margin: -1.5rem -1.5rem 1rem;
+            padding: 1rem 1.5rem;
+            background: #d6d8db; /* Parent header: slightly darker */
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .child-card .tx-card-header {
+            margin: -1rem -1rem 1rem;
+            padding: 0.75rem 1rem;
+            background: #ffffff; /* Child header: white for contrast */
+            border-bottom: 1px solid #dee2e6;
+            font-size: 1rem;
+        }
+
+        .tx-header .level-left .tx-header-name {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 768px) {
+            .parent-card {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .tx-card-header {
+                margin: -1rem -1rem 1rem;
+                padding: 0.75rem 1rem;
+            }
+        }
+
+        .helptext {
+            font-size: .75rem;
+            font-style: italic;
+        }
+    </style>
+{% endblock %}
+
+{% block view_content %}
+    <form method="post">
+        <div class="columns is-multiline">
+            {% if not formset.forms %}
+                <div class="column is-12 has-text-centered">
+                    <h3 class="is-size-3">All transactions imported :)</h3>
+                    <a href="{{ import_job_model.get_detail_url }}" class="button is-dark is-large">Back to List</a>
+                </div>
+            {% else %}
+                <div class="column is-12">
+
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    {% if formset.non_form_errors %}
+                        {% for err in formset.non_form_errors %}
+                            <p class="help is-danger">{{ err }}</p>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% for txf in formset %}
+                        <div class="sel-card {% if txf.instance.is_parent %}parent-card{% else %}child-card{% endif %}">
+
+                            <!-- Unified Header (Parent or Child) -->
+                            <header class="tx-card-header">
+                                <div class="level is-mobile is-flex-wrap-wrap tx-header">
+                                    <div class="level-left tx-header-left">
+                  <span class="mr-3" title="{{ txf.instance.date_posted }}">
+                    <span class="icon is-small mr-1">{% icon 'mdi:calendar' 16 %}</span>
+                    {{ txf.instance.date_posted }}
+                  </span>
+                                        <span class="tx-header-name has-text-weight-semibold"
+                                              title="{{ txf.instance.name }}">
+                    {{ txf.instance.name }}
+                  </span>
+                                    </div>
+                                    <div class="level-right">
+
+                  <span class="tag is-large is-rounded
+                          {% if txf.instance.is_parent %}{% if txf.instance.amount < 0 %}is-danger is-light{% else %}is-success is-light{% endif %}{% else %}{% if txf.instance.amount_split < 0 %}is-danger is-light{% else %}is-success is-light{% endif %}{% endif %}">
+                    {% currency_symbol %}
+                      {% if txf.instance.is_parent %}
+                          {{ txf.instance.amount | currency_format }}
+                      {% else %}
+                          {{ txf.instance.amount_split | currency_format }}
+                      {% endif %}
+                  </span>
+                                    {% if txf.instance.has_children %}
+                  <span class="tag is-large is-rounded
+                          {% if txf.instance.is_parent %}{% if txf.instance.amount < 0 %}is-danger is-light{% else %}is-success is-light{% endif %}{% else %}{% if txf.instance.amount_split < 0 %}is-danger is-light{% else %}is-success is-light{% endif %}{% endif %}">
+                    Splits:
+                      {% currency_symbol %}
+                      {% if txf.instance.is_parent %}
+                          {{ txf.instance.total_amount_split | currency_format }}
+                      {% else %}
+                          {{ txf.instance.total_amount_split | currency_format }}
+                      {% endif %}
+                  </span>
+                                    {% endif %}
+
+                                        {% if txf.instance.matches_found and txf.instance.matches_found > 0 %}
+                                            <span class="tag is-info is-light ml-2">
+                      {% trans 'Matches' %}: {{ txf.instance.matches_found }}
+                    </span>
+                                        {% endif %}
+
+                                        <span class="tag is-success is-light ml-2 is-hidden" data-match-selected-tag>
+                    {% trans 'Match selected' %}
+                  </span>
+
+                                        {% if txf.instance.can_import %}
+                                            <span class="tag is-warning ml-2 is-light">{% trans 'Can Import' %}</span>
+                                        {% elif txf.instance.can_match %}
+                                            <span class="tag is-success ml-2 is-light">{% trans 'Can Match' %}</span>
+                                        {% else %}
+                                            <span class="tag is-danger ml-2 is-light">{% trans 'Cannot Import' %}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </header>
+
+                            <!-- Form Content -->
+                            <div class="card-content">
+                                <div class="content">
+                                    {{ txf.as_p }}
+
+                                    {% if show_details %}
+                                        <ul>
+                                            <li>is_single: {{ txf.instance.is_single }}</li>
+                                            <li>is_parent: {{ txf.instance.is_parent }}</li>
+                                            <li>is_children: {{ txf.instance.is_children }}</li>
+                                            <li>is_mapped: {{ txf.instance.is_mapped }}</li>
+                                            <li>is_pending: {{ txf.instance.is_pending }}</li>
+                                            <li>is_imported: {{ txf.instance.is_imported }}</li>
+                                            <li>is_bundled: {{ txf.instance.is_bundled }}</li>
+
+                                            <li>imported_count: {{ txf.instance.imported_count }}</li>
+                                            <li>children_count: {{ txf.instance.children_count }}</li>
+                                            <li>children_mapped_count: {{ txf.instance.children_mapped_count }}</li>
+                                            <li>children_mapping_done: {{ txf.instance.children_mapping_done }}</li>
+                                            <li>has_match_candidates: {{ txf.instance.has_match_candidates }}</li>
+                                            <li>matches_found: {{ txf.instance.matches_found }}</li>
+
+                                            <li>is_cash_transaction: {{ txf.instance.is_cash_transaction }}</li>
+
+
+                                            <li>can_have_activity: {{ txf.instance.can_have_activity }}</li>
+
+                                            <li>can_have_amount_split: {{ txf.instance.can_have_amount_split }}</li>
+                                            <li>can_have_bundle_split: {{ txf.instance.can_have_bundle_split }}</li>
+                                            <li>can_have_vendor: {{ txf.instance.can_have_vendor }}</li>
+                                            <li>can_have_customer: {{ txf.instance.can_have_customer }}</li>
+                                            <li>has_receipt: {{ txf.instance.has_receipt }}</li>
+                                            <li>has_mapped_receipt: {{ txf.instance.has_mapped_receipt }}</li>
+                                            <li>can_unbundle: {{ txf.instance.can_unbundle }}</li>
+                                            <li>can_split: {{ txf.instance.can_split }}</li>
+                                            <li>can_have_unit: {{ txf.instance.can_have_unit }}</li>
+                                            <li>can_have_account: {{ txf.instance.can_have_account }}</li>
+                                            <li>can_have_activity: {{ txf.instance.can_have_activity }}</li>
+
+
+                                            <li>total_amount_split: {{ txf.instance.total_amount_split }}</li>
+                                            <li>ready_to_import: {{ txf.instance.ready_to_import }}</li>
+                                            <li>has_activity: {{ txf.instance.has_activity }}</li>
+                                            <li>get_import_role_set: {{ txf.instance.get_import_role_set }}</li>
+                                            <li>is_role_mapping_valid: {{ txf.instance.is_role_mapping_valid }}</li>
+                                            <li>
+                                                get_prospect_je_activity_try: {{ txf.instance.get_prospect_je_activity_try }}</li>
+                                            <li>can_import: {{ txf.instance.can_import }}</li>
+                                            <li>can_migrate: {{ txf.instance.can_migrate }}</li>
+                                        </ul>
+                                    {% endif %}
+
+
+                                </div>
+                            </div>
+
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+                <div class="column is-12 has-text-centered">
+                    <button class="button is-success is-large" type="submit">Save</button>
+                    <a href="{{ import_job_model.get_detail_url }}" class="button is-dark is-large">Back to List</a>
+                </div>
+
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}
+
+{% block bottom_extra_js %}
+    <script>
+        // Minimal JS to simplify mapping workflow and improve visibility
+        (function () {
+            function $all(root, sel) {
+                return Array.prototype.slice.call(root.querySelectorAll(sel));
+            }
+
+            function on(el, ev, fn) {
+                if (el) el.addEventListener(ev, fn);
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+
+                $all(document, '.sel-card').forEach(function (card) {
+
+                    var importCb = card.querySelector('input[type="checkbox"][name$="tx_import"]');
+                    var accountSel = card.querySelector('select[name$="account_model"]');
+                    var matchSel = card.querySelector('select[name$="matched_transaction_model"], select[name$="match_tx_model"]');
+                    var clearMatchBtn = card.querySelector('[data-clear-match]');
+                    var matchSelectedTag = card.querySelector('[data-match-selected-tag]');
+
+                    // Account search elements
+                    var accountSearchInput = card.querySelector('[data-account-search]');
+                    var accountSearchClearBtn = card.querySelector('[data-clear-account-search]');
+
+                    // Cache for option text to allow efficient filtering
+                    var _accountOptionsCache = null;
+                    var _accountNoResultsOption = null;
+
+                    function normalizeText(s) {
+                        return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    }
+
+                    function ensureAccountOptionsCache() {
+                        if (!_accountOptionsCache && accountSel && accountSel.options) {
+                            // Snapshot original options in order so we can rebuild the list reliably
+                            _accountOptionsCache = Array.prototype.map.call(accountSel.options, function (opt, idx) {
+                                return {
+                                    option: opt,
+                                    value: opt.value,
+                                    text: normalizeText(opt.text || opt.label || ''),
+                                    isPlaceholder: !opt.value,
+                                    index: idx
+                                };
+                            });
+                        }
+                    }
+
+                    function rebuildAccountOptions(includeValuesSet) {
+                        if (!accountSel) return;
+                        ensureAccountOptionsCache();
+
+                        var prevSelected = accountSel.value;
+                        var includeAll = !includeValuesSet;
+
+                        // Clear current options
+                        accountSel.innerHTML = '';
+
+                        var frag = document.createDocumentFragment();
+
+                        // Always keep placeholder (first empty-value option), if any
+                        var placeholderItem = null;
+                        for (var i = 0; i < _accountOptionsCache.length; i++) {
+                            if (_accountOptionsCache[i].isPlaceholder) {
+                                placeholderItem = _accountOptionsCache[i];
+                                break;
+                            }
+                        }
+                        if (placeholderItem) {
+                            frag.appendChild(placeholderItem.option);
+                        }
+
+                        // Append options in original order, filtered by includeValuesSet (or all if resetting)
+                        for (var j = 0; j < _accountOptionsCache.length; j++) {
+                            var item = _accountOptionsCache[j];
+                            if (item.isPlaceholder) continue;
+                            if (includeAll || includeValuesSet.has(item.value)) {
+                                frag.appendChild(item.option);
+                            }
+                        }
+
+                        accountSel.appendChild(frag);
+
+                        // Restore selection if still present; otherwise fall back to placeholder
+                        var hasPrev = prevSelected && Array.prototype.some.call(accountSel.options, function (o) {
+                            return o.value === prevSelected;
+                        });
+
+                        if (hasPrev) {
+                            accountSel.value = prevSelected;
+                        } else if (placeholderItem) {
+                            accountSel.value = '';
+                        }
+                    }
+
+                    function filterAccountOptions(query) {
+                        if (!accountSel) return;
+                        ensureAccountOptionsCache();
+                        var q = normalizeText(query || '');
+
+                        if (!q) {
+                            // Reset to full list
+                            rebuildAccountOptions(null);
+                            return;
+                        }
+
+                        var selectedVal = accountSel.value;
+                        var include = new Set();
+
+                        // Collect matches by text
+                        for (var k = 0; k < _accountOptionsCache.length; k++) {
+                            var item = _accountOptionsCache[k];
+                            if (item.isPlaceholder) continue;
+                            if (item.text.indexOf(q) !== -1) {
+                                include.add(item.value);
+                            }
+                        }
+
+                        // Always keep the currently selected option visible
+                        if (selectedVal) {
+                            include.add(selectedVal);
+                        }
+
+                        rebuildAccountOptions(include);
+                    }
+
+                    // Split control (if present for this card)
+                    var splitCb = card.querySelector('input[type="checkbox"][name$="-tx_split"]');
+                    var splitControl = splitCb ? (splitCb.closest('.control') || splitCb.parentElement) : null;
+
+                    var customerSel = card.querySelector('select[name$="-customer_model"]');
+                    var vendorSel = card.querySelector('select[name$="-vendor_model"]');
+                    var receiptSel = card.querySelector('select[name$="-receipt_type"]');
+
+                    var chipCustomer = card.querySelector('[data-chip="customer_model"]');
+                    var chipVendor = card.querySelector('[data-chip="vendor_model"]');
+                    var chipReceipt = card.querySelector('[data-chip="receipt_type"]');
+
+                    function setImportChecked(checked) {
+                        if (importCb) importCb.checked = !!checked;
+                    }
+
+                    function toggleAccountVisibility() {
+                        if (!accountSel) return;
+                        var group = accountSel.closest('.field') || accountSel.parentElement;
+                        if (!group) return;
+                        group.style.display = (matchSel && matchSel.value) ? 'none' : '';
+                    }
+
+                    function toggle(el, show) {
+                        if (!el) return;
+                        if (show) {
+                            el.classList.remove('is-hidden');
+                        } else {
+                            el.classList.add('is-hidden');
+                        }
+                    }
+
+                    function hasCandidates() {
+                        if (!matchSel || !matchSel.options) return false;
+                        for (var i = 0; i < matchSel.options.length; i++) {
+                            if (matchSel.options[i].value) return true;
+                        }
+                        return false;
+                    }
+
+                    function updateMatchUI() {
+                        var hasMatch = !!(matchSel && matchSel.value);
+                        var candidates = hasCandidates();
+                        toggleAccountVisibility();
+                        // Do not auto-check Import; user must explicitly choose to import
+                        toggle(matchSelectedTag, hasMatch);
+                        if (clearMatchBtn) {
+                            clearMatchBtn.disabled = !hasMatch;
+                            clearMatchBtn.classList[hasMatch ? 'remove' : 'add']('is-static');
+                        }
+                        // Toggle card highlight classes
+                        if (card) {
+                            card.classList[candidates ? 'add' : 'remove']('stx-outline-info');
+                            card.classList[hasMatch ? 'add' : 'remove']('stx-outline-success');
+                            if (!hasMatch && !candidates) {
+                                card.classList.remove('stx-outline-success');
+                                card.classList.remove('stx-outline-info');
+                            }
+                        }
+                        // Hide Split control when a match is selected
+                        if (splitControl) {
+                            splitControl.style.display = hasMatch ? 'none' : '';
+                            if (hasMatch && splitCb) {
+                                splitCb.checked = false;
+                            }
+                        }
+                        // Ensure bundle UI reflects current match state
+                        if (typeof updateBundleUI === 'function') updateBundleUI();
+                    }
+
+                    function labelForChip(chipEl) {
+                        return (chipEl && chipEl.dataset && chipEl.dataset.label) ? chipEl.dataset.label : '';
+                    }
+
+                    function setChip(selectEl, chipEl) {
+                        if (!selectEl || !chipEl) return;
+                        var val = selectEl.value;
+                        if (val) {
+                            var text = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text : '';
+                            chipEl.textContent = labelForChip(chipEl) + ': ' + text;
+                            chipEl.classList.remove('is-hidden');
+                        } else {
+                            chipEl.textContent = '';
+                            chipEl.classList.add('is-hidden');
+                        }
+                    }
+
+                    function updateChips() {
+                        setChip(customerSel, chipCustomer);
+                        setChip(vendorSel, chipVendor);
+                        setChip(receiptSel, chipReceipt);
+                    }
+
+                    // Account search listeners
+                    if (accountSearchInput) {
+                        on(accountSearchInput, 'input', function (e) {
+                            filterAccountOptions(e.target.value);
+                        });
+                        on(accountSearchInput, 'keydown', function (e) {
+                            if (e.key === 'Escape') {
+                                accountSearchInput.value = '';
+                                filterAccountOptions('');
+                                e.stopPropagation();
+                            }
+                        });
+                        on(accountSearchInput, 'focus', function () {
+                            ensureAccountOptionsCache();
+                        });
+                    }
+
+                    // Bundle toggle: hide account + meta when bundling
+                    var bundleCb = card.querySelector('input[type="checkbox"][name$="-bundle_split"]');
+                    var metaSection = card.querySelector('[data-meta-section]');
+
+                    function updateBundleUI() {
+                        var bundling = !!(bundleCb && bundleCb.checked);
+                        var hasMatch = !!(matchSel && matchSel.value);
+                        // Hide account field group when bundling or matching
+                        if (accountSel) {
+                            var grp = accountSel.closest('.field') || accountSel.parentElement;
+                            if (grp) grp.style.display = (bundling || hasMatch) ? 'none' : '';
+                        }
+                        // Hide meta section (unit/vendor/customer/receipt) when bundling or matching
+                        if (metaSection) {
+                            metaSection.style.display = (bundling || hasMatch) ? 'none' : '';
+                        }
+                    }
+
+                    // if (bundleCb) {
+                    //     on(bundleCb, 'change', updateBundleUI);
+                    // }
+
+                    // Card-level keyword filter: filters child split boxes and match candidates
+                    var cardFilterInput = card.querySelector('[data-card-filter]');
+                    var cardFilterClearBtn = card.querySelector('[data-clear-card-filter]');
+                    // var childBoxes = $all(card, '[data-child-box]');
+
+                    // Cache and filter for match select options (if present)
+                    var _matchOptionsCache = null;
+
+                    function ensureMatchOptionsCache() {
+                        if (!_matchOptionsCache && matchSel && matchSel.options) {
+                            _matchOptionsCache = Array.prototype.map.call(matchSel.options, function (opt) {
+                                return {
+                                    option: opt,
+                                    value: opt.value,
+                                    text: normalizeText(opt.text || opt.label || ''),
+                                    isPlaceholder: !opt.value
+                                };
+                            });
+                        }
+                    }
+
+                    function rebuildMatchOptions(includeValuesSet) {
+                        if (!matchSel) return;
+                        ensureMatchOptionsCache();
+                        var prevSelected = matchSel.value;
+                        var includeAll = !includeValuesSet;
+                        matchSel.innerHTML = '';
+                        var frag = document.createDocumentFragment();
+                        var placeholderItem = null;
+                        for (var i = 0; i < _matchOptionsCache.length; i++) {
+                            if (_matchOptionsCache[i].isPlaceholder) {
+                                placeholderItem = _matchOptionsCache[i];
+                                break;
+                            }
+                        }
+                        if (placeholderItem) frag.appendChild(placeholderItem.option);
+                        for (var j = 0; j < _matchOptionsCache.length; j++) {
+                            var it = _matchOptionsCache[j];
+                            if (it.isPlaceholder) continue;
+                            if (includeAll || includeValuesSet.has(it.value)) {
+                                frag.appendChild(it.option);
+                            }
+                        }
+                        matchSel.appendChild(frag);
+                        var hasPrev = prevSelected && Array.prototype.some.call(matchSel.options, function (o) {
+                            return o.value === prevSelected;
+                        });
+                        if (hasPrev) matchSel.value = prevSelected; else if (placeholderItem) matchSel.value = '';
+                    }
+
+                    function filterMatchOptions(query) {
+                        if (!matchSel) return;
+                        ensureMatchOptionsCache();
+                        var q = normalizeText(query || '');
+                        if (!q) {
+                            rebuildMatchOptions(null);
+                            return;
+                        }
+                        var selectedVal = matchSel.value;
+                        var include = new Set();
+                        for (var k = 0; k < _matchOptionsCache.length; k++) {
+                            var item = _matchOptionsCache[k];
+                            if (item.isPlaceholder) continue;
+                            if (item.text.indexOf(q) !== -1) include.add(item.value);
+                        }
+                        if (selectedVal) include.add(selectedVal);
+                        rebuildMatchOptions(include);
+                    }
+
+                    function applyCardFilter(q) {
+                        var nq = normalizeText(q || '');
+                        // Filter children
+                        childBoxes.forEach(function (bx) {
+                            var name = normalizeText(bx.getAttribute('data-child-name') || '');
+                            bx.style.display = nq ? (name.indexOf(nq) !== -1 ? '' : 'none') : '';
+                        });
+                        // Filter match candidates
+                        filterMatchOptions(nq);
+                    }
+
+                });
+            });
+        })();
+    </script>
+{% endblock %}

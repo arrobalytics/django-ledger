@@ -52,6 +52,7 @@ DJANGO_LEDGER_INVOICE_MODEL_ABSTRACT_CLASS = getattr(settings,
                                                      'django_ledger.models.invoice.InvoiceModelAbstract')
 
 DJANGO_LEDGER_DEFAULT_COA = getattr(settings, 'DJANGO_LEDGER_DEFAULT_COA', None)
+DJANGO_LEDGER_MATCH_DAYS_WINDOW = getattr(settings, 'DJANGO_LEDGER_MATCH_DAYS_WINDOW', 7)
 
 DJANGO_LEDGER_FINANCIAL_ANALYSIS = {
     'ratios': {

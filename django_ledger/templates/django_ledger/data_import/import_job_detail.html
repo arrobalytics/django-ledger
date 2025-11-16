@@ -1,0 +1,68 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="box">
+        <div class="columns is-multiline">
+            <div class="column is-12">
+                <div class="level">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-5 has-text-weight-semibold">{{ import_job_model.description }}</p>
+                            <p class="is-size-6 has-text-grey">
+                                {{ import_job_model.bank_account_model }}
+                                &middot; {{ import_job_model.created }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <a class="button is-info is-light mr-2"
+                           href="{{ import_job_model.get_update_url }}">
+                            {% trans 'Update' %}
+                        </a>
+                        <form class="mr-2" action="{{ import_job_model.get_data_import_reset_url }}" method="post">
+                            {% csrf_token %}
+                            <button class="button is-warning" type="submit">{% trans 'Reset Job' %}</button>
+                        </form>
+                        <a class="button is-dark"
+                           href="{{ import_job_model.get_list_url }}">{% trans 'Back' %}</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress visual -->
+            <div class="column is-12">
+                <div class="box" style="border-radius: 10px;">
+                    <div class="level is-mobile">
+                        <div class="level-left">
+                            <p class="is-size-6 has-text-weight-semibold">{% trans 'Import Progress' %}</p>
+                        </div>
+                        <div class="level-right">
+                            <span class="tag is-info is-light mr-1">{% trans 'Total' %}: {{ progress.total }}</span>
+                            <span class="tag is-success is-light mr-1">{% trans 'Imported' %}: {{ progress.imported }}</span>
+                            <span class="tag is-warning is-light mr-1">{% trans 'Ready' %}: {{ progress.ready }}</span>
+                            <span class="tag is-danger is-light">{% trans 'Pending' %}: {{ progress.pending }}</span>
+                        </div>
+                    </div>
+                    <progress class="progress is-primary" value="{{ progress.pct }}" max="100">{{ progress.pct }}%
+                    </progress>
+                    <p class="has-text-right is-size-7 has-text-grey">{{ progress.pct }}% {% trans 'complete' %}</p>
+                </div>
+            </div>
+
+            <!-- Pending Transactions Table (interactive overview) -->
+            <div class="column is-12">
+                <h2 class="is-size-4 mb-2">{% trans 'Pending Transactions' %}</h2>
+                {% import_job_txs_pending import_job_model %}
+            </div>
+
+            <!-- Imported Transactions Table (reuse tag) -->
+            <div class="column is-12 mb-4">
+                <h2 class="is-size-4 mb-2">{% trans 'Imported / Matched Transactions' %}</h2>
+                {% import_job_txs_imported import_job_model %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

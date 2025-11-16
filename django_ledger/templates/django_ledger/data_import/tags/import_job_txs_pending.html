@@ -1,0 +1,120 @@
+{% load i18n %}
+{% load django_ledger %}
+
+<div class="table-container">
+    <table class="table is-narrow is-fullwidth is-bordered">
+        <thead>
+        <tr class="has-text-centered">
+            <th>{% trans 'Date Posted' %}</th>
+            <th>{% trans 'Description' %}</th>
+            <th class="has-text-centered">{% trans 'Amount' %}</th>
+            <th>{% trans 'Activity' %}</th>
+            <th>{% trans 'Entity Unit' %}</th>
+            <th>{% trans 'Map To' %}</th>
+            <th>{% trans 'Receipt' %}</th>
+            <th class="has-text-centered">{% trans 'Status' %}</th>
+            <th class="has-text-centered">{% trans 'Actions' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        {% regroup staged_pending_qs by group_uuid as pending_groups %}
+        {% for group in pending_groups %}
+            <tr class="has-background-light">
+                <td colspan="9" class="has-text-weight-semibold">
+                    {% trans 'Bundle' %} {{ forloop.counter }} —
+                    {% trans 'Parent' %}:
+                    {% with parent_tx=group.list.0.parent|default:group.list.0 %}
+                        {{ parent_tx.date_posted }} · {{ parent_tx.name }} ·
+                        {% currency_symbol %}{{ parent_tx.get_amount }}
+                        {% if parent_tx.get_activity_display %} ·
+                            {{ parent_tx.get_activity_display }}{% endif %}
+                    {% endwith %}
+                    <span class="tag is-info is-light" style="margin-left: .5rem;">
+                                        {% if group.list.0.is_bundled %}{% trans 'Bundled' %}{% else %}
+                                            {% trans 'Not Bundled' %}{% endif %}
+                                    </span>
+                </td>
+            </tr>
+            {% for stx in group.list %}
+                {# Row highlighting for readability #}
+                <tr id="staged-tx-{{ stx.uuid }}"
+                    class="{% if stx.ready_to_import %}has-background-success-light{% elif stx.matches_found and stx.matches_found > 0 %}has-background-info-light{% elif stx.has_receipt %}has-background-link-light{% endif %} {% if stx.is_children %}is-dark{% endif %}">
+                    <td>{{ stx.date_posted }}</td>
+                    <td>
+                        {% if stx.is_children %}
+                            <span class="tag is-primary is-light">{% trans 'Child' %}</span>
+                        {% else %}
+                            <span class="tag is-dark is-light">{% trans 'Parent' %}</span>
+                        {% endif %}
+                        {{ stx.name }}
+                        <div class="is-size-7 mt-1">
+                            {% if stx.matches_found and stx.matches_found > 0 %}
+                                <span class="tag is-info is-light mr-1">{% trans 'Matches' %}: {{ stx.matches_found }}</span>
+                            {% endif %}
+                            {% if stx.is_mapped %}
+                                <span class="tag is-primary is-light mr-1">{% trans 'Mapped' %}</span>
+                            {% endif %}
+                            {% if stx.has_receipt %}
+                                <span class="tag is-link is-light mr-1">{% trans 'Has Receipt' %}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="has-text-centered {% if stx.get_amount < 0.00 %}has-text-danger{% endif %}">
+                        {% currency_symbol %}{{ stx.get_amount }}
+                    </td>
+                    <td>{% if stx.activity %}{{ stx.get_activity_display }}{% endif %}</td>
+                    <td>{% if stx.entity_unit %}{{ stx.entity_unit }}{% endif %}</td>
+                    <td>{{ stx.account_model|default:'' }}</td>
+                    <td>
+                        {% if stx.receipt_type %}
+                            <span class="tag is-light">{{ stx.get_receipt_type_display }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="has-text-centered">
+                        {% if stx.ready_to_import %}
+                            <span class="tag is-success is-light">{% trans 'Ready' %}</span>
+                        {% else %}
+                            <span class="tag is-warning is-light">{% trans 'Pending' %}</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="has-text-centered">
+                        {% if not stx.is_children %}
+                            <div class="dropdown is-hoverable is-up">
+                                <div class="dropdown-trigger">
+                                    <button class="button is-small" aria-haspopup="true"
+                                            aria-controls="actions-{{ stx.uuid }}">
+                                        <span>{% trans 'Actions' %}</span>
+                                        <span class="icon is-small">{% icon 'mdi:chevron-down' 14 %}</span>
+                                    </button>
+                                </div>
+
+                                <div class="dropdown-menu" id="actions-{{ stx.uuid }}" role="menu">
+                                    <div class="dropdown-content">
+
+                                        <a href="{{ stx.get_update_url }}"
+                                           class="dropdown-item has-text-weight-bold has-text-warning">
+                                            {% trans 'Update' %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </td>
+
+                </tr>
+            {% endfor %}
+        {% empty %}
+            <tr>
+                <td colspan="9"
+                    class="has-text-centered has-text-grey">{% trans 'No pending transactions.' %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+

@@ -983,7 +983,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             return None
         job = self.staged_transaction_model.import_job
         return reverse(
-            'django_ledger:data-import-job-txs',
+            'django_ledger:import-job-detail',
             kwargs={'entity_slug': self.entity_slug, 'job_pk': job.uuid},
         )
 

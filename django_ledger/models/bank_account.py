@@ -6,14 +6,15 @@ A Bank Account refers to the financial institution which holds financial assets 
 A bank account usually holds cash, which is a Current Asset. Transactions may be imported using the open financial
 format specification OFX into a staging area for final disposition into the EntityModel ledger.
 """
+
 import warnings
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, QuerySet, Manager
+from django.db.models import Manager, Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
@@ -37,10 +38,7 @@ class BankAccountModelQuerySet(QuerySet):
     def for_user(self, user_model) -> 'BankAccountModelQuerySet':
         if user_model.is_superuser:
             return self
-        return self.filter(
-            Q(entity_model__admin=user_model) |
-            Q(entity_model__managers__in=[user_model])
-        )
+        return self.filter(Q(entity_model__admin=user_model) | Q(entity_model__managers__in=[user_model]))
 
     def active(self) -> 'BankAccountModelQuerySet':
         """
@@ -75,7 +73,7 @@ class BankAccountModelManager(Manager):
         return BankAccountModelQuerySet(self.model, using=self._db)
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> BankAccountModelQuerySet:
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> BankAccountModelQuerySet:  # noqa: F821
         """
         Allows only the authorized user to query the BankAccountModel for a given EntityModel.
         This is the recommended initial QuerySet.
@@ -93,7 +91,7 @@ class BankAccountModelManager(Manager):
                 'user_model parameter is deprecated and will be removed in a future release. '
                 'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
                 qs = qs.for_user(kwargs['user_model'])
@@ -140,25 +138,21 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
 
     # todo: rename to account_name?...
     name = models.CharField(max_length=150, null=True, blank=True)
-    entity_model = models.ForeignKey('django_ledger.EntityModel',
-                                     on_delete=models.CASCADE,
-                                     verbose_name=_('Entity Model'))
+    entity_model = models.ForeignKey(
+        'django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Entity Model')
+    )
 
-    account_model = models.ForeignKey('django_ledger.AccountModel',
-                                      on_delete=models.RESTRICT,
-                                      help_text=_(
-                                          'Account model be used to map transactions from financial institution'
-                                      ),
-                                      verbose_name=_('Associated Account Model'))
+    account_model = models.ForeignKey(
+        'django_ledger.AccountModel',
+        on_delete=models.RESTRICT,
+        help_text=_('Account model be used to map transactions from financial institution'),
+        verbose_name=_('Associated Account Model'),
+    )
     active = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
     objects = BankAccountModelManager()
 
-    def configure(self,
-                  entity_slug,
-                  user_model: Optional[UserModel],
-                  commit: bool = False):
-
+    def configure(self, entity_slug, user_model: Optional[UserModel], commit: bool = False):
         EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_slug, str):
             if not user_model:
@@ -173,10 +167,7 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         self.entity_model = entity_model
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'entity_model',
-                'updated'
-            ])
+            self.save(update_fields=['entity_model', 'updated'])
         return self, entity_model
 
     def is_active(self):
@@ -188,11 +179,11 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         indexes = [
             models.Index(fields=['account_type']),
             models.Index(fields=['account_model']),
-            models.Index(fields=['entity_model'])
+            models.Index(fields=['entity_model']),
         ]
         unique_together = [
             ('entity_model', 'account_number'),
-            ('entity_model', 'account_model', 'account_number', 'routing_number')
+            ('entity_model', 'account_model', 'account_number', 'routing_number'),
         ]
 
     def __str__(self):
@@ -216,10 +207,7 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
                 raise BankAccountValidationError('Bank Account cannot be activated.')
         self.active = True
         if commit:
-            self.save(update_fields=[
-                'active',
-                'updated'
-            ])
+            self.save(update_fields=['active', 'updated'])
 
     def mark_as_inactive(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_inactivate():
@@ -227,10 +215,7 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
                 raise BankAccountValidationError('Bank Account cannot be deactivated.')
         self.active = False
         if commit:
-            self.save(update_fields=[
-                'active',
-                'updated'
-            ])
+            self.save(update_fields=['active', 'updated'])
 
 
 class BankAccountModel(BankAccountModelAbstract):

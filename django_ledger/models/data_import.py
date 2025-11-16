@@ -11,7 +11,7 @@ or further processing.
 """
 
 import warnings
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Set, Union
 from uuid import UUID, uuid4
@@ -32,18 +32,20 @@ from django.db.models import (
     When,
 )
 from django.db.models.functions import Coalesce
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_delete, pre_save
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
 from django_ledger.models import AccountModel
+from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.receipt import ReceiptModel
-from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+from django_ledger.models.transactions import TransactionModel
+from django_ledger.settings import DJANGO_LEDGER_MATCH_DAYS_WINDOW, DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 
 class ImportJobModelValidationError(ValidationError):
@@ -108,25 +110,25 @@ class ImportJobModelManager(Manager):
         """
         Generates a QuerySet with annotated data for ImportJobModel.
 
-        This method constructs a custom QuerySet for ImportJobModel with multiple
-        annotations and related fields. It includes counts for specific transaction
-        states, calculates pending transactions, and checks for completion status
-        of the import job. The QuerySet uses annotations and filters to derive
-        various properties required for processing.
+        This queryset annotates each import job with entity info and accurate
+        transaction progress metrics at the root (parent) level, aligned with
+        `StagedTransactionModelQuerySet.is_imported()` semantics:
+        - A root staged transaction (parent is null) is considered imported if
+          it has a non-null `transaction_model` or `matched_transaction_model`,
+          OR if it is not a bundled split (`bundle_split=False`) and has at
+          least one child with a non-null `transaction_model` or
+          `matched_transaction_model`.
 
-        Returns
-        -------
-        QuerySet
-            A QuerySet with additional annotations:
-            - _entity_uuid : UUID of the entity associated with the ledger model.
-            - _entity_slug : Slug of the entity associated with the ledger model.
-            - txs_count : Integer count of non-root transactions.
-            - txs_mapped_count : Integer count of mapped transactions based on specific
-              conditions.
-            - txs_pending : Integer count of pending transactions, calculated as
-              txs_count - txs_mapped_count.
-            - is_complete : Boolean value indicating if the import job is complete
-              (no pending transactions or total count is zero).
+        Annotations provided:
+        - _entity_uuid: UUID of the entity associated with the ledger model.
+        - _entity_slug: Slug of the entity associated with the ledger model.
+        - txs_count: Count of root (parent) staged transactions per job.
+        - txs_imported_count: Count of root staged transactions considered
+          imported per the definition above.
+        - txs_pending: Root transactions still pending import
+          (txs_count - txs_imported_count).
+        - is_complete: True when all root transactions are imported
+          (and False when there are none or still pending).
         """
         qs = ImportJobModelQuerySet(self.model, using=self._db)
         return (
@@ -135,15 +137,31 @@ class ImportJobModelManager(Manager):
                 _entity_slug=F('ledger_model__entity__slug'),
                 txs_count=Count(
                     'stagedtransactionmodel',
-                    filter=Q(stagedtransactionmodel__parent__isnull=False),
+                    filter=Q(stagedtransactionmodel__parent__isnull=True),
+                    distinct=True,
                 ),
-                txs_mapped_count=Count(
-                    'stagedtransactionmodel__account_model_id',
-                    filter=Q(stagedtransactionmodel__parent__isnull=False)
-                    | Q(stagedtransactionmodel__parent__parent__isnull=False),
+                txs_imported_count=Count(
+                    'stagedtransactionmodel',
+                    filter=(
+                        Q(stagedtransactionmodel__parent__isnull=True)
+                        & (
+                            Q(stagedtransactionmodel__transaction_model__isnull=False)
+                            | Q(stagedtransactionmodel__matched_transaction_model__isnull=False)
+                            | (
+                                Q(stagedtransactionmodel__bundle_split=False)
+                                & (
+                                    Q(stagedtransactionmodel__split_transaction_set__transaction_model__isnull=False)
+                                    | Q(
+                                        stagedtransactionmodel__split_transaction_set__matched_transaction_model__isnull=False
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    distinct=True,
                 ),
             )
-            .annotate(txs_pending=F('txs_count') - F('txs_mapped_count'))
+            .annotate(txs_pending=F('txs_count') - F('txs_imported_count'))
             .annotate(
                 is_complete=Case(
                     When(txs_count__exact=0, then=False),
@@ -239,6 +257,9 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['completed']),
         ]
 
+    def __str__(self):
+        return f'Import Job {self.uuid}: {self.description}'
+
     @property
     def entity_uuid(self) -> UUID:
         """
@@ -257,7 +278,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
             return getattr(self, '_entity_uuid')
         except AttributeError:
             pass
-        return self.ledger_model.entity_model_id
+        return self.ledger_model.entity_id
 
     @property
     def entity_slug(self) -> str:
@@ -279,7 +300,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
             return getattr(self, '_entity_slug')
         except AttributeError:
             pass
-        return self.ledger_model.entity_model.slug
+        return self.ledger_model.entity.slug
 
     def is_configured(self):
         """
@@ -319,6 +340,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     def get_delete_message(self) -> str:
         return _(f'Are you sure you want to delete Import Job {self.description}?')
 
+    # URLS...
     def get_data_import_url(self) -> str:
         return reverse(
             'django_ledger:data-import-job-txs',
@@ -331,6 +353,53 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     def get_data_import_reset_url(self) -> str:
         return reverse(
             'django_ledger:data-import-job-txs-undo',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'job_pk': self.uuid,
+            },
+        )
+
+    def get_absolute_url(self) -> str:
+        return self.get_detail_url()
+
+    def get_detail_url(self) -> str:
+        return reverse(
+            'django_ledger:import-job-detail',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'job_pk': self.uuid,
+            },
+        )
+
+    def get_update_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:import-job-update',
+            kwargs={
+                'job_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+            },
+        )
+
+    def get_list_url(self) -> str:
+        return reverse(
+            'django_ledger:import-job-list',
+            kwargs={
+                'entity_slug': self.entity_slug,
+            },
+        )
+
+    def get_delete_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:import-job-delete',
+            kwargs={
+                'job_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+            },
+        )
+
+    def get_edit_txs_url(self) -> str:
+        return reverse(
+            'django_ledger:data-import-job-txs',
             kwargs={
                 'entity_slug': self.entity_slug,
                 'job_pk': self.uuid,
@@ -430,53 +499,66 @@ class StagedTransactionModelQuerySet(QuerySet):
         """
         Determines if there are any pending transactions.
 
-        This method filters the objects in the queryset to determine whether there
-        are any transactions that are pending (i.e., have a null transaction_model).
-        Additionally, it includes parent transactions (not bundled) that have at least
-        one child transaction still pending import.
+        A transaction is considered pending if BOTH `transaction_model` and
+        `matched_transaction_model` are null. Additionally, it includes parent
+        transactions (not bundled) that have at least one child transaction still
+        pending import.
 
         Returns
         -------
         QuerySet
-            A QuerySet containing objects with a null `transaction_model`, or parent
-            transactions (not bundled) with pending children.
-
+            A QuerySet containing objects with both `transaction_model` and
+            `matched_transaction_model` null, or parent transactions (not bundled)
+            with pending children.
         """
-        parents_with_pending_children = Q(
+        is_parent_with_pending_children = Q(
             parent__isnull=True, bundle_split=False, children_mapping_done=False, children_import_pending_count__gt=0
         )
 
-        return self.filter(
-            Q(
-                transaction_model__isnull=True,
-            )
-            | parents_with_pending_children
-        ).exclude(
+        is_parent_with_imported_children = Q(
             bundle_split=False,
             transaction_model__isnull=True,
             children_count__gt=0,
-            children_import_pending_count=0
+            children_import_pending_count=0,
         )
+
+        matched_transactions = Q(
+            transaction_model__isnull=True, matched_transaction_model__isnull=False, matched_transaction=True
+        )
+
+        return self.filter(
+            Q(transaction_model__isnull=True)
+            | Q(transaction_model__isnull=True, matched_transaction_model__isnull=True, matched_transaction=False)
+            | Q(transaction_model__isnull=True, matched_transaction_model__isnull=False, matched_transaction=False)
+            | is_parent_with_pending_children
+        ).exclude(is_parent_with_imported_children | matched_transactions)
 
     def is_imported(self):
         """
-        Filter method to determine if the objects in a queryset have been linked with a
-        related transaction model. This function checks whether the `transaction_model`
-        field in the related objects is non-null.
+        Filter method to determine if the objects in a queryset are considered imported.
 
-        Additionally, it includes non-bundled parent transactions only if they have at
-        least one imported child (i.e., a child with a non-null `transaction_model`).
-        This ensures a parent is not considered imported until at least one child is
-        imported.
+        A staged transaction is considered imported if either `transaction_model` OR
+        `matched_transaction_model` is set. Additionally, it includes non-bundled
+        parent transactions only if they have at least one imported child (i.e., a
+        child with either a non-null `transaction_model` or `matched_transaction_model`).
 
         Returns
         -------
         QuerySet
-            A filtered queryset containing objects where the `transaction_model` is not
-            null, plus non-bundled parents that have at least one imported child.
+            A filtered queryset containing objects where either `transaction_model` or
+            `matched_transaction_model` is not null, plus non-bundled parents that have
+            at least one imported child.
         """
         parents_with_imported_children = Q(parent__isnull=True, bundle_split=False, imported_count__gt=0)
-        return self.filter(Q(transaction_model__isnull=False) | parents_with_imported_children)
+        matched_transactions = Q(
+            transaction_model__isnull=True, matched_transaction_model__isnull=False, matched_transaction=True
+        )
+        return self.filter(
+            Q(transaction_model__isnull=False)
+            | Q(matched_transaction_model__isnull=False, matched_transaction=True)
+            | parents_with_imported_children
+            | matched_transactions
+        )
 
     def is_parent(self):
         """
@@ -510,6 +592,21 @@ class StagedTransactionModelQuerySet(QuerySet):
             A QuerySet of elements that satisfy the `ready_to_import` condition.
         """
         return self.filter(ready_to_import=True)
+
+    def is_ready_to_match(self):
+        """
+        Checks whether items are ready to be matched by applying a filter.
+
+        This function filters elements based on the `ready_to_match` attribute.
+        It is typically used to identify and retrieve items marked as ready for
+        matching to other already imported transactions.
+
+        Returns
+        -------
+        QuerySet
+            A QuerySet of elements that satisfy the `ready_to_match` condition.
+        """
+        return self.filter(ready_to_match=True)
 
 
 class StagedTransactionModelManager(Manager):
@@ -556,6 +653,9 @@ class StagedTransactionModelManager(Manager):
                 'transaction_model',
                 'transaction_model__journal_entry',
                 'transaction_model__account',
+                'matched_transaction_model',
+                'matched_transaction_model__journal_entry',
+                'matched_transaction_model__account',
                 'import_job',
                 'import_job__bank_account_model__account_model',
                 # selecting parent data....
@@ -566,19 +666,45 @@ class StagedTransactionModelManager(Manager):
             )
             .annotate(
                 _entity_slug=F('import_job__bank_account_model__entity_model__slug'),
-                entity_unit=F('transaction_model__journal_entry__entity_unit__name'),
-                children_count=Count('split_transaction_set'),
-                children_mapped_count=Count('split_transaction_set__account_model__uuid'),
-                imported_count=Count('split_transaction_set__transaction_model_id'),
+                _receipt_uuid=F('receiptmodel__uuid'),
+                _is_cash_transaction=Case(
+                    When(
+                        Q(
+                            import_job__bank_account_model__account_type__in=[
+                                BankAccountModel.ACCOUNT_CHECKING,
+                                BankAccountModel.ACCOUNT_SAVINGS,
+                                BankAccountModel.ACCOUNT_MONEY_MKT,
+                            ]
+                        ),
+                        then=Value(True),
+                    ),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                ),
+                entity_unit=Coalesce(
+                    F('transaction_model__journal_entry__entity_unit__name'),
+                    F('matched_transaction_model__journal_entry__entity_unit__name'),
+                ),
+                import_account_uuid=F('import_job__bank_account_model__account_model_id'),
+                children_count=Count(F('split_transaction_set'),
+                                     distinct=True),
+                children_mapped_count=Count('split_transaction_set__account_model__uuid', distinct=True),
+                imported_count=Count(
+                    'split_transaction_set',
+                    distinct=True,
+                    filter=(
+                        Q(split_transaction_set__transaction_model_id__isnull=False)
+                        | Q(split_transaction_set__matched_transaction_model_id__isnull=False)
+                    ),
+                ),
                 total_amount_split=Coalesce(
-                    Sum('split_transaction_set__amount_split'),
+                    Sum('split_transaction_set__amount_split', distinct=True),
                     Value(value=0.00, output_field=DecimalField()),
                 ),
                 group_uuid=Case(
                     When(parent_id__isnull=True, then=F('uuid')),
                     When(parent_id__isnull=False, then=F('parent_id')),
                 ),
-                _receipt_uuid=F('receiptmodel__uuid'),
             )
             .annotate(
                 children_mapping_pending_count=F('children_count') - F('children_mapped_count'),
@@ -590,6 +716,20 @@ class StagedTransactionModelManager(Manager):
                     default=False,
                     output_field=BooleanField(),
                 ),
+                ready_to_match=Case(
+                    When(
+                        Q(children_count__exact=0)
+                        & Q(bundle_split=True)
+                        & Q(parent__isnull=True)
+                        & Q(account_model__isnull=True)
+                        & Q(transaction_model__isnull=True)
+                        & Q(matched_transaction_model__isnull=False)
+                        & Q(matched_transaction=False),
+                        then=Value(True),
+                    ),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                ),
                 ready_to_import=Case(
                     # single transaction...
                     When(
@@ -598,7 +738,6 @@ class StagedTransactionModelManager(Manager):
                             & Q(bundle_split=True)
                             & Q(parent__isnull=True)
                             & Q(account_model__isnull=False)
-                            & Q(parent__isnull=True)
                             & Q(transaction_model__isnull=True)
                             & (
                                 (
@@ -699,6 +838,32 @@ class StagedTransactionModelManager(Manager):
                     default=False,
                     output_field=BooleanField(),
                 ),
+            )
+            .annotate(
+                _matches_found=Count(
+                    'import_job__bank_account_model__account_model__transactionmodel',
+                    distinct=True,
+                    filter=(
+                        Q(import_job__bank_account_model__account_model__transactionmodel__amount__exact=F('amount'))
+                        & Q(
+                            import_job__bank_account_model__account_model__transactionmodel__journal_entry__timestamp__date__gte=F(
+                                'date_posted'
+                            )
+                            - timedelta(days=DJANGO_LEDGER_MATCH_DAYS_WINDOW)
+                        )
+                        & Q(
+                            import_job__bank_account_model__account_model__transactionmodel__journal_entry__timestamp__date__lte=F(
+                                'date_posted'
+                            )
+                            + timedelta(days=DJANGO_LEDGER_MATCH_DAYS_WINDOW)
+                        )
+                    ),
+                    _match_found=Case(
+                        When(_matches_found__gt=0, then=Value(True)),
+                        default=Value(False),
+                        output_field=BooleanField(),
+                    ),
+                )
             )
             .order_by('date_posted', 'group_uuid', '-children_count')
         )
@@ -810,7 +975,24 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        verbose_name=_('Transaction Model'),
     )
+
+    matched_transaction_model = models.OneToOneField(
+        'django_ledger.TransactionModel',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Matched Transaction Model',
+        related_name='matchedtransaction_model',
+    )
+
+    matched_transaction = models.BooleanField(
+        default=False,
+        verbose_name=_('Matched Transaction'),
+        help_text=_('Indicates whether this transaction is matched to another.'),
+    )
+
     receipt_type = models.CharField(
         choices=ReceiptModel.RECEIPT_TYPES,
         max_length=20,
@@ -836,6 +1018,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         help_text=_('The Customer associated with the transaction.'),
     )
 
+    notes = models.TextField(blank=True, null=True, verbose_name=_('Transaction Notes'))
     objects = StagedTransactionModelManager.from_queryset(queryset_class=StagedTransactionModelQuerySet)()
 
     class Meta:
@@ -846,10 +1029,11 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['date_posted']),
             models.Index(fields=['account_model']),
             models.Index(fields=['transaction_model']),
+            models.Index(fields=['matched_transaction_model']),
         ]
 
     def __init__(self, *args, **kwargs):
-        self._activity = None
+        self._activity_done: bool = False
         super().__init__(*args, **kwargs)
 
     def __str__(self):
@@ -1026,33 +1210,26 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def is_imported(self) -> bool:
         """
-        Determines if the necessary models have been imported for the system to function
-        properly. This method checks whether both `account_model_id` and
-        `transaction_model_id` are set.
+        Determines if the staged transaction should be considered imported.
 
-        Additionally, a parent transaction that is not bundled will be considered
-        imported for listing purposes if it has at least one child transaction that is
-        still pending import. This allows a parent to appear in both imported and
-        pending states when its children are not fully imported.
-
-        Returns
-        -------
-        bool
-            True if both `account_model_id` and `transaction_model_id` are not None,
-            indicating that the models have been successfully imported; or if this is a
-            non-bundled parent with at least one pending child. False otherwise.
+        A transaction is considered imported if either `transaction_model_id` or
+        `matched_transaction_model_id` is set. Additionally, a non-bundled parent
+        is considered imported if at least one child is imported (i.e., has either
+        `transaction_model_id` or `matched_transaction_model_id` set).
         """
-        own_imported = all(
+        own_imported = any(
             [
-                self.account_model_id is not None,
                 self.transaction_model_id is not None,
+                getattr(self, 'matched_transaction_model_id', None) is not None,
             ]
         )
         parent_with_imported_child = all(
             [
                 self.is_parent(),
                 not self.is_bundled(),
-                self.split_transaction_set.filter(transaction_model__isnull=False).exists(),
+                self.split_transaction_set.filter(
+                    Q(transaction_model__isnull=False) | Q(matched_transaction_model__isnull=False)
+                ).exists(),
             ]
         )
         return own_imported or parent_with_imported_child
@@ -1061,26 +1238,27 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         Determine if the transaction is pending.
 
-        A transaction is considered pending if it has not been assigned a
-        `transaction_model_id`. Additionally, a parent transaction that is not
-        bundled is also considered pending if any of its children are still
-        pending import. This allows a parent to be both imported and pending
-        while its children are not fully imported.
-
-        Returns
-        -------
-        bool
-            True if the transaction is pending (i.e., `transaction_model_id`
-            is None), or this is a non-bundled parent with at least one pending
-            child. False otherwise.
+        A transaction is considered pending if it has neither a `transaction_model_id`
+        nor a `matched_transaction_model_id`. Additionally, a parent transaction that
+        is not bundled is considered pending if any of its children are still pending
+        import (i.e., neither linked nor matched).
         """
-        return self.transaction_model_id is None or all(
+        own_pending = all(
+            [
+                self.transaction_model_id is None,
+                getattr(self, 'matched_transaction_model_id', None) is None,
+            ]
+        )
+        children_pending = all(
             [
                 self.is_parent(),
                 not self.is_bundled(),
-                self.split_transaction_set.filter(transaction_model__isnull=True).exists(),
+                self.split_transaction_set.filter(
+                    Q(transaction_model__isnull=True) & Q(matched_transaction_model__isnull=True)
+                ).exists(),
             ]
         )
+        return own_pending or children_pending or self.can_match()
 
     def is_mapped(self) -> bool:
         """
@@ -1114,12 +1292,56 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             True if the object has a valid `parent_id`, indicating it is a child entity;
             False otherwise.
         """
-        return self.parent_id is not None
+        return not self.is_parent()
 
     def is_bundled(self) -> bool:
         if not self.parent_id:
             return self.bundle_split is True
         return self.parent.is_bundled()
+
+    def has_match_candidates(self):
+        # return getattr(self, '_match_found')
+        return False
+
+    def matches_found(self) -> int:
+        return getattr(self, '_matches_found', 0)
+
+    def is_cash_transaction(self) -> bool:
+        return getattr(self, '_is_cash_transaction', False)
+
+    def get_match_candidates_qs(self):
+        """
+        Returns a queryset of posted TransactionModel candidates that could match this staged
+        transaction. A candidate matches when:
+        - It is posted (belongs to a posted Journal Entry and Ledger).
+        - It impacts the same mapped cash/loan/credit account used by the bank account on the import job.
+        - The amount equals this staged transaction amount (absolute value match consistent with TransactionModel schema).
+        - The journal entry date is within +/- 7 days of the staged transaction posted date.
+        """
+        if self._state.adding:
+            return TransactionModel.objects.none()
+
+        try:
+            account = self.import_job.bank_account_model.account_model
+        except Exception:
+            return TransactionModel.objects.none()
+
+        if not self.date_posted or self.amount is None:
+            return TransactionModel.objects.none()
+
+        from_date = self.date_posted - timedelta(days=7)
+        to_date = self.date_posted + timedelta(days=7)
+
+        return (
+            TransactionModel.objects.filter(
+                account=account,
+                amount=self.amount,
+                journal_entry__timestamp__date__gte=from_date,
+                journal_entry__timestamp__date__lte=to_date,
+            )
+            .posted()
+            .select_related('journal_entry', 'account')
+        )
 
     def has_activity(self) -> bool:
         """
@@ -1154,7 +1376,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         if self._state.adding:
             return False
+        if self.is_children():
+            return False
         return getattr(self, 'children_count') > 0
+
+    def has_match(self) -> bool:
+        return self.matched_transaction_model_id is not None
 
     # TX Cases...
 
@@ -1373,8 +1600,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return False
 
     def can_unbundle(self) -> bool:
-        if any([not self.is_single()]):
-            return True
+        if any(
+            [
+                self.is_single(),
+                self.is_parent(),
+            ]
+        ):
+            return not self.bundle_split
         return False
 
     def can_split(self) -> bool:
@@ -1457,11 +1689,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         bool
             True if the entity can have an account, False otherwise.
         """
-        return not self.has_children()
+        return not self.is_parent()
 
     def can_have_activity(self) -> bool:
-        if self.is_transfer():
+        if any([self.is_transfer(), not self.is_cash_transaction()]):
             return False
+
         if all(
             [
                 self.is_mapped(),
@@ -1508,6 +1741,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         if not ready_to_import:
             return False
+
+        if ready_to_import and not self.can_have_activity():
+            return True
+
         is_role_valid = self.is_role_mapping_valid(raise_exception=False)
         if not is_role_valid:
             return False
@@ -1520,12 +1757,6 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             else:
                 if any([self.is_child_not_bundled_no_receipt(), self.is_child_not_bundled_has_receipt()]):
                     return True
-        return False
-
-        can_split_into_je = getattr(self, 'can_split_into_je')
-        if can_split_into_je and as_split:
-            return True
-
         return False
 
     def can_migrate_receipt(self) -> bool:
@@ -1627,7 +1858,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             True if the number of children equals the number of mapped children,
             otherwise False.
         """
-        return getattr(self, 'children_count') == getattr(self, 'children_mapped_count')
+        return getattr(self, 'children_mapping_done')
 
     def get_import_role_set(self) -> Set[str]:
         """
@@ -1684,26 +1915,28 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             The journal entry activity if successfully retrieved or updated; otherwise,
             returns the existing activity or None if no activity is present.
         """
-        if any(
-            [
-                force_update,
-                self.is_single(),
-                self.is_parent_is_bundled_no_receipt(),
-                self.is_parent_is_bundled_has_receipt(),
-                self.is_child_not_bundled_has_receipt(),
-                self.is_child_not_bundled_no_receipt(),
-            ]
-        ):
-            role_set = self.get_import_role_set()
-            if role_set is not None:
-                try:
-                    self.activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
-                    if commit:
-                        self.save(update_fields=['activity'])
-                    return self.activity
-                except ValidationError as e:
-                    if raise_exception:
-                        raise e
+        if not self._activity_done:
+            if self.can_have_activity() and not self.activity:
+                if any(
+                    [
+                        force_update,
+                        self.is_single(),
+                        self.is_parent_is_bundled_no_receipt(),
+                        self.is_parent_is_bundled_has_receipt(),
+                        self.is_child_not_bundled_has_receipt(),
+                        self.is_child_not_bundled_no_receipt(),
+                    ]
+                ):
+                    role_set = self.get_import_role_set()
+                    if role_set is not None:
+                        try:
+                            self.activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
+                            if commit:
+                                self.save(update_fields=['activity'])
+                        except ValidationError as e:
+                            if raise_exception:
+                                raise e
+            self._activity_done = True
         return self.activity
 
     def get_prospect_je_activity(self) -> Optional[str]:
@@ -1926,10 +2159,53 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if raise_exception:
             raise StagedTransactionModelValidationError(message=_('Nothing to undo for this staged transaction.'))
 
+    def can_match(self):
+        if all(
+            [
+                any([self.is_transfer(), self.is_debt_payment()]),
+                self.matched_transaction is False,
+            ]
+        ):
+            return True
+        return False
+
+    def can_unmatch(self):
+        if all(
+            [
+                any([self.is_transfer(), self.is_debt_payment()]),
+                self.matched_transaction is True,
+            ]
+        ):
+            return True
+        return False
+
+    def unmatch(self, raise_exception: bool = True, commit: bool = True):
+        """
+        Clears the matched_transaction_model link, returning the staged transaction
+        to a pending state. Does not affect any posted transactions.
+        """
+        if not self.can_unmatch():
+            if raise_exception:
+                raise StagedTransactionModelValidationError(
+                    message=_('Nothing to unmatch or cannot unmatch this staged transaction.')
+                )
+            return
+        self.matched_transaction = False
+        if commit:
+            with transaction.atomic():
+                self.save(update_fields=['matched_transaction', 'updated'])
+
     def can_delete(self) -> bool:
         if self.is_children():
             return True
         return False
+
+    # URLs...
+    def get_update_url(self):
+        return reverse(
+            viewname='django_ledger:data-import-staged-tx-update',
+            kwargs={'entity_slug': self.entity_slug, 'job_pk': self.import_job_id, 'staged_tx_pk': self.uuid},
+        )
 
     def clean(self, verify: bool = False):
         if self.has_children():
@@ -1965,6 +2241,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if self.is_transfer():
             self.vendor_model = None
             self.customer_model = None
+
+        if not self.is_cash_transaction():
+            self.activity = None
+
+        if not self.matched_transaction_model_id:
+            self.matched_transaction = False
 
         if verify:
             self.is_role_mapping_valid(raise_exception=True)
@@ -2067,6 +2349,11 @@ def stagedtransactionmodel_presave(instance: StagedTransactionModel, **kwargs):
         raise StagedTransactionModelValidationError(
             message=_('Either customer or vendor model allowed.'),
         )
+    if not instance.is_cash_transaction():
+        instance.activity = None
+
+    if not instance.matched_transaction_model_id:
+        instance.matched_transaction = False
 
 
 pre_save.connect(stagedtransactionmodel_presave, sender=StagedTransactionModel)
@@ -2077,3 +2364,6 @@ def stagedtransactionmodel_predelete(instance: StagedTransactionModel, **kwargs)
         raise StagedTransactionModelValidationError(
             message=_('Cannot delete parent Staged Transactions.'),
         )
+
+
+pre_delete.connect(stagedtransactionmodel_predelete, sender=StagedTransactionModel)

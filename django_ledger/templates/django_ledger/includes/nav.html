@@ -4,7 +4,7 @@
 {% load i18n %}
 {% now "Y" as current_year %}
 
-<nav class="navbar is-light" role="navigation" aria-label="main navigation">
+<nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="container">
         <div class="navbar-brand">
             <a class="navbar-item" href="{% url 'django_ledger:home' %}">
@@ -27,6 +27,16 @@
                 {% if tx_digest_context.IO_RESULT.ce_to_date %}
                     <div class="navbar-item">CE TO: {{ tx_digest_context.IO_RESULT.ce_to_date | date }}</div>
                 {% endif %}
+
+                <!-- Theme toggle -->
+                <div class="navbar-item">
+                    <button id="djl-theme-toggle" class="button is-small is-text" type="button"
+                            aria-label="Toggle color mode" aria-pressed="false">
+                        <iconify-icon id="djl-theme-toggle-icon" icon="mdi:weather-sunny"></iconify-icon>
+                        <span id="djl-theme-toggle-label" class="ml-2">Light</span>
+                    </button>
+                </div>
+
                 <div class="navbar-item">
                     <form action="{% url 'django_ledger:logout' %}" method="POST">
                         {% csrf_token %}
