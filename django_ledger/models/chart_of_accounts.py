@@ -43,29 +43,28 @@ accurate record-keeping and reporting.
 import warnings
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Optional, Union, Dict
-from uuid import uuid4, UUID
+from typing import Dict, Optional, Union
+from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import Q, F, Count, Manager, QuerySet, BooleanField, Value
-from django.db.models.signals import pre_save, post_save
+from django.db import models, transaction
+from django.db.models import BooleanField, Count, F, Manager, Q, QuerySet, Value
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-
 from django_ledger.io import (
-    ROOT_COA,
-    ROOT_GROUP_LEVEL_2,
-    ROOT_GROUP_META,
     ROOT_ASSETS,
-    ROOT_LIABILITIES,
     ROOT_CAPITAL,
-    ROOT_INCOME,
+    ROOT_COA,
     ROOT_COGS,
     ROOT_EXPENSES,
     ROOT_GROUP,
+    ROOT_GROUP_LEVEL_2,
+    ROOT_GROUP_META,
+    ROOT_INCOME,
+    ROOT_LIABILITIES,
 )
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
@@ -605,6 +604,8 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         balance_type: str,
         active: bool,
         root_account_qs: Optional[AccountModelQuerySet] = None,
+        is_role_default: bool = False,
+        force_role_default: bool = False,
     ):
         """
         Proper method for inserting a new Account Model into a CoA.
@@ -624,23 +625,50 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             Specifies whether the account is active or not.
         root_account_qs : Optional[AccountModelQuerySet], optional
             The query set of root accounts to which the created account should be linked. Defaults to None.
+        is_role_default : bool
+            Marks the new account as the default for the account role.
+        force_role_default: bool
+            Forces the new account model to be set as default for a specified role. Any pre-existing default account
+            will be removed as default for the specified role.
 
         Returns
         -------
         AccountModel
             The created account model instance.
         """
-        account_model = AccountModel(
-            code=code,
-            name=name,
-            role=role,
-            active=active,
-            balance_type=balance_type,
-            coa_model=self,
-        )
-        account_model.clean()
 
-        account_model = self.insert_account(account_model=account_model, root_account_qs=root_account_qs)
+        with transaction.atomic():
+
+            if is_role_default:
+                account_model_qs: AccountModelQuerySet = self.get_coa_accounts()
+
+                default_role_account_qs: AccountModelQuerySet = account_model_qs.filter(role__exact=role, role_default=True)
+                default_account_exists = default_role_account_qs.exists()
+
+                if default_account_exists and not force_role_default:
+                    raise ChartOfAccountsModelValidationError(
+                        f'The role {role} already has a default account {default_role_account_qs.code} for CoA {self}'
+                    )
+
+                elif default_account_exists and force_role_default:
+                    default_role_account: AccountModel = default_role_account_qs.get()
+                    default_role_account.role_default = False
+                    default_role_account.save(update_fields=['role_default', 'updated'])
+
+
+            account_model = AccountModel(
+                code=code,
+                name=name,
+                role=role,
+                active=active,
+                balance_type=balance_type,
+                coa_model=self,
+                role_default=is_role_default,
+            )
+
+            account_model.clean()
+            account_model = self.insert_account(account_model=account_model, root_account_qs=root_account_qs)
+
         return account_model
 
     # ACTIONS -----

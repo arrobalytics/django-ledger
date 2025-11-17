@@ -686,8 +686,7 @@ class StagedTransactionModelManager(Manager):
                     F('matched_transaction_model__journal_entry__entity_unit__name'),
                 ),
                 import_account_uuid=F('import_job__bank_account_model__account_model_id'),
-                children_count=Count(F('split_transaction_set'),
-                                     distinct=True),
+                children_count=Count(F('split_transaction_set'), distinct=True),
                 children_mapped_count=Count('split_transaction_set__account_model__uuid', distinct=True),
                 imported_count=Count(
                     'split_transaction_set',
@@ -1689,7 +1688,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         bool
             True if the entity can have an account, False otherwise.
         """
-        return not self.is_parent()
+        return any(
+            [
+                all([self.is_parent(), not self.has_children()]),
+                self.is_children()
+            ]
+        )
 
     def can_have_activity(self) -> bool:
         if any([self.is_transfer(), not self.is_cash_transaction()]):

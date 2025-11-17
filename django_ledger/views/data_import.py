@@ -244,122 +244,6 @@ class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
         )
 
 
-# Staged Transactions Views....
-# class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
-#     template_name = 'django_ledger/data_import/staged_tx_update.html'
-#     context_object_name = 'staged_tx'
-#     form_class = StagedTransactionModelFormSet
-#     pk_url_kwarg = 'staged_tx_pk'
-#     http_method_names = ['get', 'post']
-#
-#     def get_queryset(self):
-#         import_job_model_qs = super().get_queryset()
-#         import_job_model: ImportJobModel = get_object_or_404(import_job_model_qs, uuid__exact=self.kwargs['job_pk'])
-#
-#         self.import_job_model: ImportJobModel = import_job_model
-#         return (
-#             import_job_model.stagedtransactionmodel_set.all()
-#             .is_pending()
-#             .select_related('vendor_model', 'customer_model', 'unit_model')
-#         )
-#
-#     def get_form_kwargs(self):
-#         staged_tx_model: StagedTransactionModel = self.object
-#         return {
-#             'entity_model': self.get_authorized_entity_instance(),
-#             'import_job_model': self.import_job_model,
-#             'staged_tx_pk': staged_tx_model.uuid,
-#         }
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         context['import_job_model'] = self.import_job_model
-#         context['next'] = self.request.GET.get('next', '')
-#         context['page_title'] = _('Update Staged Transaction')
-#         context['header_title'] = _('Update Staged Transaction')
-#         context['header_subtitle'] = self.import_job_model.description
-#         context['header_subtitle_icon'] = 'tabler:transfer-in'
-#
-#         if self.request.POST:
-#             staged_tx_form = StagedTransactionModelForm(
-#                 data=self.request.POST,
-#             )
-#         else:
-#             staged_tx_form = StagedTransactionModelForm()
-#         return context
-#
-#     def form_invalid(self, form):
-#         return super().form_invalid(form=form)
-#
-#     def form_valid(self, form):
-#         # Persist mapping changes first
-#         staged_tx: StagedTransactionModel = form.save()
-#
-#         # Clear proposed activity if mapping or split intent changed
-#         if any(f in getattr(form, 'changed_data', []) for f in ['account_model', 'tx_split']):
-#             staged_tx.activity = None
-#             staged_tx.save(update_fields=['activity', 'updated'])
-#
-#         is_split = form.cleaned_data.get('tx_split') is True
-#         is_import = form.cleaned_data.get('tx_import') is True
-#         is_bundled = form.cleaned_data.get('bundle_split') is True
-#
-#         if is_split:
-#             staged_tx.add_split()
-#         elif is_import:
-#             selected_match = form.cleaned_data.get('match_tx_model')
-#             if selected_match is not None:
-#                 staged_tx.matched_transaction_model = selected_match
-#                 staged_tx.save(update_fields=['matched_transaction_model', 'updated'])
-#             else:
-#                 if staged_tx.can_migrate_receipt():
-#                     staged_tx.migrate_receipt(
-#                         receipt_date=staged_tx.date_posted,
-#                         split_amount=not is_bundled,
-#                     )
-#                 else:
-#                     staged_tx.migrate_transactions(split_txs=not is_bundled)
-#
-#         # Optional: collapse any parent now reduced to a single child (match bulk behavior)
-#         parents_qs = (
-#             self.import_job_model.stagedtransactionmodel_set.all()
-#             .filter(parent__isnull=True)
-#             .prefetch_related('split_transaction_set')
-#         )
-#
-#         for parent in parents_qs:
-#             children = list(parent.split_transaction_set.all())
-#             if len(children) == 1:
-#                 child = children[0]
-#                 parent.account_model = child.account_model
-#                 parent.unit_model = child.unit_model
-#                 parent.receipt_type = child.receipt_type
-#                 parent.vendor_model = child.vendor_model
-#                 parent.customer_model = child.customer_model
-#                 parent.bundle_split = True
-#                 parent.save(
-#                     update_fields=[
-#                         'account_model',
-#                         'unit_model',
-#                         'receipt_type',
-#                         'vendor_model',
-#                         'customer_model',
-#                         'bundle_split',
-#                         'updated',
-#                     ]
-#                 )
-#                 child.delete()
-#
-#         messages.add_message(self.request, messages.SUCCESS, _('Staged transaction updated.'), extra_tags='is-success')
-#         return redirect(to=self.get_success_url())
-#
-#     def get_success_url(self):
-#         staged_tx_model: StagedTransactionModel = self.object
-#         if not staged_tx_model.is_pending():
-#             return self.import_job_model.get_detail_url()
-#         return staged_tx_model.get_update_url()
-
-
 class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
     template_name = 'django_ledger/data_import/staged_tx_update.html'
     PAGE_TITLE = _('Import Job Staged Txs')
@@ -388,7 +272,6 @@ class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
                 .is_parent()
             )
         return self.queryset
-
 
     def get_context_data(self, txs_formset: Optional[StagedTransactionModelFormSet] = None, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -511,9 +394,7 @@ class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
         )
 
         if staged_tx.is_imported():
-            return HttpResponseRedirect(
-                redirect_to=import_job_model.get_detail_url()
-            )
+            return HttpResponseRedirect(redirect_to=import_job_model.get_detail_url())
 
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context=context)
