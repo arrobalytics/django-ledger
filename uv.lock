@@ -391,7 +391,7 @@ wheels = [
 
 [[package]]
 name = "django-ledger"
-version = "0.8.2.3"
+version = "0.8.3.1"
 source = { virtual = "." }
 dependencies = [
     { name = "django" },
