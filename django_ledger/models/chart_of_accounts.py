@@ -638,23 +638,24 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
 
         with transaction.atomic():
-
             if is_role_default:
                 account_model_qs: AccountModelQuerySet = self.get_coa_accounts()
 
-                default_role_account_qs: AccountModelQuerySet = account_model_qs.filter(role__exact=role, role_default=True)
+                default_role_account_qs: AccountModelQuerySet = account_model_qs.filter(
+                    role__exact=role, role_default=True
+                )
                 default_account_exists = default_role_account_qs.exists()
 
                 if default_account_exists and not force_role_default:
+                    existing_account_model: AccountModel = default_role_account_qs.get()
                     raise ChartOfAccountsModelValidationError(
-                        f'The role {role} already has a default account {default_role_account_qs.code} for CoA {self}'
+                        f'The role {role} already has a default account {existing_account_model.code} for CoA {self}'
                     )
 
                 elif default_account_exists and force_role_default:
-                    default_role_account: AccountModel = default_role_account_qs.get()
-                    default_role_account.role_default = False
-                    default_role_account.save(update_fields=['role_default', 'updated'])
-
+                    existing_account_model: AccountModel = default_role_account_qs.get()
+                    existing_account_model.role_default = False
+                    existing_account_model.save(update_fields=['role_default', 'updated'])
 
             account_model = AccountModel(
                 code=code,
