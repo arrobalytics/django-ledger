@@ -1,4 +1,4 @@
-![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
+![django ledger logo](https://django-ledger.atl1.digitaloceanspaces.com/logo/django-ledger-logo@2x.png)
 
 # Django Ledger
 
@@ -229,14 +229,15 @@ python manage.py test django_ledger
 
 # Screenshots
 
-![django ledger entity dashboard](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
-![django ledger balance sheet](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_income_statement.png)
-![django ledger income statement](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_balance_sheet.png)
-![django ledger bill](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_bill.png)
-![django ledger invoice](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_invoice.png)
+![django ledger entity dashboard](https://atl1.digitaloceanspaces.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
+![django ledger balance sheet](https://django-ledger.atl1.digitaloceanspaces.com/public/img/django_ledger_income_statement.png)
+![django ledger income statement](https://django-ledger.atl1.digitaloceanspaces.com/public/img/django_ledger_balance_sheet.png)
+![django ledger bill](https://django-ledger.atl1.digitaloceanspaces.com/public/img/django_ledger_bill.png)
+![django ledger invoice](https://django-ledger.atl1.digitaloceanspaces.com/public/img/django_ledger_invoice.png)
 
 # Financial Statements Screenshots
 
-![balance_sheet_report](https://django-ledger.us-east-1.linodeobjects.com/public/img/BalanceSheetStatement.png)
-![income_statement_report](https://django-ledger.us-east-1.linodeobjects.com/public/img/IncomeStatement.png)
-![cash_flow_statement_report](https://django-ledger.us-east-1.linodeobjects.com/public/img/CashFlowStatement.png)
+![balance_sheet_report](https://django-ledger.atl1.digitaloceanspaces.com/public/img/BalanceSheetStatement.png)
+![income_statement_report](https://django-ledger.atl1.digitaloceanspaces.com/public/img/IncomeStatement.png)
+![cash_flow_statement_report](https://django-ledger.atl1.digitaloceanspaces.com/public/img/CashFlowStatement.png)
+
