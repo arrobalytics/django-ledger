@@ -6,7 +6,6 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
-
 from django.contrib import messages
 from django.http import HttpResponseBadRequest, HttpResponseNotFound, HttpResponseRedirect
 from django.urls import reverse
@@ -63,9 +62,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = EntityModel.objects.for_user(
-                user_model=self.request.user
-            )
+            self.queryset = EntityModel.objects.for_user(user_model=self.request.user)
         return super().get_queryset()
 
     def counted_inventory(self):
@@ -93,7 +90,6 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
         return context
 
     def get(self, request, *args, **kwargs):
-
         confirm = self.request.GET.get('confirm')
 
         if confirm:
@@ -101,22 +97,21 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
                 confirm = int(confirm)
             except TypeError:
                 return HttpResponseBadRequest('Not Found. Invalid conform code...')
-            finally:
-                if confirm not in [0, 1]:
-                    return HttpResponseNotFound('Not Found. Invalid conform code...')
+
+            if confirm not in [0, 1]:
+                return HttpResponseNotFound('Not Found. Invalid conform code...')
 
             self.update_inventory()
             messages.add_message(
                 request,
                 level=messages.INFO,
                 message=f'Successfully updated recorded inventory.',
-                extra_tags='is-success'
+                extra_tags='is-success',
             )
             return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:inventory-recount',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug']
-                                    })
+                redirect_to=reverse(
+                    'django_ledger:inventory-recount', kwargs={'entity_slug': self.kwargs['entity_slug']}
+                )
             )
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context)

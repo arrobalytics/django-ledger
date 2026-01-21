@@ -1,127 +1,139 @@
 {% load i18n %}
 {% load django_ledger %}
 
-{% for root_role, role_list in accounts_gb %}
-    {% with title=root_role %}
-        <div class="box">
-
-            <div class="table-container">
-                <table class="table is-fullwidth is-striped is-narrow django-ledger-table-bottom-margin-75">
-                    <thead>
-                    {% if title %}
-                        <tr>
-                            <td><h2 class="is-size-3 has-text-weight-light">{{ title | upper }}</h2></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    {% endif %}
-
-                    <tr>
-                        <th>{% trans 'Account Name' %}</th>
-                        <th>{% trans 'CoA' %}</th>
-                        <th>{% trans 'Balance Type' %}</th>
-                        <th>{% trans 'Active' %}</th>
-                        <th>{% trans 'Locked' %}</th>
-                        <th>{% trans 'CoA Role Default' %}</th>
-                        <th>{% trans 'Actions' %}</th>
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr>
+                <th>{% trans 'Account' %}</th>
+                <th>{% trans 'Balance' %}</th>
+                <th class="has-text-centered">{% trans 'Status' %}</th>
+                <th class="has-text-centered">{% trans 'Locked' %}</th>
+                <th class="has-text-centered">{% trans 'Default' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for root_role, role_list in accounts_gb %}
+                <tr class="is-selected">
+                    <td colspan="6">
+                        <h3 class="title is-5 mb-0 has-text-white">{{ root_role | upper }}</h3>
+                    </td>
+                </tr>
+                {% for role, acc_list in role_list %}
+                    <tr class="has-background-light">
+                        <td colspan="6" class="pl-4">
+                            <span class="tag is-info is-light">{% trans 'Role' %}: {{ role | upper }}</span>
+                        </td>
                     </tr>
-                    </thead>
-                    <tbody>
-                    {% for role, acc_list in role_list %}
-                        <tr>
-                            <td class="has-text-weight-bold is-underlined">{{ role | upper }}</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-
-                        {% for account in acc_list %}
-                            <tr>
-                                <td style="{% if account.is_indented %}padding-left: {{ account.get_html_pixel_indent }};{% endif %}">
-                                    <span class="has-text-weight-bold">{{ account.code }}</span>: {{ account.name }}
-                                </td>
-                                <td>{{ account.coa_model.name }}</td>
-                                <td>{{ account.get_balance_type_display }}</td>
-                                <td class="has-text-centered">
-                                    {% if account.is_active %}
-                                        <span class="icon has-text-success">
-                                        {% icon 'ant-design:check-circle-filled' 24 %}
-                                    </span>
-                                    {% else %}
-                                        <span class="icon has-text-danger">
-                                        {% icon 'mdi:dangerous' 24 %}
-                                    </span>
-                                    {% endif %}
-                                </td>
-
-                                <td class="has-text-centered">
-                                    {% if account.is_locked %}
-                                        <span class="icon has-text-success">
-                                        {% icon 'ooui:lock' 24 %}
-                                    </span>
-                                    {% else %}
-                                        <span class="icon has-text-danger">
-                                        {% icon 'ooui:un-lock' 24 %}
-                                    </span>
-                                    {% endif %}
-                                </td>
-
-                                <td class="has-text-centered">
-                                    {% if account.role_default %}
-                                        <span class="icon has-text-success">
-                                            {% icon 'ant-design:check-circle-filled' 24 %}
+                    {% for account in acc_list %}
+                        <tr class="{% if not account.is_active %}has-text-grey-light{% endif %}">
+                            <td style="padding-left: {{ account.depth | add:"-1" | multiply:20 }}px;">
+                                <div class="is-flex is-align-items-center">
+                                    {% if account.depth > 2 %}
+                                        <span class="icon is-small has-text-grey-light mr-1">
+                                            {% icon 'bi:arrow-return-right' 16 %}
                                         </span>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <div class="dropdown is-right is-hoverable" id="account-action-{{ account.uuid }}">
-                                        <div class="dropdown-trigger">
-                                            <button class="button is-small is-rounded"
-                                                    aria-haspopup="true"
-                                                    aria-controls="dropdown-menu">
-                                                <span>{% trans 'Actions' %}</span>
-                                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                                            </button>
-                                        </div>
-                                        <div class="dropdown-menu" id="dropdown-menu-{{ account.uuid }}" role="menu">
-                                            <div class="dropdown-content">
-                                                <a href="{{ account.get_absolute_url }}"
-                                                   class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
-                                                <a href="{{ account.get_update_url }}"
-                                                   class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
-                                                {% if account.can_activate %}
-                                                    <a href="{{ account.get_action_activate_url }}"
-                                                       class="dropdown-item has-text-success has-text-weight-bold">{% trans 'Activate' %}</a>
-                                                {% endif %}
-                                                {% if account.can_deactivate %}
-                                                    <a href="{{ account.get_action_deactivate_url }}"
-                                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Deactivate' %}</a>
-                                                {% endif %}
-                                                {% if account.can_lock %}
-                                                    <a href="{{ account.get_action_lock_url }}"
-                                                       class="dropdown-item has-text-success has-text-weight-bold">{% trans 'Lock' %}</a>
-                                                {% endif %}
-                                                {% if account.can_unlock %}
-                                                    <a href="{{ account.get_action_unlock_url }}"
-                                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Unlock' %}</a>
-                                                {% endif %}
-                                            </div>
+                                    <span class="has-text-weight-bold mr-2">{{ account.code }}</span>
+                                    <span>{{ account.name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="tag is-rounded is-light">
+                                    {{ account.get_balance_type_display }}
+                                </span>
+                            </td>
+                            <td class="has-text-centered">
+                                {% if account.is_active %}
+                                    <span class="icon has-text-success" title="{% trans 'Active' %}">
+                                        {% icon 'ant-design:check-circle-filled' 20 %}
+                                    </span>
+                                {% else %}
+                                    <span class="icon has-text-danger" title="{% trans 'Inactive' %}">
+                                        {% icon 'mdi:dangerous' 20 %}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="has-text-centered">
+                                {% if account.is_locked %}
+                                    <span class="icon has-text-grey" title="{% trans 'Locked' %}">
+                                        {% icon 'ooui:lock' 20 %}
+                                    </span>
+                                {% else %}
+                                    <span class="icon has-text-grey-lighter" title="{% trans 'Unlocked' %}">
+                                        {% icon 'ooui:un-lock' 20 %}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="has-text-centered">
+                                {% if account.role_default %}
+                                    <span class="icon has-text-info" title="{% trans 'Default Account for Role' %}">
+                                        {% icon 'ant-design:star-filled' 20 %}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="has-text-centered">
+                                <div class="dropdown is-right is-hoverable" id="account-action-{{ account.uuid }}">
+                                    <div class="dropdown-trigger">
+                                        <button class="button is-small is-rounded is-white"
+                                                aria-haspopup="true"
+                                                aria-controls="dropdown-menu">
+                                            <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                        </button>
+                                    </div>
+                                    <div class="dropdown-menu" id="dropdown-menu-{{ account.uuid }}" role="menu">
+                                        <div class="dropdown-content">
+                                            <a href="{{ account.get_absolute_url }}"
+                                               class="dropdown-item">
+                                                <span class="icon is-small mr-2">{% icon 'bi:eye' 16 %}</span>
+                                                {% trans 'Detail' %}
+                                            </a>
+                                            <a href="{{ account.get_update_url }}"
+                                               class="dropdown-item">
+                                                <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                                {% trans 'Update' %}
+                                            </a>
+                                            <hr class="dropdown-divider">
+                                            {% if account.can_activate %}
+                                                <a href="{{ account.get_action_activate_url }}"
+                                                   class="dropdown-item has-text-success">
+                                                    <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
+                                                    {% trans 'Activate' %}
+                                                </a>
+                                            {% endif %}
+                                            {% if account.can_deactivate %}
+                                                <a href="{{ account.get_action_deactivate_url }}"
+                                                   class="dropdown-item has-text-danger">
+                                                    <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
+                                                    {% trans 'Deactivate' %}
+                                                </a>
+                                            {% endif %}
+                                            {% if account.can_lock %}
+                                                <a href="{{ account.get_action_lock_url }}"
+                                                   class="dropdown-item has-text-warning">
+                                                    <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
+                                                    {% trans 'Lock' %}
+                                                </a>
+                                            {% endif %}
+                                            {% if account.can_unlock %}
+                                                <a href="{{ account.get_action_unlock_url }}"
+                                                   class="dropdown-item has-text-info">
+                                                    <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
+                                                    {% trans 'Unlock' %}
+                                                </a>
+                                            {% endif %}
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
                     {% endfor %}
-                </table>
-            </div>
-        </div>
-    {% endwith %}
-{% endfor %}
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 

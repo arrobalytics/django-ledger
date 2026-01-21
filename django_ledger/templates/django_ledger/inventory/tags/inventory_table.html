@@ -1,31 +1,33 @@
 {% load django_ledger %}
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered">
-        <thead>
-        <tr class="has-text-centered">
-            <th>Item</th>
-            <th>UOM</th>
-            <th>Quantity</th>
-            <th>Value</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for i in inventory_list %}
+{% load i18n %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow">
+            <thead>
             <tr>
-                <td>{{ i.item_model__name }}</td>
-                <td>{{ i.item_model__uom__name }}</td>
-                <td>{{ i.total_quantity | floatformat:3 }}</td>
-                <td>{% currency_symbol %}{{ i.total_value | currency_format }}</td>
+                <th>{% trans 'Item' %}</th>
+                <th>{% trans 'UOM' %}</th>
+                <th class="has-text-right">{% trans 'Quantity' %}</th>
+                <th class="has-text-right">{% trans 'Value' %}</th>
             </tr>
-        {% endfor %}
-        </tbody>
-        <tfoot>
-        <tr>
-            <th></th>
-            <th></th>
-            <th>Total Value</th>
-            <th>{% currency_symbol %}{{ inventory_total_value | currency_format }}</th>
-        </tr>
-        </tfoot>
-    </table>
+            </thead>
+            <tbody>
+            {% for i in inventory_list %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ i.item_model__name }}</span></td>
+                    <td>{{ i.item_model__uom__name }}</td>
+                    <td class="has-text-right">{{ i.total_quantity | floatformat:3 }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ i.total_value | currency_format }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+            <tr>
+                <th colspan="2"></th>
+                <th class="has-text-right">{% trans 'Total Value' %}</th>
+                <th class="has-text-right">{% currency_symbol %}{{ inventory_total_value | currency_format }}</th>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>

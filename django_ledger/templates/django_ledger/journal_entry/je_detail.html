@@ -3,6 +3,31 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    <a href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}"
+       class="button is-dark  is-outlined">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Ledger Detail' %}</span>
+    </a>
+    <a class="button is-primary  is-outlined"
+       href="{% url 'django_ledger:je-detail-txs' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+        <span class="icon">{% icon 'bi:list-check' 16 %}</span>
+        <span>{% trans 'Edit TXS' %}</span>
+    </a>
+    {% if journal_entry.can_unlock %}
+        <a class="button is-warning  is-outlined"
+           href="{% url 'django_ledger:je-mark-as-unlocked' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+            <span class="icon">{% icon 'bi:unlock-fill' 16 %}</span>
+            <span>{% trans 'Unlock' %}</span>
+        </a>
+    {% endif %}
+    <a class="button is-info  is-outlined"
+       href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+        <span class="icon">{% icon 'bi:pencil' 16 %}</span>
+        <span>{% trans 'Update' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
     <div class="columns is-centered is-multiline">
         <div class="column is-12">
@@ -15,24 +40,6 @@
                 </div>
                 <div class="card-content">
                     {% transactions_table journal_entry %}
-                    <a class="button is-primary is-outlined"
-                       href="{% url 'django_ledger:je-detail-txs' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                        {% trans 'Edit TXS' %}
-                    </a>
-                    <a class="button is-dark"
-                       href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                        {% trans 'Ledger Detail' %}
-                    </a>
-                    {% if journal_entry.can_unlock %}
-                        <a class="button is-warning"
-                           href="{% url 'django_ledger:je-mark-as-unlocked' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                            {% trans 'Unlock' %}
-                        </a>
-                    {% endif %}
-                    <a class="button is-info"
-                       href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                        {% trans 'Update' %}
-                    </a>
                 </div>
             </div>
         </div>

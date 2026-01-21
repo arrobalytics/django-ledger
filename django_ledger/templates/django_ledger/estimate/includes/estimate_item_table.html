@@ -1,49 +1,40 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered">
-        <thead>
-        <tr>
-            <th>{% trans 'Item' %}</th>
-            <th>{% trans 'Entity Unit' %}</th>
-            <th>{% trans 'Quantity' %}</th>
-            <th>{% trans 'Unit Cost' %}</th>
-            <th>{% trans 'Unit Sale Price' %}</th>
-            <th>{% trans 'Total Cost Estimate' %}</th>
-            <th>{% trans 'Total Revenue Estimate' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for ce_item in ce_item_list %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow">
+            <thead>
             <tr>
-                <td>{{ ce_item.item_model }}</td>
-                <td>{% if ce_item.entity_unit %}
-                    {{ ce_item.entity_unit }}{% endif %}</td>
-                <td>{{ ce_item.ce_quantity }}</td>
-                <td>{% currency_symbol %}{{ ce_item.ce_unit_cost_estimate | currency_format }}</td>
-                <td>
-                    {% currency_symbol %}{{ ce_item.ce_unit_revenue_estimate | currency_format }}</td>
-                <td>{% currency_symbol %}{{ ce_item.ce_cost_estimate | currency_format }}</td>
-                <td>
-                    {% currency_symbol %}{{ ce_item.ce_revenue_estimate | currency_format }}</td>
+                <th>{% trans 'Item' %}</th>
+                <th>{% trans 'Unit' %}</th>
+                <th class="has-text-right">{% trans 'Quantity' %}</th>
+                <th class="has-text-right">{% trans 'Unit Cost' %}</th>
+                <th class="has-text-right">{% trans 'Unit Sale Price' %}</th>
+                <th class="has-text-right">{% trans 'Total Cost' %}</th>
+                <th class="has-text-right">{% trans 'Total Revenue' %}</th>
             </tr>
-        {% endfor %}
-        </tbody>
-        <tfoot>
-        <tr>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th>{% trans 'Total' %}</th>
-            <th>
-                {% currency_symbol %}{{ ce_model.get_cost_estimate | currency_format }}
-            </th>
-            <th>
-                {% currency_symbol %}{{ ce_model.get_revenue_estimate | currency_format }}
-            </th>
-        </tr>
-        </tfoot>
-    </table>
+            </thead>
+            <tbody>
+            {% for ce_item in ce_item_list %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ ce_item.item_model }}</span></td>
+                    <td>{% if ce_item.entity_unit %}<span class="tag is-white">{{ ce_item.entity_unit }}</span>{% endif %}</td>
+                    <td class="has-text-right">{{ ce_item.ce_quantity }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ ce_item.ce_unit_cost_estimate | currency_format }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ ce_item.ce_unit_revenue_estimate | currency_format }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ ce_item.ce_cost_estimate | currency_format }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ ce_item.ce_revenue_estimate | currency_format }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+            <tr class="has-text-weight-bold has-background-light">
+                <td colspan="5" class="has-text-right">{% trans 'Total' %}</td>
+                <td class="has-text-right">{% currency_symbol %}{{ ce_model.get_cost_estimate | currency_format }}</td>
+                <td class="has-text-right">{% currency_symbol %}{{ ce_model.get_revenue_estimate | currency_format }}</td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>

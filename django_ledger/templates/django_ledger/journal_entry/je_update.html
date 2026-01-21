@@ -2,6 +2,14 @@
 {% load i18n %}
 {% load static %}
 
+{% block header_buttons %}
+    <a href="{{ journal_entry.get_absolute_url }}"
+       class="button is-dark  is-outlined">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Back to Detail' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
     <div class="columns is-centered">
         <div class="column is-6">
@@ -9,10 +17,11 @@
                 <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
-                    <button class="button is-fullwidth is-primary is-outlined djetler_my_1" type="submit">Update
+                    <hr>
+                    <button class="button is-fullwidth is-primary" type="submit">
+                        <span class="icon">{% icon 'bi:save' 16 %}</span>
+                        <span>{% trans 'Update Journal Entry' %}</span>
                     </button>
-                    <a href="{{ journal_entry.get_journal_entry_list_url }}"
-                       class="button is-small is-dark is-fullwidth">Back</a>
                 </form>
             </div>
         </div>

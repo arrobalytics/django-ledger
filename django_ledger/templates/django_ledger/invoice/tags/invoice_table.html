@@ -1,60 +1,69 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th>Invoice Number</th>
-            <th>Status Date</th>
-            <th>Status</th>
-            <th>Invoiced To</th>
-            <th>Amount</th>
-            <th>Payments</th>
-            <th>Past Due?</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for invoice in invoices %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
             <tr>
-                <td>{{ invoice.invoice_number }}</td>
-                <td>{{ invoice.get_status_action_date }}</td>
-                <td>{{ invoice.get_invoice_status_display }}</td>
-                <td>{{ invoice.customer.customer_name }}</td>
-                <td>{% currency_symbol %}{{ invoice.amount_due | currency_format }}</td>
-                <td>{% currency_symbol %}{{ invoice.amount_paid | currency_format }}</td>
-                <td>
-                    {% if invoice.is_past_due %}
-                        <span class="icon is-small has-text-danger">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
-
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>{% trans 'Actions' %}</span>
-                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu" id="dropdown-menu-{{ invoice.uuid }}" role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
-                                   class="dropdown-item has-text-success">Details</a>
-                                <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
-                                   class="dropdown-item has-text-success">Update</a>
+                <th>{% trans 'Invoice Number' %}</th>
+                <th>{% trans 'Status Date' %}</th>
+                <th>{% trans 'Status' %}</th>
+                <th>{% trans 'Invoiced To' %}</th>
+                <th class="has-text-right">{% trans 'Amount' %}</th>
+                <th class="has-text-right">{% trans 'Payments' %}</th>
+                <th class="has-text-centered">{% trans 'Past Due?' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for invoice in invoices %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ invoice.invoice_number }}</span></td>
+                    <td>{{ invoice.get_status_action_date | date }}</td>
+                    <td>
+                        <span class="tag is-light {% if invoice.invoice_status == 'paid' %}is-success{% elif invoice.invoice_status == 'partially_paid' %}is-info{% elif invoice.is_past_due %}is-danger{% endif %}">
+                            {{ invoice.get_invoice_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ invoice.customer.customer_name }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ invoice.amount_due | currency_format }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ invoice.amount_paid | currency_format }}</td>
+                    <td class="has-text-centered">
+                        {% if invoice.is_past_due %}
+                            <span class="icon has-text-danger" title="{% trans 'Past Due' %}">
+                                {% icon 'bi:exclamation-circle-fill' 20 %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ invoice.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:eye' 16 %}</span>
+                                        {% trans 'Details' %}
+                                    </a>
+                                    <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Update' %}
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

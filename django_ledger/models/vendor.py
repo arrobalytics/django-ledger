@@ -18,6 +18,7 @@ from uuid import UUID, uuid4
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, Manager, Q, QuerySet
+from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
@@ -119,9 +120,17 @@ class VendorModelManager(Manager):
     providing additional support for filtering based on associated EntityModel or EntityModel slug.
     """
 
+    def get_queryset(self) -> VendorModelQuerySet:
+        qs = VendorModelQuerySet(self.model, using=self._db)
+        return qs.select_related(
+            'entity_model'
+        ).annotate(
+            _entity_slug=F('entity_model__slug'),
+        )
+
     @deprecated_entity_slug_behavior
     def for_entity(
-        self, entity_model: 'EntityModel | str | UUID' = None, **kwargs
+            self, entity_model: 'EntityModel | str | UUID' = None, **kwargs
     ) -> VendorModelQuerySet:
         """
         Filters the queryset for a given entity model.
@@ -269,6 +278,13 @@ class VendorModelAbstract(
             f'Unknown Vendor: {self.vendor_name}'
         return f'{self.vendor_number}: {self.vendor_name}'
 
+    @property
+    def entity_slug(self) -> str:
+        try:
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            return self.entity_model.slug
+
     def validate_for_entity(self, entity_model: 'EntityModel | str | UUID'):
         EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_model, str):
@@ -369,6 +385,23 @@ class VendorModelAbstract(
                 self.save(update_fields=['vendor_number', 'updated'])
 
         return self.vendor_number
+
+    def get_absolute_url(self):
+        return reverse('django_ledger:vendor-detail',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'vendor_pk': self.uuid
+                       })
+
+    def get_detail_url(self):
+        return self.get_absolute_url()
+
+    def get_update_url(self):
+        return reverse('django_ledger:vendor-update',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'vendor_pk': self.uuid
+                       })
 
     def clean(self):
         """

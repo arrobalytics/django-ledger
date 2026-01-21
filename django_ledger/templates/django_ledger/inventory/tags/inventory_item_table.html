@@ -1,48 +1,50 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th>{% trans 'Inventory Number' %}</th>
-            <th>{% trans 'Item' %}</th>
-            <th>{% trans 'UOM' %}</th>
-            <th>{% trans 'Inventory Account' %}</th>
-            <th>{% trans 'COGS Account' %}</th>
-            <th>{% trans 'Action' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for inv_item in inventory_item_list %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
             <tr>
-                <td>{{ inv_item.item_number }}</td>
-                <td>{{ inv_item.name }}</td>
-                <td>{{ inv_item.uom }}</td>
-                <td>{{ inv_item.inventory_account }}</td>
-                <td>{{ inv_item.cogs_account }}</td>
-                <td>
-                    <div class="dropdown is-right is-hoverable" id="inv-item-action-{{ inv_item.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>Actions</span>
-                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu" id="dropdown-menu-{{ inv_item.uuid }}" role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:inventory-item-update' entity_slug=entity_slug item_pk=inv_item.uuid %}"
-                                   class="dropdown-item has-text-success">{% trans 'Update' %}</a>
+                <th>{% trans 'Number' %}</th>
+                <th>{% trans 'Item' %}</th>
+                <th>{% trans 'UOM' %}</th>
+                <th>{% trans 'Inventory Account' %}</th>
+                <th>{% trans 'COGS Account' %}</th>
+                <th class="has-text-centered">{% trans 'Action' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for inv_item in inventory_item_list %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ inv_item.item_number }}</span></td>
+                    <td>{{ inv_item.name }}</td>
+                    <td>{{ inv_item.uom }}</td>
+                    <td><span class="is-size-7">{{ inv_item.inventory_account }}</span></td>
+                    <td><span class="is-size-7">{{ inv_item.cogs_account }}</span></td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="inv-item-action-{{ inv_item.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ inv_item.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:inventory-item-update' entity_slug=entity_slug item_pk=inv_item.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Update' %}
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

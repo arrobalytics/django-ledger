@@ -3,23 +3,34 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    <a href="{{ coa_model.get_create_coa_account_url }}"
+       class="button is-success  is-outlined">
+        <span class="icon">{% icon 'bi:plus-lg' 20 %}</span>
+        <span>{% trans 'Create Account' %}</span>
+    </a>
+    <a href="{{ coa_model.get_coa_list_url }}"
+       class="button is-primary  is-outlined">{% trans 'Back to CoA List' %}</a>
+{% endblock %}
+
 {% block view_content %}
-    <div class="box">
-        <div class="columns is-multiline">
-            <div class="column is-12 has-text-centered">
-                <h1 class="is-size-3">{% trans 'CoA Account List' %}</h1>
-                <h2 class="is-size-1 has-text-info">{{ coa_model.name }}</h2>
-                <p class="is-italic has-text-danger">({{ coa_model.slug }})</p>
-            </div>
-            <div class="column is-12">
-                {% accounts_table accounts %}
-            </div>
-            <div class="column is-12 has-text-centered">
-                <a href="{{ coa_model.get_create_coa_account_url }}"
-                   class="button is-success">{% trans 'Create Account' %}</a>
-                <a href="{{ coa_model.get_coa_list_url }}"
-                   class="button is-dark">{% trans 'Back to CoA List' %}</a>
-            </div>
+    <div class="columns">
+        <div class="column is-4">
+            <form action="" method="get">
+                <div class="field has-addons">
+                    <div class="control is-expanded">
+                        <input class="input is-rounded" type="text" name="q" value="{{ request.GET.q }}"
+                               placeholder="{% trans 'Search Code or Name...' %}">
+                    </div>
+                    <div class="control">
+                        <button type="submit" class="button is-info is-rounded">
+                            <span class="icon">{% icon 'bi:search' 16 %}</span>
+                            <span>{% trans 'Search' %}</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
+    {% accounts_table accounts %}
 {% endblock %}

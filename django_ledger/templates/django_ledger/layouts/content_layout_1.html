@@ -19,10 +19,16 @@
                 {% endif %}
 
                 <div class="column">
-                    {% block view_content %}{% endblock %}
-                </div>
+                    <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% block header_buttons %}{% endblock %}
+                        </div>
+                        <div class="column is-12">
+                            {% block view_content %}{% endblock %}
+                        </div>
+                    </div>
 
+                </div>
             </div>
-        </div>
     </section>
 {% endblock content %}

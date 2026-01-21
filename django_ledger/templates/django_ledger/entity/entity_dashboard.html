@@ -44,17 +44,14 @@
     </section>
 
     {# RECEIVABLES SECTION START #}
-    <section class="hero is-light is-bold is-small">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="is-size-2 is-bold">{% trans 'Receivables' %}</h1>
-                <h2 class="is-size-5 has-text-weight-light">
-                    <span class="icon">{% icon "ic:baseline-business" 16 %}</span>{{ entity.name }}</h2>
+    <section class="section pt-0">
+        <div class="container is-fluid px-0">
+            <div class="box has-background-light">
+                <h2 class="title is-4">
+                    <span class="icon mr-2">{% icon "bi:arrow-down-circle" 24 %}</span>
+                    {% trans 'Receivables' %}
+                </h2>
             </div>
-        </div>
-    </section>
-    <section class="section">
-        <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if invoices %}
                     <div class="column is-6-tablet is-4-desktop">
@@ -77,17 +74,14 @@
     {# RECEIVABLES SECTION END #}
 
     {# PAYABLES SECTION START #}
-    <section class="hero is-light is-bold is-small">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="is-size-2 is-bold">{% trans 'Payables' %}</h1>
-                <h2 class="is-size-5 has-text-weight-light">
-                    <span class="icon">{% icon "ic:baseline-business" 16 %}</span>{{ entity.name }}</h2>
+    <section class="section pt-0">
+        <div class="container is-fluid px-0">
+            <div class="box has-background-light">
+                <h2 class="title is-4">
+                    <span class="icon mr-2">{% icon "bi:arrow-up-circle" 24 %}</span>
+                    {% trans 'Payables' %}
+                </h2>
             </div>
-        </div>
-    </section>
-    <section class="section">
-        <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if bills %}
                     <div class="column is-6-tablet is-4-desktop">
