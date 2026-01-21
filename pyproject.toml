@@ -5,6 +5,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 description = "Double entry accounting system built on the Django Web Framework."
 keywords = ["django", "finance", "bookkeeping", "accounting", "balance sheet", "income statement", "general ledger", "money", "engine"]
+license = "GPL-3.0-or-later"
 authors = [
     { name = "Miguel Sanda", email = "msanda@arrobalytics.com" }
 ]
@@ -27,8 +28,7 @@ classifiers = [
     "Framework :: Django :: 4.0",
     "Framework :: Django :: 5.0",
     "Intended Audience :: Financial and Insurance Industry",
-    "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Intended Audience :: End Users/Desktop"
 ]
 
 [project.urls]
@@ -36,9 +36,6 @@ classifiers = [
 "Bug Tracker" = "https://github.com/arrobalytics/django-ledger/issues"
 "Documentation" = "https://django-ledger.readthedocs.io/en/latest/"
 "Source Code" = "https://github.com/arrobalytics/django-ledger"
-
-[project.license]
-text = "GPLv3 License"
 
 
 [dependency-groups]
