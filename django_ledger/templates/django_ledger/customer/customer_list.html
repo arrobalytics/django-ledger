@@ -3,21 +3,14 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    <a href="{% url 'django_ledger:customer-create' entity_slug=view.kwargs.entity_slug %}"
+       class="button is-success is-outlined">
+        <span class="icon">{% icon 'bi:plus-lg' 20 %}</span>
+        <span>{% trans 'New Customer' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
-
-
-    <div class="box">
-        <div class="columns">
-            <div class="column">
-                <a class="button is-primary is-outlined is-small"
-                   href="{% url 'django_ledger:customer-create' entity_slug=view.kwargs.entity_slug %}">
-                    <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 24 %}</span>
-                    <span>{% trans 'New Customer' %}</span>
-                </a>
-            </div>
-        </div>
-
-        {% customer_table %}
-
-    </div>
+    {% customer_table customer_list %}
 {% endblock %}

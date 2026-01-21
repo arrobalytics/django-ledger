@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -46,6 +47,13 @@ class BaseAccountModelBaseView(DjangoLedgerSecurityMixIn):
                 return_coa_model=True,
                 active=False
             )
+
+            search = self.request.GET.get('q')
+            if search:
+                account_model_qs = account_model_qs.filter(
+                    Q(code__icontains=search) |
+                    Q(name__icontains=search)
+                )
 
             account_model_qs = account_model_qs.select_related(
                 'coa_model',
@@ -91,15 +99,12 @@ class AccountModelListView(BaseAccountModelBaseView, ListView):
             qs = qs.active()
         return qs
 
-
-
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)
         chart_of_accounts_model: ChartOfAccountModel = self.get_coa_model()
         if not chart_of_accounts_model.is_active():
             messages.error(request, _('WARNING: The chart of accounts list is inactive.'), extra_tags='is-danger')
         return response
-
 
 
 class AccountModelCreateView(BaseAccountModelBaseView, CreateView):

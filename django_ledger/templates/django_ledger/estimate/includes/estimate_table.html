@@ -1,64 +1,65 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr>
+                <th>{% trans 'Estimate' %}</th>
+                <th>{% trans 'Customer' %}</th>
+                <th>{% trans 'Title' %}</th>
+                <th>{% trans 'Status' %}</th>
+                <th>{% trans 'Status Date' %}</th>
+                <th class="has-text-right">{% trans 'Sales Price' %}</th>
+                <th class="has-text-centered">{% trans 'GM%' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for ce_model in ce_list %}
+                <tr id="{{ ce_model.get_html_id }}">
+                    <td><span class="has-text-weight-bold">{{ ce_model.estimate_number }}</span></td>
+                    <td>{{ ce_model.customer.customer_name }}</td>
+                    <td><span class="is-size-7">{{ ce_model.title }}</span></td>
+                    <td>
+                        <span class="tag is-light {% if ce_model.status == 'approved' %}is-success{% elif ce_model.status == 'draft' %}is-warning{% endif %}">
+                            {{ ce_model.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ ce_model.get_status_action_date | date }}</td>
+                    <td class="has-text-right">
+                        {% currency_symbol %}{{ ce_model.get_revenue_estimate | currency_format }}
+                    </td>
+                    <td class="has-text-centered">
+                        <span class="tag is-rounded is-white">
+                            {{ ce_model.get_gross_margin_estimate | percentage }}
+                        </span>
+                    </td>
 
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th>{% trans 'Estimate' %}</th>
-            <th>{% trans 'Customer' %}</th>
-            <th>{% trans 'Title' %}</th>
-            <th>{% trans 'Status' %}</th>
-            <th>{% trans 'Status Date' %}</th>
-            <th>{% trans 'Sales Price' %}</th>
-            <th>{% trans 'GM%' %}</th>
-            <th>{% trans 'Actions' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for ce_model in ce_list %}
-            <tr id="{{ ce_model.get_html_id }}">
-                <td>{{ ce_model.estimate_number }}</td>
-                <td>{{ ce_model.customer.customer_name }}</td>
-                <td>{{ ce_model.title }}</td>
-                <td>{{ ce_model.get_status_display }}</td>
-                <td>{{ ce_model.get_status_action_date }}</td>
-                <td class="has-text-centered">
-                    {% currency_symbol %}{{ ce_model.get_revenue_estimate | currency_format }}</td>
-                <td class="has-text-centered">{{ ce_model.get_gross_margin_estimate | percentage }}</td>
-
-                {# ACTIONS #}
-                <td class="has-text-centered">
-                    <div class="dropdown is-right is-hoverable" id="cj-action-{{ ce_model.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>{% trans 'Actions' %}</span>
-                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                            </button>
-                        </div>
-                        <div class="dropdown-menu" id="dropdown-menu-{{ ce_model.uuid }}" role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug ce_pk=ce_model.uuid %}"
-                                   class="dropdown-item has-text-success">Details</a>
-                                {#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
-                                {#                                   class="dropdown-item has-text-warning-dark">Update</a>#}
-                                {#                                {% if not cj.paid %}#}
-                                {#                                    {% modal_action cj 'get' entity_slug %}#}
-                                {#                                    <a onclick="djLedger.showModal('{{ cj.get_html_id }}')"#}
-                                {#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
-                                {#                                {% endif %}#}
-                                {#                                <a href="{% url 'django_ledger:cj-delete' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
-                                {#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="ce-action-{{ ce_model.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ ce_model.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug ce_pk=ce_model.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:eye' 16 %}</span>
+                                        {% trans 'Details' %}
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

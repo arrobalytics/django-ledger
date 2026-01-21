@@ -22,6 +22,10 @@
                            href="{{ import_job_model.get_update_url }}">
                             {% trans 'Update' %}
                         </a>
+                        <a class="button is-primary is-light mr-2"
+                           href="{{ import_job_model.get_ledger_detail_url }}">
+                            {% trans 'Ledger Detail' %}
+                        </a>
                         <form class="mr-2" action="{{ import_job_model.get_data_import_reset_url }}" method="post">
                             {% csrf_token %}
                             <button class="button is-warning" type="submit">{% trans 'Reset Job' %}</button>

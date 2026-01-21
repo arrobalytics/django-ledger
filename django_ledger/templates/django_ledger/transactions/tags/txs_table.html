@@ -2,68 +2,97 @@
 {% load django_ledger %}
 
 {% if style == 'detail' %}
-    <div class="table-container">
-        <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-            <tr>
-                <th>{% trans 'Timestamp' %}</th>
-                <th>{% trans 'Account' %}</th>
-                <th>{% trans 'Account Name' %}</th>
-                <th>{% trans 'Unit' %}</th>
-                <th>{% trans 'Credit' %}</th>
-                <th>{% trans 'Debit' %}</th>
-                <th>{% trans 'Description' %}</th>
-            </tr>
-            {% for transaction_model in transaction_model_qs %}
+    <div class="box">
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+                <thead>
                 <tr>
-                    <td>{{ transaction_model.timestamp }}</td>
-                    <td>{{ transaction_model.account_code }}</td>
-                    <td>{{ transaction_model.account_name }}</td>
-                    <td>{% if transaction_model.entity_unit_name %}
-                        {{ transaction_model.entity_unit_name }}{% endif %}</td>
-                    <td>{% if transaction_model.is_credit %}{% currency_symbol %}
-                        {{ transaction_model.amount | currency_format }}{% endif %}</td>
-                    <td>{% if transaction_model.is_debit %}{% currency_symbol %}
-                        {{ transaction_model.amount | currency_format }}{% endif %}</td>
-                    <td>{% if transaction_model.description %}{{ transaction_model.description }}{% endif %}</td>
+                    <th>{% trans 'Timestamp' %}</th>
+                    <th>{% trans 'Account' %}</th>
+                    <th>{% trans 'Account Name' %}</th>
+                    <th>{% trans 'Unit' %}</th>
+                    <th class="has-text-right">{% trans 'Credit' %}</th>
+                    <th class="has-text-right">{% trans 'Debit' %}</th>
+                    <th>{% trans 'Description' %}</th>
                 </tr>
-            {% endfor %}
-            <tr class="has-text-weight-bold">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td class="has-text-right">Total</td>
-                <td>{% currency_symbol %}{{ total_credits | currency_format }}</td>
-                <td>{% currency_symbol %}{{ total_debits | currency_format }}</td>
-                <td></td>
-            </tr>
-        </table>
+                </thead>
+                <tbody>
+                {% for transaction_model in transaction_model_qs %}
+                    <tr>
+                        <td>{{ transaction_model.timestamp | date }}</td>
+                        <td><span class="has-text-weight-bold">{{ transaction_model.account_code }}</span></td>
+                        <td>{{ transaction_model.account_name }}</td>
+                        <td>
+                            {% if transaction_model.entity_unit_name %}
+                                <span class="tag is-white">{{ transaction_model.entity_unit_name }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="has-text-right">
+                            {% if transaction_model.is_credit %}
+                                {% currency_symbol %}{{ transaction_model.amount | currency_format }}
+                            {% endif %}
+                        </td>
+                        <td class="has-text-right">
+                            {% if transaction_model.is_debit %}
+                                {% currency_symbol %}{{ transaction_model.amount | currency_format }}
+                            {% endif %}
+                        </td>
+                        <td><span class="is-size-7">{{ transaction_model.description | default:"" }}</span></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                <tr class="has-text-weight-bold has-background-light">
+                    <td colspan="4" class="has-text-right">{% trans 'Total' %}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ total_credits | currency_format }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ total_debits | currency_format }}</td>
+                    <td></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 {% elif style == 'compact' %}
-    <div class="table-container">
-        <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-            <tr>
-                <th>{% trans 'Account' %}</th>
-                <th>{% trans 'Account Name' %}</th>
-                <th>{% trans 'Credit' %}</th>
-                <th>{% trans 'Debit' %}</th>
-                <th>{% trans 'Description' %}</th>
-            </tr>
-            {% for transaction_model in transaction_model_qs %}
+    <div class="box">
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+                <thead>
                 <tr>
-                    <td>{{ transaction_model.account_code }}</td>
-                    <td>{{ transaction_model.account_name }}</td>
-                    <td>{% if transaction_model.is_credit %}{% currency_symbol %}{{ transaction_model.amount | currency_format }}{% endif %}</td>
-                    <td>{% if transaction_model.is_debit %}{% currency_symbol %}{{ transaction_model.amount | currency_format }}{% endif %}</td>
-                    <td>{% if transaction_model.description %}{{ transaction_model.description }}{% endif %}</td>
+                    <th>{% trans 'Account' %}</th>
+                    <th>{% trans 'Account Name' %}</th>
+                    <th class="has-text-right">{% trans 'Credit' %}</th>
+                    <th class="has-text-right">{% trans 'Debit' %}</th>
+                    <th>{% trans 'Description' %}</th>
                 </tr>
-            {% endfor %}
-            <tr class="has-text-weight-bold">
-                <td></td>
-                <td class="has-text-right">{% trans 'Total' %}</td>
-                <td>{% currency_symbol %}{{ total_credits | currency_format }}</td>
-                <td>{% currency_symbol %}{{ total_debits | currency_format }}</td>
-                <td></td>
-            </tr>
-        </table>
+                </thead>
+                <tbody>
+                {% for transaction_model in transaction_model_qs %}
+                    <tr>
+                        <td><span class="has-text-weight-bold">{{ transaction_model.account_code }}</span></td>
+                        <td>{{ transaction_model.account_name }}</td>
+                        <td class="has-text-right">
+                            {% if transaction_model.is_credit %}
+                                {% currency_symbol %}{{ transaction_model.amount | currency_format }}
+                            {% endif %}
+                        </td>
+                        <td class="has-text-right">
+                            {% if transaction_model.is_debit %}
+                                {% currency_symbol %}{{ transaction_model.amount | currency_format }}
+                            {% endif %}
+                        </td>
+                        <td><span class="is-size-7">{{ transaction_model.description | default:"" }}</span></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                <tr class="has-text-weight-bold has-background-light">
+                    <td colspan="2" class="has-text-right">{% trans 'Total' %}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ total_credits | currency_format }}</td>
+                    <td class="has-text-right">{% currency_symbol %}{{ total_debits | currency_format }}</td>
+                    <td></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 {% endif %}

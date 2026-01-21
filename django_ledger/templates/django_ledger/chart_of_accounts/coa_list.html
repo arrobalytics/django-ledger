@@ -3,33 +3,32 @@
 {% load static %}
 {% load icon from django_ledger %}
 
-{% block view_content %}
-    <div class="card">
-        <div class="card-content">
-            <div class="columns">
-                <div class="column is-12">
-                    <h1 class="is-size-1">Chart of Accounts
-                        <a href="{{ entity_model.get_coa_create_url }}">
-                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
-                    </h1>
-                    {% if not inactive %}
-                        <a class="button is-warning" href="{{ entity_model.get_coa_list_inactive_url }}">
-                            {% trans 'Show Inactive' %}</a>
-                    {% else %}
-                        <a class="button is-warning" href="{{ entity_model.get_coa_list_url }}">
-                            {% trans 'Show Active' %}</a>
-                    {% endif %}
+{% block header_buttons %}
+    <a href="{{ entity_model.get_coa_create_url }}"
+       class="button is-success  is-outlined">
+        <span class="icon">{% icon 'bi:plus-lg' 20 %}</span>
+        <span>{% trans 'Create CoA' %}</span>
+    </a>
+    {% if not inactive %}
+        <a class="button is-warning  is-outlined" href="{{ entity_model.get_coa_list_inactive_url }}">
+            <span class="icon">{% icon 'bi:eye-slash' 16 %}</span>
+            <span>{% trans 'Show Inactive' %}</span>
+        </a>
+    {% else %}
+        <a class="button is-warning  is-outlined" href="{{ entity_model.get_coa_list_url }}">
+            <span class="icon">{% icon 'bi:eye' 16 %}</span>
+            <span>{% trans 'Show Active' %}</span>
+        </a>
+    {% endif %}
+{% endblock %}
 
-                </div>
+{% block view_content %}
+    <div class="columns is-centered is-multiline">
+        {% for coa_model in coa_list %}
+            <div class="column is-6">
+                {% include 'django_ledger/chart_of_accounts/includes/coa_card.html' with coa_model=coa_model %}
             </div>
-            <div class="columns is-centered is-multiline">
-                {% for coa_model in coa_list %}
-                    <div class="column is-6">
-                        {% include 'django_ledger/chart_of_accounts/includes/coa_card.html' with coa_model=coa_model %}
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+        {% endfor %}
     </div>
 {% endblock %}
 

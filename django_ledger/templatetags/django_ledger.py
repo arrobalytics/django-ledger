@@ -11,6 +11,7 @@ from random import randint
 from typing import Union
 
 from django import template
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.urls import reverse
@@ -21,7 +22,8 @@ from django_ledger.forms.app_filters import ActivityFilterForm, EntityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import ROLES_ORDER_ALL
 from django_ledger.io.io_core import get_localdate, validate_activity
-from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel, ImportJobModelQuerySet, ImportJobModel
+from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel, ImportJobModelQuerySet, ImportJobModel, \
+    VendorModelQuerySet, CustomerModelQueryset
 from django_ledger.settings import (
     DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_FINANCIAL_ANALYSIS,
@@ -305,6 +307,14 @@ def po_table(context, purchase_order_qs):
     }
 
 
+@register.filter
+def multiply(value, arg):
+    try:
+        return int(value) * int(arg)
+    except (ValueError, TypeError):
+        return value
+
+
 @register.inclusion_tag('django_ledger/account/tags/accounts_table.html', takes_context=True)
 def accounts_table(context, accounts_qs, title=None):
     return {
@@ -315,13 +325,17 @@ def accounts_table(context, accounts_qs, title=None):
 
 
 @register.inclusion_tag('django_ledger/customer/tags/customer_table.html', takes_context=True)
-def customer_table(context):
-    return context
+def customer_table(context, customer_qs: CustomerModelQueryset):
+    return {
+        'customer_list': customer_qs,
+    }
 
 
 @register.inclusion_tag('django_ledger/vendor/tags/vendor_table.html', takes_context=True)
-def vendor_table(context):
-    return context
+def vendor_table(context, vendor_qs: VendorModelQuerySet):
+    return {
+        'vendor_list': vendor_qs
+    }
 
 
 @register.inclusion_tag('django_ledger/account/tags/account_txs_table.html', takes_context=True)
@@ -449,12 +463,12 @@ def modal_action(context, model, http_method: str = 'post', entity_slug: str = N
 
 @register.inclusion_tag('django_ledger/components/modals_v2.html', takes_context=True)
 def modal_action_v2(
-    context,
-    model,
-    action_url: str,
-    message: str,
-    html_id: str,
-    http_method: str = 'get',
+        context,
+        model,
+        action_url: str,
+        message: str,
+        html_id: str,
+        http_method: str = 'get',
 ):
     return {
         'object': model,
@@ -497,10 +511,10 @@ def fin_ratio_threshold_class(value, ratio):
 
 @register.inclusion_tag('django_ledger/components/feedback_button.html', takes_context=True)
 def feedback_button(
-    context,
-    button_size_class: str = 'is-small',
-    color_class: str = 'is-success',
-    icon_id: str = None,
+        context,
+        button_size_class: str = 'is-small',
+        color_class: str = 'is-success',
+        icon_id: str = None,
 ):
     bug_modal_html_id = f'djl-bug-button-{randint(10000, 99999)}'
     feature_modal_html_id = f'djl-feature-button-{randint(10000, 99999)}'
@@ -616,6 +630,8 @@ def navigation_menu(context, style):
     ctx = dict()
     ctx['style'] = style
     if ENTITY_SLUG:
+        DJL_RECON_INSTALLED = apps.is_installed('django_ledger_recon')
+
         ctx['entity_slug'] = ENTITY_SLUG
         nav_menu_links = [
             {
@@ -868,6 +884,25 @@ def navigation_menu(context, style):
                 ],
             },
         ]
+
+        if DJL_RECON_INSTALLED:
+            nav_menu_links.append(
+                {
+                    'type': 'links',
+                    'title': 'Reconciliation',
+                    'links': [
+                        {
+                            'type': 'link',
+                            'title': 'Bank Reconciliation',
+                            'url': reverse(
+                                'django_ledger_recon:recon-dashboard',
+                                kwargs={'entity_slug': ENTITY_SLUG},
+                            ),
+                            'icon': 'fa7-brands:hornbill',
+                        }
+                    ],
+                }
+            )
         ctx['links'] = nav_menu_links
         ctx['request'] = context['request']
     return ctx
@@ -976,3 +1011,9 @@ def customer_estimate_item_formset(context, item_formset):
         'ce_cost_estimate__sum': context['ce_cost_estimate__sum'],
         'item_formset': item_formset,
     }
+
+
+@register.simple_tag
+def django_ledger_recon_installed():
+    """Returns True if 'django_ledger_recon' is in INSTALLED_APPS"""
+    return apps.is_installed('django_ledger_recon')

@@ -3,140 +3,125 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    {% if not ledger_model.is_locked %}
+        <a href="{{ ledger_model.get_journal_entry_create_url }}"
+           class="button is-success  is-outlined">
+            <span class="icon">{% icon 'bi:plus-lg' 20 %}</span>
+            <span>{% trans 'Create Entry' %}</span>
+        </a>
+    {% endif %}
+    <a class="button is-info  is-outlined"
+       href="{{ ledger_model.get_action_lock_journal_entries_url }}">
+        <span class="icon">{% icon 'bi:lock-fill' 16 %}</span>
+        <span>{% trans 'Lock All' %}</span>
+    </a>
+    <a class="button is-warning  is-outlined"
+       href="{{ ledger_model.get_action_post_journal_entries_url }}">
+        <span class="icon">{% icon 'bi:cloud-upload-fill' 16 %}</span>
+        <span>{% trans 'Post All' %}</span>
+    </a>
+    <a class="button is-dark  is-outlined"
+       href="{{ ledger_model.get_list_url }}">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Ledgers' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
-
-    <div class="card">
-        <div class="card-content">
-            <div class="level">
-                <div class="level-left">
-                    <div class="level-item">
-                        {% if month %}
-                            <h1 class="is-size-1 has-text-weight-thin">{{ month | date:'F Y' }}</h1>
-                        {% elif year %}
-                            <h1 class="is-size-1 has-text-weight-thin">Year {{ year | date:'Y' }}
-                                Journal Entries</h1>
-                        {% else %}
-                            <h1 class="is-size-1 has-text-weight-thin">{% trans 'Journal Entries' %}</h1>
-                        {% endif %}
-                    </div>
-
-                    {# Do not show + button if ledger is locked #}
-                    {% if not ledger_model.is_locked %}
-                        <div class="level-item">
-                            <a href="{{ ledger_model.get_journal_entry_create_url }}">
-                                <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
-                        </div>
-                    {% endif %}
-
-                </div>
-                <div class="level-right">
-                    {% if previous_month %}
-                        <div class="level-item">
-                            <a class="button is-small is-dark is-outlined"
-                               href="{% url 'django_ledger:ledger-list-month' year=previous_month.year month=previous_month.month entity_slug=view.kwargs.entity_slug %}">
-                                <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 16 %}</span>
-                                <span>{{ previous_month | date:'F Y' }}</span>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if next_month %}
-                        <div class="level-item">
-                            <a class="button is-small is-dark is-outlined"
-                               href="{% url 'django_ledger:ledger-list-month' year=next_month.year month=next_month.month entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                                <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 16 %}</span>
-                                <span>{{ next_month | date:'F Y' }}</span>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if previous_year %}
-                        <div class="level-item">
-                            <a class="button is-small is-dark is-outlined"
-                               href="{% url 'django_ledger:ledger-list-year' year=previous_year.year entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                                <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 16 %}</span>
-                                <span>{{ previous_year | date:'Y' }}</span>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if next_year %}
-                        <div class="level-item">
-                            <a class="button is-small is-dark is-outlined"
-                               href="{% url 'django_ledger:ledger-list-year' year=next_year.year entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                                <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 16 %}</span>
-                                <span>{{ next_year | date:'Y' }}</span>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if page_obj %}
-                        {% if page_obj.has_previous %}
-                            <div class="level-item">
-                                <a href="?page={{ page_obj.previous_page_number }}"
-                                   class="button is-small is-dark is-outlined">
-                                    <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 24 %}</span>
-                                </a>
-                            </div>
-                        {% endif %}
-                        <div class="level-item">
-                            <p class="is-italic">page {{ page_obj.number }}
-                                of {{ page_obj.paginator.num_pages }}</p>
-                        </div>
-                        {% if page_obj.has_next %}
-                            <div class="level-item">
-                                <a href="?page={{ page_obj.next_page_number }}"
-                                   class="button is-small is-dark is-outlined">
-                                    <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 24 %}</span>
-                                </a>
-                            </div>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-
-            {% jes_table journal_entry_qs %}
-
-            {% if year %}
-                <h5 class="is-size-5">{% trans 'Go to month:' %}</h5>
-                <p>
-                    <a href="{{ ledger_model.get_journal_entry_list_url }}">
-                        {% trans 'All' %} |
-                    </a>
-                    {% for date in date_list %}
-                        <a href="{% url 'django_ledger:je-list-month' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk year=date.year month=date.month %}">
-                            {{ date | date:'F' }} {% if not forloop.last %}>{% endif %}
-                        </a>
-                    {% endfor %}
-                </p>
-            {% else %}
-                <h5 class="is-size-5">{% trans 'Go to year:' %}</h5>
-                <p>
-                    <a href="{{ ledger_model.get_journal_entry_list_url }}">
-                        {% trans 'All' %} |
-                    </a>
-                    {% for date in date_list %}
-                        <a href="{% url 'django_ledger:je-list-year' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk year=date.year %}">
-                            {{ date.year }} {% if not forloop.last %}>{% endif %}
-                        </a>
-                    {% endfor %}
-                </p>
-            {% endif %}
-            <div class="container">
-                <div class="columns is-centered">
-                    <div class="column is-3">
-                        <a class="button is-dark is-fullwidth"
-                           href="{{ ledger_model.get_list_url }}">
-                            {% trans 'Back to Ledger List' %}</a>
-                    </div>
-                    <div class="column is-3">
-                        <a class="button is-success is-fullwidth"
-                           href="{{ ledger_model.get_action_lock_journal_entries_url }}">
-                            {% trans 'Lock All' %}</a>
-                    </div>
-                    <div class="column is-3">
-                        <a class="button is-warning is-fullwidth"
-                           href="{{ ledger_model.get_action_post_journal_entries_url }}">
-                            {% trans 'Post All' %}</a>
-                    </div>
-                </div>
-            </div>
+    <div class="level mb-4">
+        <div class="level-left">
+            {# Standardized list header #}
         </div>
+        <div class="level-right">
+            {% if previous_month %}
+                <div class="level-item">
+                    <a class="button is-small is-dark is-outlined"
+                       href="{% url 'django_ledger:ledger-list-month' year=previous_month.year month=previous_month.month entity_slug=view.kwargs.entity_slug %}">
+                        <span class="icon is-small">{% icon 'bi:arrow-left-circle' 16 %}</span>
+                        <span>{{ previous_month | date:'F Y' }}</span>
+                    </a>
+                </div>
+            {% endif %}
+            {% if next_month %}
+                <div class="level-item">
+                    <a class="button is-small is-dark is-outlined"
+                       href="{% url 'django_ledger:ledger-list-month' year=next_month.year month=next_month.month entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                        <span>{{ next_month | date:'F Y' }}</span>
+                        <span class="icon is-small">{% icon 'bi:arrow-right-circle' 16 %}</span>
+                    </a>
+                </div>
+            {% endif %}
+            {% if previous_year %}
+                <div class="level-item">
+                    <a class="button is-small is-dark is-outlined"
+                       href="{% url 'django_ledger:ledger-list-year' year=previous_year.year entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                        <span class="icon is-small">{% icon 'bi:arrow-left-circle' 16 %}</span>
+                        <span>{{ previous_year | date:'Y' }}</span>
+                    </a>
+                </div>
+            {% endif %}
+            {% if next_year %}
+                <div class="level-item">
+                    <a class="button is-small is-dark is-outlined"
+                       href="{% url 'django_ledger:ledger-list-year' year=next_year.year entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                        <span>{{ next_year | date:'Y' }}</span>
+                        <span class="icon is-small">{% icon 'bi:arrow-right-circle' 16 %}</span>
+                    </a>
+                </div>
+            {% endif %}
+            {% if page_obj %}
+                {% if page_obj.has_previous %}
+                    <div class="level-item">
+                        <a href="?page={{ page_obj.previous_page_number }}"
+                           class="button is-small is-dark is-outlined">
+                            <span class="icon is-small">{% icon 'bi:arrow-left' 16 %}</span>
+                        </a>
+                    </div>
+                {% endif %}
+                <div class="level-item">
+                    <p class="is-italic is-size-7">page {{ page_obj.number }}
+                        of {{ page_obj.paginator.num_pages }}</p>
+                </div>
+                {% if page_obj.has_next %}
+                    <div class="level-item">
+                        <a href="?page={{ page_obj.next_page_number }}"
+                           class="button is-small is-dark is-outlined">
+                            <span class="icon is-small">{% icon 'bi:arrow-right' 16 %}</span>
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    {% jes_table journal_entry_qs %}
+
+    <div class="box has-background-light mt-4">
+        {% if year %}
+            <h5 class="title is-6 mb-2">{% trans 'Go to month:' %}</h5>
+            <div class="buttons are-small">
+                <a class="button is-white" href="{{ ledger_model.get_journal_entry_list_url }}">
+                    {% trans 'All' %}
+                </a>
+                {% for date in date_list %}
+                    <a class="button is-info is-light" href="{% url 'django_ledger:je-list-month' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk year=date.year month=date.month %}">
+                        {{ date | date:'F' }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <h5 class="title is-6 mb-2">{% trans 'Go to year:' %}</h5>
+            <div class="buttons are-small">
+                <a class="button is-white" href="{{ ledger_model.get_journal_entry_list_url }}">
+                    {% trans 'All' %}
+                </a>
+                {% for date in date_list %}
+                    <a class="button is-info is-light" href="{% url 'django_ledger:je-list-year' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk year=date.year %}">
+                        {{ date.year }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

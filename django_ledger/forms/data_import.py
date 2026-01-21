@@ -72,12 +72,12 @@ class ImportJobModelUpdateForm(ModelForm):
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
     def __init__(
-        self,
-        *args,
-        entity_model: EntityModel,
-        import_job_model: ImportJobModel,
-        staged_tx_pk: Optional[UUID | StagedTransactionModel] = None,
-        **kwargs,
+            self,
+            *args,
+            entity_model: EntityModel,
+            import_job_model: ImportJobModel,
+            staged_tx_pk: Optional[UUID | StagedTransactionModel] = None,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -202,12 +202,12 @@ class StagedTransactionModelForm(ModelForm):
     )
 
     def __init__(
-        self,
-        *args,
-        entity_model: EntityModel,
-        import_job_model: ImportJobModel,
-        base_formset_instance: BaseStagedTransactionModelFormSet,
-        **kwargs,
+            self,
+            *args,
+            entity_model: EntityModel,
+            import_job_model: ImportJobModel,
+            base_formset_instance: BaseStagedTransactionModelFormSet,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.ENTITY_MODEL: EntityModel = entity_model
@@ -362,17 +362,17 @@ class StagedTransactionModelForm(ModelForm):
 
         # Matching validation for transfers & debt payments
         if all(
-            [
-                self.cleaned_data.get('matched_transaction') is True,
-                any([staged_txs_model.is_transfer(), staged_txs_model.is_debt_payment()]),
-            ]
+                [
+                    self.cleaned_data.get('matched_transaction') is True,
+                    any([staged_txs_model.is_transfer(), staged_txs_model.is_debt_payment()]),
+                ]
         ):
             candidates_qs = staged_txs_model.get_match_candidates_qs()
-            selected = self.cleaned_data.get('match_tx_model')
+            selected = self.cleaned_data.get('matched_transaction_model')
             if candidates_qs.count() > 1 and selected is None:
                 raise ValidationError(message=_('Multiple matches found. Please select a transaction to match.'))
             if candidates_qs.count() == 1 and selected is None:
-                self.cleaned_data['match_tx_model'] = candidates_qs.first()
+                self.cleaned_data['matched_transaction_model'] = candidates_qs.first()
 
     class Meta:
         model = StagedTransactionModel

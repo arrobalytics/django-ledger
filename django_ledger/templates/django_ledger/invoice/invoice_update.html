@@ -3,6 +3,19 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+       class="button is-dark  is-outlined">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Back to Detail' %}</span>
+    </a>
+    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+       class="button is-primary  is-outlined">
+        <span class="icon">{% icon 'bi:list' 16 %}</span>
+        <span>{% trans 'Invoice List' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
     <div class="container">
         <div class="columns is-multiline">
@@ -15,16 +28,12 @@
                       method="post">
                     {% csrf_token %}
                     {{ form }}
+                    <hr>
                     <button type="submit"
-                            class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save Invoice' %}</button>
-
-                    <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                       class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to Invoice Detail' %}</a>
-                    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                       class="button is-small is-info is-fullwidth mt-2">{% trans 'Invoice List' %}</a>
-                    <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
-                       class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>
-
+                            class="button is-primary is-fullwidth">
+                        <span class="icon">{% icon 'bi:save' 16 %}</span>
+                        <span>{% trans 'Save Invoice' %}</span>
+                    </button>
                 </form>
             </div>
             <div class="column is-12">

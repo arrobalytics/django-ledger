@@ -1,76 +1,81 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th class="has-text-centered">{% trans 'Customer Number' %}</th>
-            <th class="has-text-centered">{% trans 'Customer' %}</th>
-            <th class="has-text-centered">{% trans 'Address' %}</th>
-            <th class="has-text-centered">{% trans 'Customer Code' %}</th>
-            <th class="has-text-centered">{% trans 'Active' %}</th>
-            <th class="has-text-centered">{% trans 'Hidden' %}</th>
-            <th class="has-text-centered">{% trans 'Actions' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for customer in customers %}
-            <tr class="has-text-centered">
-                <td>{{ customer.customer_number }}</td>
-                <td><a href="{% url 'django_ledger:customer-detail' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}">{{ customer.customer_name }}</a></td>
-                <td>{% if customer.address_1 %}{{ customer.address_1 }}{% endif %}</td>
-                <td>{% if customer.customer_code %}{{ customer.customer_code }}{% endif %}</td>
-                <td>
-                    {% if customer.active %}
-                        <span class="icon has-text-success">
-                                        {% icon 'ant-design:check-circle-filled' 24 %}
-                                    </span>
-                    {% elif not customer.active %}
-                        <span class="icon has-text-danger">
-                                        {% icon 'mdi:dangerous' 24 %}
-                                    </span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if customer.hidden %}
-                        <span class="icon has-text-success">
-                                        {% icon 'ant-design:check-circle-filled' 24 %}
-                                    </span>
-                    {% elif not customer.hidden %}
-                        <span class="icon has-text-danger">
-                                        {% icon 'mdi:dangerous' 24 %}
-                                    </span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="dropdown is-right is-hoverable"
-                         id="customer-action-{{ customer.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>Actions</span>
-                                <span class="icon is-small">
-                                        {% icon 'bi:arrow-down' 24 %}
-                                      </span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu"
-                             id="dropdown-menu-{{ customer.uuid }}"
-                             role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:customer-detail' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}"
-                                   class="dropdown-item has-text-weight-bold has-text-success">{% trans 'View' %}</a>
-                                <a href="{% url 'django_ledger:customer-update' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}"
-                                   class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr>
+                <th>{% trans 'Customer Number' %}</th>
+                <th>{% trans 'Customer' %}</th>
+                <th>{% trans 'Address' %}</th>
+                <th>{% trans 'Code' %}</th>
+                <th class="has-text-centered">{% trans 'Active' %}</th>
+                <th class="has-text-centered">{% trans 'Hidden' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for customer_model in customer_list %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ customer_model.customer_number }}</span></td>
+                    <td>
+                        <a href="{{ customer_model.get_detail_url }}">
+                            {{ customer_model.customer_name }}
+                        </a>
+                    </td>
+                    <td>{% if customer_model.address_1 %}{{ customer_model.address_1 }}{% endif %}</td>
+                    <td>{% if customer_model.customer_code %}{{ customer_model.customer_code }}{% endif %}</td>
+                    <td class="has-text-centered">
+                        {% if customer_model.active %}
+                            <span class="icon has-text-success" title="{% trans 'Active' %}">
+                                {% icon 'ant-design:check-circle-filled' 20 %}
+                            </span>
+                        {% else %}
+                            <span class="icon has-text-danger" title="{% trans 'Inactive' %}">
+                                {% icon 'mdi:dangerous' 20 %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        {% if customer_model.hidden %}
+                            <span class="icon has-text-warning" title="{% trans 'Hidden' %}">
+                                {% icon 'bi:eye-slash-fill' 20 %}
+                            </span>
+                        {% else %}
+                            <span class="icon has-text-grey-lighter" title="{% trans 'Visible' %}">
+                                {% icon 'bi:eye-fill' 20 %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="customer-action-{{ customer_model.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ customer_model.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{{ customer_model.get_detail_url }}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:eye' 16 %}</span>
+                                        {% trans 'View' %}
+                                    </a>
+                                    <a href="{{ customer_model.get_update_url }}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Update' %}
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

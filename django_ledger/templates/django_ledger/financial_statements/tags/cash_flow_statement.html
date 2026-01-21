@@ -1,220 +1,289 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<style>
-    table.financial-statement thead th:last-child,
-    table.financial-statement tbody td:last-child,
-    table.financial-statement tfoot td:last-child {
-        text-align: right;
-    }
+<div class="box">
+    <div class="table-container">
+        {# OPERATING ACTIVITIES #}
+        <table class="table is-fullwidth is-narrow is-striped is-hoverable financial-statement django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr class="is-selected">
+                <th>
+                    <h2 class="title is-4 mb-0">{% trans 'CASH FROM OPERATING ACTIVITIES' %}</h2>
+                </th>
+                <th class="has-text-right">
+                    <h2 class="title is-4 mb-0">{% trans 'TOTAL' %}</h2>
+                </th>
+            </tr>
+            </thead>
 
-    table.financial-statement tfoot td {
-        font-weight: 700;
-    }
-</style>
+            <tbody>
+            <tr>
+                <td class="has-text-weight-bold is-size-5">
+                    {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_NET_INCOME.description }}
+                </td>
+                <td class="has-text-weight-bold has-text-right is-size-5">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_NET_INCOME.balance | currency_format }}
+                </td>
+            </tr>
 
-<div class="table-container">
+            {# Non-cash Charges to Non-current Accounts #}
+            <tr class="has-background-light">
+                <td colspan="2" class="pl-4">
+                    <span class="tag is-info is-light has-text-weight-bold">{% trans 'NON-CASH CHARGES TO NON-CURRENT ACCOUNTS' %}</span>
+                </td>
+            </tr>
 
-    {# OPERATING ACTIVITIES #}
-    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
-        <thead>
-        <tr>
-            <td class="has-text-weight-light is-size-3">{% trans 'Cash from Operating Activities' %}</td>
-            <td class="has-text-right has-text-weight-bold">{% trans 'Total' %}</td>
-        </tr>
-        </thead>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_DEPRECIATION_AMORTIZATION.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_DEPRECIATION_AMORTIZATION.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.balance | currency_format }}
+                </td>
+            </tr>
 
-        <tbody>
+            {# Non-cash Charges to Current Accounts #}
+            <tr class="has-background-light">
+                <td colspan="2" class="pl-4">
+                    <span class="tag is-info is-light has-text-weight-bold">{% trans 'NON-CASH CHARGES TO CURRENT ACCOUNTS' %}</span>
+                </td>
+            </tr>
 
-        <tr>
-            <td class="has-text-weight-bold is-size-5">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_NET_INCOME.description }}
-            </td>
-            <td class="has-text-weight-bold has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_NET_INCOME.balance | currency_format }}</td>
-        </tr>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_RECEIVABLE.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_RECEIVABLE.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVENTORY.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVENTORY.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_PAYABLE.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_PAYABLE.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 2.5rem;">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT.balance | currency_format }}
+                </td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr class="has-background-info-light">
+                <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Operating Activities' %}</td>
+                <td class="has-text-weight-bold has-text-right is-size-5">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash_by_activity.OPERATING | currency_format }}
+                </td>
+            </tr>
+            </tfoot>
+        </table>
 
-        {# Non-cash Charges to Non-current Accounts #}
-        <tr>
-            <td class="is-size-5 has-text-weight-light has-text-centered">{% trans 'Noncash Charges to Non-current Accounts' %}</td>
-            <td></td>
-        </tr>
+        {# FINANCING ACTIVITIES #}
+        <table class="table is-fullwidth is-narrow is-striped is-hoverable financial-statement django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr class="is-selected">
+                <th colspan="2">
+                    <h2 class="title is-4 mb-0 ">{% trans 'CASH FROM FINANCING ACTIVITIES' %}</h2>
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td class="pl-5">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ISSUING_EQUITY.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ISSUING_EQUITY.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td class="pl-5">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_DIVIDENDS.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_DIVIDENDS.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td class="pl-5">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ST_DEBT_PAYMENTS.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ST_DEBT_PAYMENTS.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td class="pl-5">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_LT_DEBT_PAYMENTS.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_LT_DEBT_PAYMENTS.balance | currency_format }}
+                </td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr class="has-background-info-light">
+                <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Financing Activities' %}</td>
+                <td class="has-text-weight-bold has-text-right is-size-5">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash_by_activity.FINANCING | currency_format }}
+                </td>
+            </tr>
+            </tfoot>
+        </table>
 
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_DEPRECIATION_AMORTIZATION.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_DEPRECIATION_AMORTIZATION.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.balance | currency_format }}</td>
-        </tr>
+        {# INVESTING ACTIVITIES #}
+        <table class="table is-fullwidth is-narrow is-striped is-hoverable financial-statement django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr class="is-selected">
+                <th colspan="2">
+                    <h2 class="title is-4 mb-0 ">{% trans 'CASH FROM INVESTING ACTIVITIES' %}</h2>
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td class="pl-5">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_PPE.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_PPE.balance | currency_format }}
+                </td>
+            </tr>
+            <tr>
+                <td class="pl-5">
+                    <div class="is-flex is-align-items-center">
+                        <span class="icon is-small has-text-grey-light mr-1">
+                            {% icon 'bi:arrow-return-right' 16 %}
+                        </span>
+                        <span>{{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_SECURITIES.description }}</span>
+                    </div>
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_SECURITIES.balance | currency_format }}
+                </td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr class="has-background-info-light">
+                <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Investing Activities' %}</td>
+                <td class="has-text-weight-bold has-text-right is-size-5">
+                    {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash_by_activity.INVESTING | currency_format }}
+                </td>
+            </tr>
+            </tfoot>
+        </table>
 
-        {# Non-cash Charges to Current Accounts #}
-        <tr>
-            <td class="is-size-5 has-text-weight-light has-text-centered">{% trans 'Noncash Charges to Current Accounts' %}</td>
-            <td></td>
-        </tr>
-
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_RECEIVABLE.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_RECEIVABLE.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVENTORY.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVENTORY.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_PAYABLE.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_ACCOUNTS_PAYABLE.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT.balance | currency_format }}</td>
-        </tr>
-
-        </tbody>
-        <tfoot>
-        <tr>
-            <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Operating Activities' %}</td>
-            <td class="has-text-weight-bold has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash_by_activity.OPERATING | currency_format }}</td>
-        </tr>
-        </tfoot>
-    </table>
-
-    {# FINANCING ACTIVITIES #}
-    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
-        <thead>
-        <tr>
-            <td class="has-text-weight-light is-size-3">{% trans 'Cash from Financing Activities' %}</td>
-            <td></td>
-        </tr>
-        </thead>
-
-        <tbody>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ISSUING_EQUITY.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ISSUING_EQUITY.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_DIVIDENDS.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_DIVIDENDS.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ST_DEBT_PAYMENTS.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_ST_DEBT_PAYMENTS.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_LT_DEBT_PAYMENTS.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.financing.GROUP_CFS_FIN_LT_DEBT_PAYMENTS.balance | currency_format }}</td>
-        </tr>
-
-
-        </tbody>
-        <tfoot>
-        <tr>
-            <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Financing Activities' %}</td>
-            <td class="has-text-weight-bold has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash_by_activity.FINANCING | currency_format }}</td>
-        </tr>
-        </tfoot>
-    </table>
-
-    {# INVESTING ACTIVITIES #}
-    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
-        <thead>
-        <tr>
-            <td class="has-text-weight-light is-size-3">{% trans 'Cash from Investing Activities' %}</td>
-            <td></td>
-        </tr>
-        </thead>
-        <tbody>
-
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_PPE.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_PPE.balance | currency_format }}</td>
-        </tr>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_SECURITIES.description }}
-            </td>
-            <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.investing.GROUP_CFS_INVESTING_SECURITIES.balance | currency_format }}</td>
-        </tr>
-
-        </tbody>
-
-
-        <tfoot>
-        <tr>
-            <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Investing Activities' %}</td>
-            <td class="has-text-weight-bold has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash_by_activity.INVESTING | currency_format }}</td>
-        </tr>
-        </tfoot>
-
-
-    </table>
-
-    {# NET CASH #}
-    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
-        <thead>
-        <tr>
-            <td class="has-text-weight-light is-size-3">{% trans 'Net Cashflow' %}</td>
-            <td></td>
-        </tr>
-        </thead>
-
-        <tbody>
-        <tr>
-            <td class="has-text-right has-text-weight-light">
-                {% trans 'Net Cash From' %} {{ tx_digest.from_date }} -> {{ tx_digest.to_date }}
-            </td>
-            <td class="has-text-weight-bold has-text-right is-size-5">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash | currency_format }}</td>
-        </tr>
-
-        </tbody>
-
-    </table>
+        {# NET CASH #}
+        <table class="table is-fullwidth is-narrow financial-statement">
+            <thead>
+            <tr class="has-background-info ">
+                <th>
+                    <h2 class="title is-3 mb-0">{% trans 'NET CASHFLOW' %}</h2>
+                </th>
+                <th class="has-text-right">
+                    <h2 class="title is-3 mb-0">
+                        {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash | currency_format }}
+                    </h2>
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td colspan="2" class="has-text-centered has-text-grey">
+                    {% trans 'From' %} {{ tx_digest.from_date }} {% trans 'through' %} {{ tx_digest.to_date }}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>

@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, Manager, Q, QuerySet
+from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
@@ -128,7 +129,10 @@ class CustomerModelManager(Manager):
     """
 
     def get_queryset(self) -> CustomerModelQueryset:
-        return CustomerModelQueryset(self.model, using=self._db)
+        qs = CustomerModelQueryset(self.model, using=self._db)
+        return qs.select_related('entity_model').annotate(
+            _entity_slug=F('entity_model__slug')
+        )
 
     @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> CustomerModelQueryset:  # noqa: F821
@@ -252,6 +256,14 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
             f'Unknown Customer: {self.customer_name}'
         return f'{self.customer_number}: {self.customer_name}'
 
+    @property
+    def entity_slug(self) -> str:
+        try:
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            pass
+        return self.entity_model.slug
+
     def can_generate_customer_number(self) -> bool:
         """
         Determines if the CustomerModel can be issued a Customer Number.
@@ -340,6 +352,17 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     def validate_for_entity(self, entity_model: 'EntityModel'):  # noqa: F821
         if entity_model.uuid != self.entity_model_id:
             raise CustomerModelValidationError('EntityModel does not belong to this Vendor')
+
+    def get_detail_url(self) -> str:
+        return reverse('django_ledger:customer-detail',
+                       kwargs={'customer_pk': self.uuid, 'entity_slug': self.entity_slug})
+
+    def get_absolute_url(self) -> str:
+        return self.get_detail_url()
+
+    def get_update_url(self) -> str:
+        return reverse('django_ledger:customer-update',
+                       kwargs={'customer_pk': self.uuid, 'entity_slug': self.entity_slug})
 
     def clean(self):
         """

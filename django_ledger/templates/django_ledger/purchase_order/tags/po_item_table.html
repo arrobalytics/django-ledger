@@ -1,49 +1,56 @@
 {% load i18n %}
 {% load django_ledger %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-striped is-narrow is-bordered">
-        <thead>
-        <tr class="has-text-centered">
-            <th>{% trans 'Item' %}</th>
-            <th>{% trans 'Unit Cost' %}</th>
-            <th>{% trans 'PO Qty' %}</th>
-            <th>{% trans 'Amount' %}</th>
-            <th>{% trans 'Status' %}</th>
-            <th>{% trans 'Billed' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for item in po_item_list %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow">
+            <thead>
             <tr>
-                <td>{{ item.item_model }}</td>
-                <td class="has-text-centered">{{ item.po_unit_cost }}</td>
-                <td class="has-text-centered">{{ item.po_quantity }}</td>
-                <td class="{% if item.is_cancelled %}djl-is-strikethrough{% endif %} has-text-centered">
-                    {% currency_symbol %}{{ item.po_total_amount | currency_format }}</td>
-                <td class="has-text-weight-bold has-text-centered {% if item.is_cancelled %}has-text-danger{% endif %}">
-                    {% if item.po_item_status %}
-                        {{ item.get_po_item_status_display }}
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">{% if item.bill_model_id %}
-                    <a class="is-small is-info button"
-                       href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=item.bill_model_id %}">View
-                        Bill</a>{% endif %}
-                </td>
+                <th>{% trans 'Item' %}</th>
+                <th class="has-text-right">{% trans 'Unit Cost' %}</th>
+                <th class="has-text-right">{% trans 'PO Qty' %}</th>
+                <th class="has-text-right">{% trans 'Amount' %}</th>
+                <th class="has-text-centered">{% trans 'Status' %}</th>
+                <th class="has-text-centered">{% trans 'Billed' %}</th>
             </tr>
-        {% endfor %}
-        </tbody>
-        <tfoot>
-        <tr>
-            <td></td>
-            <td></td>
-            <td class="has-text-right">{% trans 'Total PO Amount' %}</td>
-            <td class="has-text-weight-bold has-text-centered">
-                {% currency_symbol %}{{ po_model.po_amount | currency_format }}</td>
-            <td></td>
-            <td></td>
-        </tr>
-        </tfoot>
-    </table>
+            </thead>
+            <tbody>
+            {% for item in po_item_list %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ item.item_model }}</span></td>
+                    <td class="has-text-right">{{ item.po_unit_cost }}</td>
+                    <td class="has-text-right">{{ item.po_quantity }}</td>
+                    <td class="has-text-right {% if item.is_cancelled %}djl-is-strikethrough{% endif %}">
+                        {% currency_symbol %}{{ item.po_total_amount | currency_format }}
+                    </td>
+                    <td class="has-text-centered">
+                        {% if item.po_item_status %}
+                            <span class="tag is-light {% if item.is_cancelled %}is-danger{% elif item.po_item_status == 'received' %}is-success{% endif %}">
+                                {{ item.get_po_item_status_display }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        {% if item.bill_model_id %}
+                            <a class="button is-small is-info is-rounded"
+                               href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=item.bill_model_id %}">
+                                <span class="icon">{% icon 'bi:receipt' 16 %}</span>
+                                <span>{% trans 'View Bill' %}</span>
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+            <tr class="has-text-weight-bold has-background-light">
+                <td colspan="3" class="has-text-right">{% trans 'Total PO Amount' %}</td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ po_model.po_amount | currency_format }}
+                </td>
+                <td colspan="2"></td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>

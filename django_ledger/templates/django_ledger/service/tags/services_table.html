@@ -1,55 +1,64 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th>{% trans 'Type' %}</th>
-            <th>{% trans 'Item Number' %}</th>
-            <th>{% trans 'Item' %}</th>
-            <th>{% trans 'UOM' %}</th>
-            <th>{% trans 'SKU' %}</th>
-            <th>{% trans 'UPC' %}</th>
-            <th>{% trans 'Earnings Account' %}</th>
-            <th>{% trans 'Actions' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for service in service_list %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
             <tr>
-                <td>{{ service.product_or_service_display | capfirst }}</td>
-                <td>{{ service.item_number }}</td>
-                <td>{{ service.name }}</td>
-                <td>{{ service.uom }}</td>
-                <td>{{ service.sku }}</td>
-                <td>{{ service.upc }}</td>
-                <td>{{ service.earnings_account }}</td>
-                <td>
-                    <div class="dropdown is-right is-hoverable" id="sercice-action-{{ invoice.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>Actions</span>
-                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu" id="dropdown-menu-{{ service.uuid }}" role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:service-update' entity_slug=entity_slug item_pk=service.uuid %}"
-                                   class="dropdown-item has-text-success">{% trans 'Update' %}</a>
-                                <a href="{% url 'django_ledger:service-delete' entity_slug=entity_slug item_pk=service.uuid %}"
-                                   class="dropdown-item has-text-danger">{% trans 'Delete' %}</a>
+                <th>{% trans 'Type' %}</th>
+                <th>{% trans 'Number' %}</th>
+                <th>{% trans 'Name' %}</th>
+                <th>{% trans 'UOM' %}</th>
+                <th>{% trans 'SKU' %}</th>
+                <th>{% trans 'UPC' %}</th>
+                <th>{% trans 'Account' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for service in service_list %}
+                <tr>
+                    <td>
+                        <span class="tag is-light {% if service.product_or_service == 'product' %}is-info{% else %}is-primary{% endif %}">
+                            {{ service.product_or_service_display | capfirst }}
+                        </span>
+                    </td>
+                    <td><span class="has-text-weight-bold">{{ service.item_number }}</span></td>
+                    <td>{{ service.name }}</td>
+                    <td>{{ service.uom }}</td>
+                    <td>{{ service.sku }}</td>
+                    <td>{{ service.upc }}</td>
+                    <td><span class="is-size-7">{{ service.earnings_account }}</span></td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="service-action-{{ service.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ service.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:service-update' entity_slug=entity_slug item_pk=service.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Update' %}
+                                    </a>
+                                    <hr class="dropdown-divider">
+                                    <a href="{% url 'django_ledger:service-delete' entity_slug=entity_slug item_pk=service.uuid %}"
+                                       class="dropdown-item has-text-danger">
+                                        <span class="icon is-small mr-2">{% icon 'bi:trash-fill' 16 %}</span>
+                                        {% trans 'Delete' %}
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

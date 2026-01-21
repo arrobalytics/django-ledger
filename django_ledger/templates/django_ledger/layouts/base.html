@@ -51,7 +51,7 @@
 {% endblock %}
 
 {% block header %}
-    {% include 'django_ledger/includes/page_header.html' with header_title=header_title header_subtitle=header_subtitle %}
+    {% include 'django_ledger/includes/page_header.html' with header_title=header_title header_subtitle=header_subtitle header_buttons=True %}
 {% endblock %}
 
 {% block breadcrumbs %}{% endblock %}
@@ -88,7 +88,10 @@
         (function () {
             function applyTheme(theme) {
                 document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('djl-theme', theme); } catch (e) {}
+                try {
+                    localStorage.setItem('djl-theme', theme);
+                } catch (e) {
+                }
                 var icon = document.getElementById('djl-theme-toggle-icon');
                 var label = document.getElementById('djl-theme-toggle-label');
                 var btn = document.getElementById('djl-theme-toggle');
@@ -110,7 +113,9 @@
 
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', initThemeToggle);
-            } else { initThemeToggle(); }
+            } else {
+                initThemeToggle();
+            }
         })();
     </script>
 {% endblock %}

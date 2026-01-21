@@ -54,6 +54,8 @@
                 <a href="{% url 'django_ledger:receipt-list-type' entity_slug=view.kwargs.entity_slug receipt_type='expense_refund' %}">{% trans 'Expense Refund' %}</a>
                 |
                 <a href="{% url 'django_ledger:receipt-list-type' entity_slug=view.kwargs.entity_slug receipt_type='transfer' %}">{% trans 'Transfer' %}</a>
+                |
+                <a href="{% url 'django_ledger:receipt-list-type' entity_slug=view.kwargs.entity_slug receipt_type='debt_paydown' %}">{% trans 'Debt Paydown' %}</a>
             </p>
         </div>
 
