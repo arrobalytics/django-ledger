@@ -8,6 +8,7 @@ Contributions to this module:
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
@@ -21,6 +22,7 @@ from django.views.generic import (
     YearArchiveView,
 )
 from django.views.generic.detail import SingleObjectMixin
+
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
@@ -65,12 +67,18 @@ class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
         qs = super().get_queryset()
         qs = qs.select_related('billmodel', 'invoicemodel')
         qs = qs.order_by('-created')
+
         if self.show_all:
             return qs
         if self.show_current:
             qs = qs.current()
         if self.show_visible:
             qs = qs.visible()
+
+        search = self.request.GET.get('q')
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(ledger_xid__icontains=search))
+
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):

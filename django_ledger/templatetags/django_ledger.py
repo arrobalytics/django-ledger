@@ -11,6 +11,7 @@ from random import randint
 from typing import Union
 
 from django import template
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.urls import reverse
@@ -616,6 +617,8 @@ def navigation_menu(context, style):
     ctx = dict()
     ctx['style'] = style
     if ENTITY_SLUG:
+        DJL_RECON_INSTALLED = apps.is_installed('django_ledger_recon')
+
         ctx['entity_slug'] = ENTITY_SLUG
         nav_menu_links = [
             {
@@ -868,6 +871,25 @@ def navigation_menu(context, style):
                 ],
             },
         ]
+
+        if DJL_RECON_INSTALLED:
+            nav_menu_links.append(
+                {
+                    'type': 'links',
+                    'title': 'Reconciliation',
+                    'links': [
+                        {
+                            'type': 'link',
+                            'title': 'Bank Reconciliation',
+                            'url': reverse(
+                                'django_ledger_recon:recon-dashboard',
+                                kwargs={'entity_slug': ENTITY_SLUG},
+                            ),
+                            'icon': 'fa7-brands:hornbill',
+                        }
+                    ],
+                }
+            )
         ctx['links'] = nav_menu_links
         ctx['request'] = context['request']
     return ctx
@@ -976,3 +998,9 @@ def customer_estimate_item_formset(context, item_formset):
         'ce_cost_estimate__sum': context['ce_cost_estimate__sum'],
         'item_formset': item_formset,
     }
+
+
+@register.simple_tag
+def django_ledger_recon_installed():
+    """Returns True if 'django_ledger_recon' is in INSTALLED_APPS"""
+    return apps.is_installed('django_ledger_recon')

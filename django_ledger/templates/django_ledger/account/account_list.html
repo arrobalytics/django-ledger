@@ -12,6 +12,25 @@
                 <p class="is-italic has-text-danger">({{ coa_model.slug }})</p>
             </div>
             <div class="column is-12">
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <form action="" method="get">
+                            <div class="field has-addons">
+                                <div class="control is-expanded">
+                                    <input class="input" type="text" name="q" value="{{ request.GET.q }}"
+                                           placeholder="{% trans 'Search Code or Name...' %}">
+                                </div>
+                                <div class="control">
+                                    <button type="submit" class="button is-info">
+                                        {% trans 'Search' %}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-12">
                 {% accounts_table accounts %}
             </div>
             <div class="column is-12 has-text-centered">

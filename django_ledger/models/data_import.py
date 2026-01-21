@@ -406,6 +406,11 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
             },
         )
 
+    def get_ledger_detail_url(self) -> str:
+        return reverse(
+            'django_ledger:je-list', kwargs={'entity_slug': self.entity_slug, 'ledger_pk': self.ledger_model_id}
+        )
+
 
 class StagedTransactionModelValidationError(ValidationError):
     """
@@ -958,6 +963,9 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     amount_split = models.DecimalField(decimal_places=2, max_digits=15, null=True, blank=True)
     name = models.CharField(max_length=200, blank=True, null=True)
     memo = models.CharField(max_length=200, blank=True, null=True)
+    # excluded = models.BooleanField(
+    #     default=False, verbose_name=_('Excluded'), help_text=_('Excludes transaction from import.')
+    # )
 
     account_model = models.ForeignKey('django_ledger.AccountModel', on_delete=models.RESTRICT, null=True, blank=True)
 
@@ -1688,12 +1696,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         bool
             True if the entity can have an account, False otherwise.
         """
-        return any(
-            [
-                all([self.is_parent(), not self.has_children()]),
-                self.is_children()
-            ]
-        )
+        return any([all([self.is_parent(), not self.has_children()]), self.is_children()])
 
     def can_have_activity(self) -> bool:
         if any([self.is_transfer(), not self.is_cash_transaction()]):

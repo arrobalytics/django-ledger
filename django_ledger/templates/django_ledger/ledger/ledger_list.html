@@ -24,6 +24,17 @@
                                 <a href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">
                                     <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
                             </div>
+                            {# Search Input #}
+                            <div class="level-item">
+                                <form action="" method="get">
+                                    <div class="field has-addons">
+                                        <div class="control is-expanded">
+                                            <input class="input" type="text" name="q"
+                                                   placeholder="{% trans 'Search...' %}">
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                         <div class="level-right">
                             {% if previous_month %}
