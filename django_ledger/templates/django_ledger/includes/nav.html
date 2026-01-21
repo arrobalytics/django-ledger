@@ -41,9 +41,9 @@
                     <form action="{% url 'django_ledger:logout' %}" method="POST">
                         {% csrf_token %}
                         <button
-                            id="djl-el=logout-button-nav"
-                            class="button is-small is-danger is-outlined"
-                            type="submit">
+                                id="djl-el=logout-button-nav"
+                                class="button is-small is-danger is-outlined"
+                                type="submit">
                             {% trans 'Logout' %}
                         </button>
                     </form>

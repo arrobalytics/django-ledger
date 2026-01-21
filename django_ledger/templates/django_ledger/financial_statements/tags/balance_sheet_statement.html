@@ -1,164 +1,154 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<style>
-    /* Align currency columns on balance sheet tables */
-    table.financial-statement thead th:nth-last-child(2),
-    table.financial-statement tbody td:nth-last-child(2),
-    table.financial-statement thead th:last-child,
-    table.financial-statement tbody td:last-child {
-        text-align: right;
-    }
-</style>
-
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-hoverable is-bordered financial-statement">
-        <tbody>
-        {% for bs_role, bs_role_data in tx_digest.balance_sheet.items %}
-            {% if bs_role_data.is_block %}
-                <tr>
-                    <td><h2 class="is-size-3">{{ bs_role | upper }}</h2></td>
-                    <td></td>
-                    {% if tx_digest.by_unit %}
-                        <td></td>
-                    {% endif %}
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <th class="has-text-centered">{% trans 'Account Code' %}</th>
-                    <th class="has-text-centered">{% trans 'Account Name' %}</th>
-                    {% if tx_digest.by_unit %}
-                        <th class="has-text-centered">{% trans 'Unit' %}</th>
-                    {% endif %}
-                    <th class="has-text-centered">{% trans 'Balance Type' %}</th>
-                    <th class="has-text-right">{% trans 'Balance Through' %} {{ tx_digest.to_date | date }}</th>
-                    <th class="has-text-centered">{% trans 'Actions' %}</th>
-                </tr>
-
-                {% for acc_role, acc_data in bs_role_data.roles.items %}
-                    <tr class="has-background-grey-light">
-                        <td class="p-3 has-text-weight-bold">{{ acc_data.role_name | upper }}</td>
-                        <td></td>
-                        {% if tx_digest.by_unit %}
-                            <td></td>
-                        {% endif %}
-                        <td></td>
-                        <td></td>
-                        <td></td>
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-narrow is-striped is-hoverable financial-statement django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr>
+                <th>{% trans 'Account' %}</th>
+                {% if tx_digest.by_unit %}
+                    <th>{% trans 'Unit' %}</th>
+                {% endif %}
+                <th class="has-text-centered">{% trans 'Type' %}</th>
+                <th class="has-text-right">{% trans 'Balance Through' %} {{ tx_digest.to_date | date }}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for bs_role, bs_role_data in tx_digest.balance_sheet.items %}
+                {% if bs_role_data.is_block %}
+                    <tr class="is-selected">
+                        <td colspan="{% if tx_digest.by_unit %}5{% else %}4{% endif %}">
+                            <h2 class="title is-4 mb-0">{{ bs_role | upper }}</h2>
+                        </td>
                     </tr>
 
-                    {% for acc in acc_data.accounts %}
-                        <tr>
-                            <td>{{ acc.code }}</td>
-                            <td class="has-text-left">{{ acc.name }}</td>
-                            {% if tx_digest.by_unit %}
-                                <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
-                            {% endif %}
-                            <td class="has-text-centered">
-                                {% if acc.balance_type == 'debit' %}
-                                    <span class="tag is-info is-light">
-                                        <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
-                                        debit
-                                    </span>
-                                {% elif acc.balance_type == 'credit' %}
-                                    <span class="tag is-success is-light">
-                                        <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
-                                        credit
-                                    </span>
-                                {% else %}
-                                    <span class="tag is-light">{{ acc.balance_type }}</span>
-                                {% endif %}
+                    {% for acc_role, acc_data in bs_role_data.roles.items %}
+                        <tr class="has-background-light">
+                            <td colspan="{% if tx_digest.by_unit %}5{% else %}4{% endif %}" class="pl-4">
+                                <span class="tag is-info is-light has-text-weight-bold">{{ acc_data.role_name | upper }}</span>
                             </td>
-                            <td class="has-text-right">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
-                            <td>
-                                <div class="dropdown is-hoverable" id="account-action-{{ account.uuid }}">
-                                    <div class="dropdown-trigger">
-                                        <button class="button is-small is-rounded"
-                                                aria-haspopup="true"
-                                                aria-controls="dropdown-menu">
-                                            <span>{% trans 'Actions' %}</span>
-                                            <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                                        </button>
+                        </tr>
+
+                        {% for acc in acc_data.accounts %}
+                            <tr>
+                                <td style="padding-left: 2.5rem;">
+                                    <div class="is-flex is-align-items-center">
+                                        <span class="icon is-small has-text-grey-light mr-1">
+                                            {% icon 'bi:arrow-return-right' 16 %}
+                                        </span>
+                                        <span class="has-text-weight-bold mr-2">{{ acc.code }}</span>
+                                        <span>{{ acc.name }}</span>
                                     </div>
-                                    <div class="dropdown-menu" id="dropdown-menu-{{ acc.uuid }}" role="menu">
-                                        <div class="dropdown-content">
-                                            <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug coa_slug=acc.coa_slug account_pk=acc.account_uuid %}"
-                                               class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
-                                            <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=acc.coa_slug account_pk=acc.account_uuid %}"
-                                               class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
+                                </td>
+                                {% if tx_digest.by_unit %}
+                                    <td>
+                                        {% if acc.unit_name %}
+                                            <span class="tag is-white">{{ acc.unit_name }}</span>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                                <td class="has-text-centered">
+                                    {% if acc.balance_type == 'debit' %}
+                                        <span class="tag is-info is-light">
+                                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-down' 16 %}</span>
+                                            {% trans 'debit' %}
+                                        </span>
+                                    {% elif acc.balance_type == 'credit' %}
+                                        <span class="tag is-success is-light">
+                                            <span class="icon is-small mr-1">{% icon 'bi:arrow-bar-up' 16 %}</span>
+                                            {% trans 'credit' %}
+                                        </span>
+                                    {% else %}
+                                        <span class="tag is-light">{{ acc.balance_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="has-text-right has-text-weight-semibold">
+                                    {% currency_symbol %}{{ acc.balance | currency_format }}
+                                </td>
+                                <td class="has-text-centered">
+                                    <div class="dropdown is-right is-hoverable" id="account-action-{{ acc.account_uuid }}">
+                                        <div class="dropdown-trigger">
+                                            <button class="button is-small is-rounded is-white"
+                                                    aria-haspopup="true"
+                                                    aria-controls="dropdown-menu">
+                                                <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                            </button>
+                                        </div>
+                                        <div class="dropdown-menu" id="dropdown-menu-{{ acc.account_uuid }}" role="menu">
+                                            <div class="dropdown-content">
+                                                <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug coa_slug=acc.coa_slug account_pk=acc.account_uuid %}"
+                                                   class="dropdown-item">
+                                                    <span class="icon is-small mr-2">{% icon 'bi:eye' 16 %}</span>
+                                                    {% trans 'Detail' %}
+                                                </a>
+                                                <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=acc.coa_slug account_pk=acc.account_uuid %}"
+                                                   class="dropdown-item">
+                                                    <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                                    {% trans 'Update' %}
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                        <tr class="has-text-weight-bold">
+                            <td class="has-text-right" colspan="{% if tx_digest.by_unit %}3{% else %}2{% endif %}">
+                                {{ acc_data.role_name | upper }} {% trans 'TOTAL' %}:
                             </td>
+                            <td class="has-text-right" style="border-top: 2px solid grey;">
+                                {% currency_symbol %}{{ acc_data.total_balance | currency_format }}
+                            </td>
+                            <td></td>
                         </tr>
                     {% endfor %}
 
-                    <tr class="has-text-weight-bold is-selected">
-                        <td></td>
-                        <td>{{ acc_data.role_name | upper }} {% trans 'Total:' %}</td>
-                        <td></td>
-                        {% if tx_digest.by_unit %}
+                    {% if bs_role != 'equity' %}
+                        <tr class="has-text-weight-bold is-size-5 has-background-light">
+                            <td class="has-text-right" colspan="{% if tx_digest.by_unit %}3{% else %}2{% endif %}">
+                                {% trans 'TOTAL' %} {{ bs_role | upper }}
+                            </td>
+                            <td class="has-text-right">
+                                {% currency_symbol %}{{ bs_role_data.total_balance | currency_format }}
+                            </td>
                             <td></td>
-                        {% endif %}
-                        <td class="has-text-right">
-                            {% currency_symbol %}{{ acc_data.total_balance | currency_format }}</td>
-                        <td></td>
-                    </tr>
-
-                {% endfor %}
-
-
-                {% if bs_role != 'equity' %}
-                    <tr class="has-text-weight-bold is-size-5">
-                    <td>{% trans 'Total' %} {{ bs_role | upper }}</td>
-                    <td></td>
-                    {% if tx_digest.by_unit %}
-                        <td></td>
+                        </tr>
                     {% endif %}
-                    <td></td>
-                    <td></td>
-                    <td>{% currency_symbol %}{{ bs_role_data.total_balance | currency_format }}</td>
                 {% endif %}
+            {% endfor %}
+
+            <tr class="has-text-weight-bold is-size-5">
+                <td class="has-text-right" colspan="{% if tx_digest.by_unit %}3{% else %}2{% endif %}">
+                    {% trans 'Retained Earnings' %}
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}
+                </td>
+                <td></td>
             </tr>
 
-            {% endif %}
-        {% endfor %}
-
-
-        <tr class="has-text-weight-bold is-size-5">
-            <td>{% trans 'Retained Earnings' %}</td>
-            <td></td>
-            {% if tx_digest.by_unit %}
+            <tr class="has-text-weight-bold is-size-5 has-background-info-light">
+                <td class="has-text-right" colspan="{% if tx_digest.by_unit %}3{% else %}2{% endif %}">
+                    {% trans 'TOTAL EQUITY' %}
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EQUITY | currency_format }}
+                </td>
                 <td></td>
-            {% endif %}
-            <td></td>
-            <td></td>
-            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
-        </tr>
-
-        <tr class="has-text-weight-bold is-size-5">
-            <td>{% trans 'Total EQUITY' %}</td>
-            <td></td>
-            {% if tx_digest.by_unit %}
+            </tr>
+            <tr class="has-text-weight-bold is-size-4 has-background-info has-text-white">
+                <td class="has-text-right" colspan="{% if tx_digest.by_unit %}3{% else %}2{% endif %}">
+                    {% trans 'TOTAL EQUITY & LIABILITIES' %}
+                </td>
+                <td class="has-text-right">
+                    {% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | currency_format }}
+                </td>
                 <td></td>
-            {% endif %}
-            <td></td>
-            <td></td>
-            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EQUITY | currency_format }}</td>
-        </tr>
-        <tr class="has-text-weight-bold is-size-5">
-            <td>{% trans 'Total Equity + Liabilities' %}</td>
-            <td></td>
-            {% if tx_digest.by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td></td>
-            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | currency_format }}</td>
-        </tr>
-
-        </tbody>
-    </table>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>

@@ -3,6 +3,19 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+       class="button is-dark  is-outlined">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Back to Invoices' %}</span>
+    </a>
+    <a href="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+       class="button is-info  is-outlined">
+        <span class="icon">{% icon 'bi:pencil' 16 %}</span>
+        <span>{% trans 'Update' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
     <div class="columns">
         <div class="column is-4">
@@ -12,12 +25,6 @@
                 </div>
                 <div class="column is-12">
                     {% include 'django_ledger/customer/includes/card_customer.html' with customer=invoice.customer %}
-                </div>
-                <div class="column is-12">
-                    <a class="button is-info is-fullwidth is-outlined"
-                       href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">
-                        {% trans 'Invoice List' %}
-                    </a>
                 </div>
             </div>
         </div>

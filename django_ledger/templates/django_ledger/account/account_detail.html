@@ -7,19 +7,19 @@
     {% period_navigation 'account-detail' %}
 {% endblock %}
 
+{% block header_buttons %}
+    <a href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}"
+       class="button is-dark  is-outlined">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Back to Accounts' %}</span>
+    </a>
+    <a href="{{ account.get_update_url }}"
+       class="button is-info  is-outlined">
+        <span class="icon">{% icon 'bi:pencil' 16 %}</span>
+        <span>{% trans 'Update' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
-    <div class="card">
-        <div class="card-content has-text-centered">
-            <h1 class="is-size-1 has-text-weight-bold">{{ account.code }}: {{ account.name }}</h1>
-            <h2 class="is-size-2 has-text-weight-light">{% trans 'Account Transaction List Report' %}</h2>
-            <h3 class="is-size-4 is-italic has-font-weight-light">
-                {% if view_date %}
-                    {{ from_date | date:'m/d/Y' }}
-                {% else %}
-                    {{ from_date | date:'m/d/Y' }} - {{ to_date | date:'m/d/Y' }}
-                {% endif %}
-            </h3>
-        </div>
-        <div class="card-content">{% account_txs_table transactions %}</div>
-    </div>
+    {% account_txs_table transactions %}
 {% endblock %}

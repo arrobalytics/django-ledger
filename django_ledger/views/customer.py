@@ -45,7 +45,7 @@ class CustomerModelListView(CustomerModelModelViewQuerySetMixIn, ListView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'dashicons:businesswoman',
     }
-    context_object_name = 'customers'
+    context_object_name = 'customer_list'
 
 
 class CustomerModelCreateView(CustomerModelModelViewQuerySetMixIn, CreateView):

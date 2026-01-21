@@ -1,53 +1,60 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th>{% trans 'Expense Number' %}</th>
-            <th>{% trans 'Item' %}</th>
-            <th>{% trans 'UOM' %}</th>
-            <th>{% trans 'Expense Account' %}</th>
-            <th>{% trans 'Is Active' %}</th>
-            <th>{% trans 'Actions' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for expense_item in expense_list %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
             <tr>
-                <td>{{ expense_item.item_number }}</td>
-                <td>{{ expense_item.name }}</td>
-                <td>{{ expense_item.uom }}</td>
-                <td>{{ expense_item.expense_account }}</td>
-                <td class="has-text-centered">
-                    {% if expense_item.is_active %}
-                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'healthicons:no' 24 %}</span>
-                    {% endif %} </td>
-                <td>
-                    <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>Actions</span>
-                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu" id="dropdown-menu-{{ expense_item.uuid }}" role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:expense-update' entity_slug=entity_slug item_pk=expense_item.uuid %}"
-                                   class="dropdown-item has-text-success">{% trans 'Update' %}</a>
+                <th>{% trans 'Number' %}</th>
+                <th>{% trans 'Item' %}</th>
+                <th>{% trans 'UOM' %}</th>
+                <th>{% trans 'Expense Account' %}</th>
+                <th class="has-text-centered">{% trans 'Active' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for expense_item in expense_list %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ expense_item.item_number }}</span></td>
+                    <td>{{ expense_item.name }}</td>
+                    <td>{{ expense_item.uom }}</td>
+                    <td><span class="is-size-7">{{ expense_item.expense_account }}</span></td>
+                    <td class="has-text-centered">
+                        {% if expense_item.is_active %}
+                            <span class="icon has-text-success" title="{% trans 'Active' %}">
+                                {% icon 'ant-design:check-circle-filled' 20 %}
+                            </span>
+                        {% else %}
+                            <span class="icon has-text-danger" title="{% trans 'Inactive' %}">
+                                {% icon 'mdi:dangerous' 20 %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="expense-item-action-{{ expense_item.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ expense_item.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:expense-update' entity_slug=entity_slug item_pk=expense_item.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Update' %}
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

@@ -1,68 +1,75 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <thead>
-        <tr>
-            <th class="has-text-centered">Name</th>
-            <th class="has-text-centered">Account Number</th>
-            <th class="has-text-centered">Routing Number</th>
-            <th class="has-text-centered">Type</th>
-            <th class="has-text-centered">Account</th>
-            <th class="has-text-centered">Active</th>
-            <th class="has-text-centered">Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for bank_acc in bank_account_qs %}
-            <tr class="has-text-centered">
-                <td>{{ bank_acc.name }}</td>
-                <td>{{ bank_acc.account_number | last_four }}</td>
-                <td>{{ bank_acc.routing_number | last_four }}</td>
-                <td>{{ bank_acc.get_account_type_display }}</td>
-                <td>{{ bank_acc.account_model }}</td>
-                <td>
-                    {% if bank_acc.active %}
-                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="dropdown is-right is-hoverable"
-                         id="bank-action-{{ bank_acc.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>{% trans 'Actions' %}</span>
-                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu"
-                             id="dropdown-menu-{{ bank_acc.uuid }}"
-                             role="menu">
-                            <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:bank-account-update' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                   class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
-                                {% if bank_acc.can_activate %}
-                                    <a href="{% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                       class="dropdown-item has-text-weight-bold has-text-success">{% trans 'Activate' %}</a>
-                                {% elif bank_acc.can_inactivate %}
-                                    <a href="{% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                       class="dropdown-item has-text-weight-bold has-text-danger">{% trans 'Inactivate' %}</a>
-                                {% endif %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-75">
+            <thead>
+            <tr>
+                <th>{% trans 'Name' %}</th>
+                <th>{% trans 'Account Number' %}</th>
+                <th>{% trans 'Routing Number' %}</th>
+                <th>{% trans 'Type' %}</th>
+                <th>{% trans 'Ledger Account' %}</th>
+                <th class="has-text-centered">{% trans 'Active' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for bank_acc in bank_account_qs %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ bank_acc.name }}</span></td>
+                    <td>{{ bank_acc.account_number | last_four }}</td>
+                    <td>{{ bank_acc.routing_number | last_four }}</td>
+                    <td>{{ bank_acc.get_account_type_display }}</td>
+                    <td>{{ bank_acc.account_model }}</td>
+                    <td class="has-text-centered">
+                        {% if bank_acc.active %}
+                            <span class="icon has-text-success" title="{% trans 'Active' %}">
+                                {% icon 'ant-design:check-circle-filled' 20 %}
+                            </span>
+                        {% else %}
+                            <span class="icon has-text-danger" title="{% trans 'Inactive' %}">
+                                {% icon 'mdi:dangerous' 20 %}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="bank-action-{{ bank_acc.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ bank_acc.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:bank-account-update' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Update' %}
+                                    </a>
+                                    {% if bank_acc.can_activate %}
+                                        <a href="{% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
+                                           class="dropdown-item has-text-success">
+                                            <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
+                                            {% trans 'Activate' %}
+                                        </a>
+                                    {% elif bank_acc.can_inactivate %}
+                                        <a href="{% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
+                                           class="dropdown-item has-text-danger">
+                                            <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
+                                            {% trans 'Inactivate' %}
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

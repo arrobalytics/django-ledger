@@ -32,7 +32,7 @@ class VendorModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 class VendorModelListView(VendorModelModelBaseView, ListView):
     template_name = 'django_ledger/vendor/vendor_list.html'
-    context_object_name = 'vendors'
+    context_object_name = 'vendor_list'
     PAGE_TITLE = _('Vendor List')
     extra_context = {
         'page_title': PAGE_TITLE,

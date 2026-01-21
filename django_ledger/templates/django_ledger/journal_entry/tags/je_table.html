@@ -1,100 +1,119 @@
 {% load i18n %}
 {% load django_ledger %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped django-ledger-table-bottom-margin-150">
-        <thead>
-        <tr class="has-text-centered">
-            <th>{% trans 'Document Number' %}</th>
-            <th>{% trans 'Timestamp' %}</th>
-            <th>{% trans 'Activity' %}</th>
-            <th>{% trans 'Description' %}</th>
-            <th>{% trans 'Posted' %}</th>
-            <th>{% trans 'Locked' %}</th>
-            <th>{% trans 'Unit' %}</th>
-            <th>{% trans 'Txs Count' %}</th>
-            <th>{% trans 'Actions' %}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for journal_entry_model in journal_entry_qs %}
-            <tr class="has-text-centered">
-                <td>{{ journal_entry_model.je_number }}</td>
-                <td>{{ journal_entry_model.timestamp }}</td>
-                <td>{% if journal_entry_model.activity %}{{ journal_entry_model.get_activity_display }}{% endif %}</td>
-                <td>{% if journal_entry_model.description %}{{ journal_entry_model.description }}{% endif %}</td>
-                <td>
-                    {% if journal_entry_model.is_posted %}
-                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if journal_entry_model.is_locked %}
-                        <span class="icon has-text-success-dark">
-                            {% icon 'bi:lock-fill' 24 %}
-                        </span>
-                    {% else %}
-                        <span class="icon has-text-danger-dark">
-                            {% icon 'bx:bx-lock-open-alt' 24 %}
-                        </span>
-                    {% endif %}
-                </td>
-                <td>{{ journal_entry_model.get_entity_unit_name }}</td>
-                <td class="has-text-weight-bold">{{ journal_entry_model.txs_count }}</td>
-                <td>
-                    <div class="dropdown is-right is-hoverable"
-                         id="je-action-{{ journal_entry_model.uuid }}">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small is-rounded is-outlined is-dark"
-                                    aria-haspopup="true"
-                                    aria-controls="dropdown-menu">
-                                <span>Actions</span>
-                                <span class="icon is-small">
-                                        {% icon 'bi:arrow-down' 24 %}
-                                      </span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu"
-                             id="dropdown-menu-{{ journal_entry_model.uuid }}"
-                             role="menu">
-                            <div class="dropdown-content">
-                                {% if journal_entry_model.can_post %}
-                                    <a class="dropdown-item"
-                                       href="{{ journal_entry_model.get_action_post_url }}?next={{ next_url }}">
-                                        {% trans 'Post' %}</a>
-                                {% elif journal_entry_model.can_unpost %}
-                                    <a class="dropdown-item"
-                                       href="{{ journal_entry_model.get_action_unpost_url }}?next={{ next_url }}">
-                                        {% trans 'UnPost' %}</a>
-                                {% endif %}
-                                {% if journal_entry_model.can_lock %}
-                                    <a class="dropdown-item"
-                                       href="{{ journal_entry_model.get_action_lock_url }}?next={{ next_url }}">
-                                        {% trans 'Lock' %}</a>
-                                {% elif journal_entry_model.can_unlock %}
-                                    <a class="dropdown-item"
-                                       href="{{ journal_entry_model.get_action_unlock_url }}?next={{ next_url }}">
-                                        {% trans 'Unlock' %}</a>
-                                {% endif %}
-                                <a class="dropdown-item"
-                                   href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'Edit' %}</a>
-                                <a class="dropdown-item"
-                                   href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'View' %}</a>
-                                {% if journal_entry_model.can_delete %}
-                                    <a class="dropdown-item has-text-danger has-text-weight-bold"
-                                       href="{% url 'django_ledger:je-delete' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'Delete' %}</a>
-                                {% endif %}
-                                <a class="dropdown-item"
-                                   href="{% url 'django_ledger:je-detail-txs' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'Transactions' %}</a>
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow django-ledger-table-bottom-margin-150">
+            <thead>
+            <tr>
+                <th>{% trans 'Number' %}</th>
+                <th>{% trans 'Timestamp' %}</th>
+                <th>{% trans 'Activity' %}</th>
+                <th>{% trans 'Description' %}</th>
+                <th class="has-text-centered">{% trans 'Posted' %}</th>
+                <th class="has-text-centered">{% trans 'Locked' %}</th>
+                <th>{% trans 'Unit' %}</th>
+                <th class="has-text-centered">{% trans 'Txs' %}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for journal_entry_model in journal_entry_qs %}
+                <tr>
+                    <td><span class="has-text-weight-bold">{{ journal_entry_model.je_number }}</span></td>
+                    <td>{{ journal_entry_model.timestamp | date:"SHORT_DATE_FORMAT" }}</td>
+                    <td>
+                        {% if journal_entry_model.activity %}
+                            <span class="tag is-light is-info">{{ journal_entry_model.get_activity_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="is-size-7">{{ journal_entry_model.description | default:"" | truncatechars:50 }}</span></td>
+                    <td class="has-text-centered">
+                        {% if journal_entry_model.is_posted %}
+                            <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 20 %}</span>
+                        {% else %}
+                            <span class="icon has-text-grey-lighter">{% icon 'ant-design:check-circle-filled' 20 %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-centered">
+                        {% if journal_entry_model.is_locked %}
+                            <span class="icon has-text-grey" title="{% trans 'Locked' %}">{% icon 'ooui:lock' 20 %}</span>
+                        {% else %}
+                            <span class="icon has-text-grey-lighter" title="{% trans 'Unlocked' %}">{% icon 'ooui:un-lock' 20 %}</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="tag is-white">{{ journal_entry_model.get_entity_unit_name }}</span></td>
+                    <td class="has-text-centered">
+                        <span class="tag is-rounded is-light">{{ journal_entry_model.txs_count }}</span>
+                    </td>
+                    <td class="has-text-centered">
+                        <div class="dropdown is-right is-hoverable" id="je-action-{{ journal_entry_model.uuid }}">
+                            <div class="dropdown-trigger">
+                                <button class="button is-small is-rounded is-white"
+                                        aria-haspopup="true"
+                                        aria-controls="dropdown-menu">
+                                    <span class="icon is-small">{% icon 'bi:three-dots-vertical' 20 %}</span>
+                                </button>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-menu-{{ journal_entry_model.uuid }}" role="menu">
+                                <div class="dropdown-content">
+                                    <a href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:eye' 16 %}</span>
+                                        {% trans 'View' %}
+                                    </a>
+                                    <a href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'bi:pencil' 16 %}</span>
+                                        {% trans 'Edit' %}
+                                    </a>
+                                    <a href="{% url 'django_ledger:je-detail-txs' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}"
+                                       class="dropdown-item">
+                                        <span class="icon is-small mr-2">{% icon 'grommet-icons:transaction' 16 %}</span>
+                                        {% trans 'Transactions' %}
+                                    </a>
+                                    <hr class="dropdown-divider">
+                                    {% if journal_entry_model.can_post %}
+                                        <a class="dropdown-item has-text-info"
+                                           href="{{ journal_entry_model.get_action_post_url }}?next={{ next_url }}">
+                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
+                                            {% trans 'Post' %}
+                                        </a>
+                                    {% elif journal_entry_model.can_unpost %}
+                                        <a class="dropdown-item has-text-warning"
+                                           href="{{ journal_entry_model.get_action_unpost_url }}?next={{ next_url }}">
+                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
+                                            {% trans 'UnPost' %}
+                                        </a>
+                                    {% endif %}
+                                    {% if journal_entry_model.can_lock %}
+                                        <a class="dropdown-item has-text-info"
+                                           href="{{ journal_entry_model.get_action_lock_url }}?next={{ next_url }}">
+                                            <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
+                                            {% trans 'Lock' %}
+                                        </a>
+                                    {% elif journal_entry_model.can_unlock %}
+                                        <a class="dropdown-item has-text-warning"
+                                           href="{{ journal_entry_model.get_action_unlock_url }}?next={{ next_url }}">
+                                            <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
+                                            {% trans 'Unlock' %}
+                                        </a>
+                                    {% endif %}
+                                    {% if journal_entry_model.can_delete %}
+                                        <hr class="dropdown-divider">
+                                        <a class="dropdown-item has-text-danger"
+                                           href="{% url 'django_ledger:je-delete' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">
+                                            <span class="icon is-small mr-2">{% icon 'bi:trash-fill' 16 %}</span>
+                                            {% trans 'Delete' %}
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

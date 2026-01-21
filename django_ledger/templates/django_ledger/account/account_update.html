@@ -3,24 +3,27 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block header_buttons %}
+    <a href="{{ account.get_absolute_url }}"
+       class="button is-dark  is-outlined">
+        <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>
+        <span>{% trans 'Back to Detail' %}</span>
+    </a>
+{% endblock %}
+
 {% block view_content %}
-    <div class="box">
-        <div class="columns is-centered is-multiline">
-            <div class="column is-12 has-text-centered">
-                <h2 class="is-size-3 has-text-info">{{ coa_model.name }}</h2>
-                <p class="is-size-4 has-text-danger is-italic">({{ coa_model.slug }})</p>
-                <h1 class="is-size-2">{{ account }}</h1>
-            </div>
-            <div class="column is-8-tablet is-6-desktop">
-                <div class="box">
-                    <form method="post">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>
-                        <a class="button is-dark is-small is-fullwidth"
-                           href="{{ coa_model.get_account_list_url }}">Back</a>
-                    </form>
-                </div>
+    <div class="columns is-centered">
+        <div class="column is-8-tablet is-6-desktop">
+            <div class="box">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <hr>
+                    <button type="submit" class="button is-primary is-fullwidth">
+                        <span class="icon">{% icon 'bi:save' 16 %}</span>
+                        <span>{% trans 'Update Account' %}</span>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
