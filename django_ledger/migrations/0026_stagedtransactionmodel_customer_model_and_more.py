@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('receipt_number', models.CharField(max_length=255, verbose_name='Receipt Number')),
                 ('receipt_date', models.DateField(verbose_name='Receipt Date')),
-                ('receipt_type', models.CharField(choices=[('sales', 'Sales Receipt'), ('customer_refund', 'Sales Refund'), ('expense', 'Expense Receipt'), ('expense_refund', 'Expense Refund'), ('transfer', 'Transfer Receipt')], verbose_name='Receipt Type')),
+                ('receipt_type', models.CharField(choices=[('sales', 'Sales Receipt'), ('customer_refund', 'Sales Refund'), ('expense', 'Expense Receipt'), ('expense_refund', 'Expense Refund'), ('transfer', 'Transfer Receipt')], max_length=255, verbose_name='Receipt Type')),
                 ('amount', models.DecimalField(decimal_places=2, help_text='Amount of the receipt.', max_digits=20, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Receipt Amount')),
                 ('charge_account', models.ForeignKey(help_text='The financial account (cash or credit) where this transaction was made.', on_delete=django.db.models.deletion.PROTECT, related_name='charge_receiptmodel_set', to='django_ledger.accountmodel', verbose_name='Charge Account')),
                 ('customer_model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='django_ledger.customermodel', verbose_name='Customer Model')),
