@@ -263,9 +263,9 @@ django==5.2.10 ; python_full_version < '3.12' \
     #   django-debug-toolbar
     #   django-ledger
     #   django-treebeard
-django==6.0.1 ; python_full_version >= '3.12' \
-    --hash=sha256:a92a4ff14f664a896f9849009cb8afaca7abe0d6fc53325f3d1895a15253433d \
-    --hash=sha256:ed76a7af4da21551573b3d9dfc1f53e20dd2e6c7d70a3adc93eedb6338130a5f
+django==5.2.9 ; python_full_version >= '3.12' \
+    --hash=sha256:16b5ccfc5e8c27e6c0561af551d2ea32852d7352c67d452ae3e76b4f6b2ca495 \
+    --hash=sha256:3a4ea88a70370557ab1930b332fd2887a9f48654261cdffda663fef5976bb00a
     # via
     #   django-debug-toolbar
     #   django-ledger
