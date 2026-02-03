@@ -236,9 +236,9 @@ defusedxml==0.7.1 \
     # via
     #   fpdf2
     #   nbconvert
-django==5.2.6 \
-    --hash=sha256:60549579b1174a304b77e24a93d8d9fafe6b6c03ac16311f3e25918ea5a20058 \
-    --hash=sha256:da5e00372763193d73cecbf71084a3848458cecf4cee36b9a1e8d318d114a87b
+django==5.2.11 \
+    --hash=sha256:7f2d292ad8b9ee35e405d965fbbad293758b858c34bbf7f3df551aeeac6f02d3 \
+    --hash=sha256:e7130df33ada9ab5e5e929bc19346a20fe383f5454acb2cc004508f242ee92c0
     # via
     #   django-debug-toolbar
     #   django-ledger
