@@ -33,7 +33,8 @@ from itertools import chain
 from typing import Dict, List, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 
-from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
+from django.core.exceptions import (FieldError, ObjectDoesNotExist,
+                                    ValidationError)
 from django.db import IntegrityError, models, transaction
 from django.db.models import Count, F, Manager, Q, QuerySet, Sum
 from django.db.models.functions import Coalesce
@@ -44,35 +45,28 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import roles
 from django_ledger.io.io_core import get_localtime
-from django_ledger.io.roles import (
-    ASSET_CA_CASH,
-    GROUP_CFS_FIN_DIVIDENDS,
-    GROUP_CFS_FIN_ISSUING_EQUITY,
-    GROUP_CFS_FIN_LT_DEBT_PAYMENTS,
-    GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
-    GROUP_CFS_INVESTING_AND_FINANCING,
-    GROUP_CFS_INVESTING_PPE,
-    GROUP_CFS_INVESTING_SECURITIES,
-    validate_roles,
-)
+from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS,
+                                    GROUP_CFS_FIN_ISSUING_EQUITY,
+                                    GROUP_CFS_FIN_LT_DEBT_PAYMENTS,
+                                    GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
+                                    GROUP_CFS_INVESTING_AND_FINANCING,
+                                    GROUP_CFS_INVESTING_PPE,
+                                    GROUP_CFS_INVESTING_SECURITIES,
+                                    validate_roles)
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
-from django_ledger.models.signals import (
-    journal_entry_locked,
-    journal_entry_posted,
-    journal_entry_unlocked,
-    journal_entry_unposted,
-)
+from django_ledger.models.signals import (journal_entry_locked,
+                                          journal_entry_posted,
+                                          journal_entry_unlocked,
+                                          journal_entry_unposted)
 from django_ledger.models.transactions import TransactionModelQuerySet
-from django_ledger.settings import (
-    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX,
-    DJANGO_LEDGER_JE_NUMBER_PREFIX,
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
-)
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX,
+                                    DJANGO_LEDGER_JE_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR)
 
 
 class JournalEntryValidationError(ValidationError):
@@ -89,7 +83,7 @@ class JournalEntryModelQuerySet(QuerySet):
     locked entries, and querying entries associated with specific ledgers.
     """
 
-    def for_user(self, user_model) -> 'JournalEntryModelQuerySet':
+    def for_user(self, user_model) -> "JournalEntryModelQuerySet":
         """
         Filters the JournalEntryModel queryset for the given user.
 
@@ -111,11 +105,15 @@ class JournalEntryModelQuerySet(QuerySet):
             return self
 
         return self.filter(
-            Q(ledger__entity__admin=user_model) |  # Entries for entities where the user is admin
-            Q(ledger__entity__managers__in=[user_model])  # Entries for entities where the user is a manager
+            Q(ledger__entity__admin=user_model)
+            | Q(  # Entries for entities where the user is admin
+                ledger__entity__managers__in=[user_model]
+            )  # Entries for entities where the user is a manager
         )
 
-    def create(self, verify_on_save: bool = False, force_create: bool = False, **kwargs) -> 'JournalEntryModelQuerySet':
+    def create(
+        self, verify_on_save: bool = False, force_create: bool = False, **kwargs
+    ) -> "JournalEntryModelQuerySet":
         """
         Creates a new Journal Entry while enforcing business logic validations.
 
@@ -146,9 +144,11 @@ class JournalEntryModelQuerySet(QuerySet):
             Raised if attempting to create a "posted" Journal Entry without
             setting `force_create=True`.
         """
-        is_posted = kwargs.get('posted')
+        is_posted = kwargs.get("posted")
         if is_posted and not force_create:
-            raise FieldError("Cannot create Journal Entries in a posted state without 'force_create=True'.")
+            raise FieldError(
+                "Cannot create Journal Entries in a posted state without 'force_create=True'."
+            )
 
         obj = self.model(**kwargs)
         self._for_write = True
@@ -157,7 +157,7 @@ class JournalEntryModelQuerySet(QuerySet):
         obj.save(force_insert=True, using=self.db, verify=verify_on_save)
         return obj
 
-    def posted(self) -> 'JournalEntryModelQuerySet':
+    def posted(self) -> "JournalEntryModelQuerySet":
         """
         Filters the QuerySet to include only "posted" Journal Entries.
 
@@ -168,7 +168,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(posted=True)
 
-    def unposted(self) -> 'JournalEntryModelQuerySet':
+    def unposted(self) -> "JournalEntryModelQuerySet":
         """
         Filters the QuerySet to include only "unposted" Journal Entries.
 
@@ -179,7 +179,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(posted=False)
 
-    def locked(self) -> 'JournalEntryModelQuerySet':
+    def locked(self) -> "JournalEntryModelQuerySet":
         """
         Filters the QuerySet to include only "locked" Journal Entries.
 
@@ -190,7 +190,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(locked=True)
 
-    def unlocked(self) -> 'JournalEntryModelQuerySet':
+    def unlocked(self) -> "JournalEntryModelQuerySet":
         """
         Filters the QuerySet to include only "unlocked" Journal Entries.
 
@@ -201,7 +201,9 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(locked=False)
 
-    def for_ledger(self, ledger_pk: Union[str, UUID, LedgerModel]) -> 'JournalEntryModelQuerySet':
+    def for_ledger(
+        self, ledger_pk: Union[str, UUID, LedgerModel]
+    ) -> "JournalEntryModelQuerySet":
         """
         Filters the QuerySet to include Journal Entries associated with a specific Ledger.
 
@@ -249,15 +251,17 @@ class JournalEntryModelManager(Manager):
         """
         qs = JournalEntryModelQuerySet(self.model, using=self._db)
         return qs.annotate(
-            _entity_uuid=F('ledger__entity_id'),
-            _entity_slug=F('ledger__entity__slug'),  # Annotates the entity slug
-            _entity_last_closing_date=F('ledger__entity__last_closing_date'),
-            _ledger_is_locked=F('ledger__locked'),
-            txs_count=Count('transactionmodel')  # Annotates the count of transactions
+            _entity_uuid=F("ledger__entity_id"),
+            _entity_slug=F("ledger__entity__slug"),  # Annotates the entity slug
+            _entity_last_closing_date=F("ledger__entity__last_closing_date"),
+            _ledger_is_locked=F("ledger__locked"),
+            txs_count=Count("transactionmodel"),  # Annotates the count of transactions
         )
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> JournalEntryModelQuerySet:
+    def for_entity(
+        self, entity_model: EntityModel | str | UUID = None, **kwargs
+    ) -> JournalEntryModelQuerySet:
         """
         Filters the JournalEntryModel queryset for a specific entity and user.
 
@@ -276,15 +280,15 @@ class JournalEntryModelManager(Manager):
             given entity and restricted by the user's access permissions.
         """
         qs = self.get_queryset()
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             qs = qs.filter(ledger__entity=entity_model)
@@ -294,7 +298,7 @@ class JournalEntryModelManager(Manager):
             qs = qs.filter(ledger__entity_id=entity_model)
         else:
             raise JournalEntryValidationError(
-                message='Must provide EntityModel, slug or UUID',
+                message="Must provide EntityModel, slug or UUID",
             )
         return qs
 
@@ -312,9 +316,10 @@ class ActivityEnum(Enum):
     FINANCING : str
         Prefix for a Journal Entry categorized as a Financing Activity.
     """
-    OPERATING = 'op'
-    INVESTING = 'inv'
-    FINANCING = 'fin'
+
+    OPERATING = "op"
+    INVESTING = "inv"
+    FINANCING = "fin"
 
 
 class JournalEntryModelAbstract(CreateUpdateMixIn):
@@ -355,48 +360,67 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     OPERATING_ACTIVITY = ActivityEnum.OPERATING.value
     FINANCING_OTHER = ActivityEnum.FINANCING.value
     INVESTING_OTHER = ActivityEnum.INVESTING.value
-    INVESTING_SECURITIES = f'{ActivityEnum.INVESTING.value}_securities'
-    INVESTING_PPE = f'{ActivityEnum.INVESTING.value}_ppe'
-    FINANCING_STD = f'{ActivityEnum.FINANCING.value}_std'
-    FINANCING_LTD = f'{ActivityEnum.FINANCING.value}_ltd'
-    FINANCING_EQUITY = f'{ActivityEnum.FINANCING.value}_equity'
-    FINANCING_DIVIDENDS = f'{ActivityEnum.FINANCING.value}_dividends'
+    INVESTING_SECURITIES = f"{ActivityEnum.INVESTING.value}_securities"
+    INVESTING_PPE = f"{ActivityEnum.INVESTING.value}_ppe"
+    FINANCING_STD = f"{ActivityEnum.FINANCING.value}_std"
+    FINANCING_LTD = f"{ActivityEnum.FINANCING.value}_ltd"
+    FINANCING_EQUITY = f"{ActivityEnum.FINANCING.value}_equity"
+    FINANCING_DIVIDENDS = f"{ActivityEnum.FINANCING.value}_dividends"
 
     # Activity categories for dropdown
     ACTIVITIES = [
-        (_('Operating'), (
-            (OPERATING_ACTIVITY, _('Operating')),
-        )),
-        (_('Investing'), (
-            (INVESTING_PPE, _('Purchase/Disposition of PPE')),
-            (INVESTING_SECURITIES, _('Purchase/Disposition of Securities')),
-            (INVESTING_OTHER, _('Investing Activity Other')),
-        )),
-        (_('Financing'), (
-            (FINANCING_STD, _('Payoff of Short Term Debt')),
-            (FINANCING_LTD, _('Payoff of Long Term Debt')),
-            (FINANCING_EQUITY, _('Issuance of Common Stock, Preferred Stock or Capital Contribution')),
-            (FINANCING_DIVIDENDS, _('Dividends or Distributions to Shareholders')),
-            (FINANCING_OTHER, _('Financing Activity Other')),
-        )),
+        (_("Operating"), ((OPERATING_ACTIVITY, _("Operating")),)),
+        (
+            _("Investing"),
+            (
+                (INVESTING_PPE, _("Purchase/Disposition of PPE")),
+                (INVESTING_SECURITIES, _("Purchase/Disposition of Securities")),
+                (INVESTING_OTHER, _("Investing Activity Other")),
+            ),
+        ),
+        (
+            _("Financing"),
+            (
+                (FINANCING_STD, _("Payoff of Short Term Debt")),
+                (FINANCING_LTD, _("Payoff of Long Term Debt")),
+                (
+                    FINANCING_EQUITY,
+                    _(
+                        "Issuance of Common Stock, Preferred Stock or Capital Contribution"
+                    ),
+                ),
+                (FINANCING_DIVIDENDS, _("Dividends or Distributions to Shareholders")),
+                (FINANCING_OTHER, _("Financing Activity Other")),
+            ),
+        ),
     ]
 
     # Utility mappings for activity validation
-    VALID_ACTIVITIES = list(chain.from_iterable([[a[0] for a in cat[1]] for cat in ACTIVITIES]))
-    MAP_ACTIVITIES = dict(chain.from_iterable([[(a[0], cat[0]) for a in cat[1]] for cat in ACTIVITIES]))
-    NON_OPERATIONAL_ACTIVITIES = [a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a]
+    VALID_ACTIVITIES = list(
+        chain.from_iterable([[a[0] for a in cat[1]] for cat in ACTIVITIES])
+    )
+    MAP_ACTIVITIES = dict(
+        chain.from_iterable([[(a[0], cat[0]) for a in cat[1]] for cat in ACTIVITIES])
+    )
+    NON_OPERATIONAL_ACTIVITIES = [
+        a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a
+    ]
 
     # Field definitions
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    je_number = models.SlugField(max_length=25, editable=False, verbose_name=_('Journal Entry Number'))
-    timestamp = models.DateTimeField(verbose_name=_('Timestamp'), default=localtime)
-    description = models.CharField(max_length=120, blank=True, null=True, verbose_name=_('Description'))
+    je_number = models.SlugField(
+        max_length=25, editable=False, verbose_name=_("Journal Entry Number")
+    )
+    timestamp = models.DateTimeField(verbose_name=_("Timestamp"), default=localtime)
+    description = models.CharField(
+        max_length=120, blank=True, null=True, verbose_name=_("Description")
+    )
     entity_unit = models.ForeignKey(
-        'django_ledger.EntityUnitModel',
+        "django_ledger.EntityUnitModel",
         on_delete=models.RESTRICT,
         blank=True,
         null=True,
-        verbose_name=_('Associated Entity Unit')
+        verbose_name=_("Associated Entity Unit"),
     )
     activity = models.CharField(
         choices=ACTIVITIES,
@@ -404,36 +428,40 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         null=True,
         blank=True,
         editable=False,
-        verbose_name=_('Activity')
+        verbose_name=_("Activity"),
     )
-    origin = models.CharField(max_length=30, blank=True, null=True, verbose_name=_('Origin'))
-    posted = models.BooleanField(default=False, verbose_name=_('Posted'))
-    locked = models.BooleanField(default=False, verbose_name=_('Locked'))
+    origin = models.CharField(
+        max_length=30, blank=True, null=True, verbose_name=_("Origin")
+    )
+    posted = models.BooleanField(default=False, verbose_name=_("Posted"))
+    locked = models.BooleanField(default=False, verbose_name=_("Locked"))
     is_closing_entry = models.BooleanField(default=False)
     ledger = models.ForeignKey(
-        'django_ledger.LedgerModel',
-        verbose_name=_('Ledger'),
-        related_name='journal_entries',
-        on_delete=models.CASCADE
+        "django_ledger.LedgerModel",
+        verbose_name=_("Ledger"),
+        related_name="journal_entries",
+        on_delete=models.CASCADE,
     )
 
     # Custom manager
-    objects = JournalEntryModelManager.from_queryset(queryset_class=JournalEntryModelQuerySet)()
+    objects = JournalEntryModelManager.from_queryset(
+        queryset_class=JournalEntryModelQuerySet
+    )()
 
     class Meta:
         abstract = True
-        ordering = ['-created']
-        verbose_name = _('Journal Entry')
-        verbose_name_plural = _('Journal Entries')
+        ordering = ["-created"]
+        verbose_name = _("Journal Entry")
+        verbose_name_plural = _("Journal Entries")
         indexes = [
-            models.Index(fields=['ledger']),
-            models.Index(fields=['timestamp']),
-            models.Index(fields=['activity']),
-            models.Index(fields=['entity_unit']),
-            models.Index(fields=['locked']),
-            models.Index(fields=['posted']),
-            models.Index(fields=['je_number']),
-            models.Index(fields=['is_closing_entry']),
+            models.Index(fields=["ledger"]),
+            models.Index(fields=["timestamp"]),
+            models.Index(fields=["activity"]),
+            models.Index(fields=["entity_unit"]),
+            models.Index(fields=["locked"]),
+            models.Index(fields=["posted"]),
+            models.Index(fields=["je_number"]),
+            models.Index(fields=["is_closing_entry"]),
         ]
 
     def __init__(self, *args, **kwargs):
@@ -448,7 +476,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     @property
     def entity_uuid(self):
         try:
-            return getattr(self, '_entity_uuid')
+            return getattr(self, "_entity_uuid")
         except AttributeError:
             pass
         return self.ledger.entity_id
@@ -466,7 +494,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             str: The slug value from `_entity_slug` if available, or `ledger.entity.slug` otherwise.
         """
         try:
-            return getattr(self, '_entity_slug')
+            return getattr(self, "_entity_slug")
         except AttributeError:
             pass
         return self.ledger.entity.slug
@@ -486,21 +514,23 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     @property
     def entity_last_closing_date(self) -> Optional[date]:
         """
-            Retrieves the last closing date for an entity, if available.
+        Retrieves the last closing date for an entity, if available.
 
-            This property returns the date of the most recent closing event
-            associated with the entity. If no closing date exists, the
-            result will be None.
+        This property returns the date of the most recent closing event
+        associated with the entity. If no closing date exists, the
+        result will be None.
 
-            Returns
-            -------
-            Optional[date]
-                The date of the last closing event, or None if no closing
-                date is available.
+        Returns
+        -------
+        Optional[date]
+            The date of the last closing event, or None if no closing
+            date is available.
         """
         return self.get_entity_last_closing_date()
 
-    def validate_for_entity(self, entity_model: Union[EntityModel, str, UUID], raise_exception: bool = True) -> bool:
+    def validate_for_entity(
+        self, entity_model: Union[EntityModel, str, UUID], raise_exception: bool = True
+    ) -> bool:
         """
         Validates whether the given entity_model owns thr Journal Entry instance.
 
@@ -530,7 +560,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         if not is_valid and raise_exception:
             raise JournalEntryValidationError(
-                message='The Journal Entry does not belong to the provided entity.'
+                message="The Journal Entry does not belong to the provided entity."
             )
         return is_valid
 
@@ -550,64 +580,74 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             A boolean value indicating whether the ledger is locked.
         """
         try:
-            return getattr(self, '_ledger_is_locked')
+            return getattr(self, "_ledger_is_locked")
         except AttributeError:
             pass
         return self.ledger.is_locked()
 
     def can_post(self, ignore_verify: bool = True) -> bool:
         """Determines if the journal entry can be posted."""
-        return all([
-            self.is_locked(),
-            not self.is_posted(),
-            self.is_verified() if not ignore_verify else True,  # avoids db queries, will be verified before saving
-            not self.ledger_is_locked(),
-            not self.is_in_locked_period()
-        ])
+        return all(
+            [
+                self.is_locked(),
+                not self.is_posted(),
+                self.is_verified()
+                if not ignore_verify
+                else True,  # avoids db queries, will be verified before saving
+                not self.ledger_is_locked(),
+                not self.is_in_locked_period(),
+            ]
+        )
 
     def can_unpost(self) -> bool:
         """Checks if the journal entry can be un-posted."""
-        return all([
-            self.is_posted(),
-            not self.ledger_is_locked(),
-            not self.is_in_locked_period()
-        ])
+        return all(
+            [
+                self.is_posted(),
+                not self.ledger_is_locked(),
+                not self.is_in_locked_period(),
+            ]
+        )
 
     def can_lock(self) -> bool:
         """Determines if the journal entry can be locked."""
-        return all([
-            not self.is_locked(),
-            not self.ledger_is_locked()
-        ])
+        return all([not self.is_locked(), not self.ledger_is_locked()])
 
     def can_unlock(self) -> bool:
         """Checks if the journal entry can be unlocked."""
-        return all([
-            self.is_locked(),
-            not self.is_posted(),
-            not self.is_in_locked_period(),
-            not self.ledger_is_locked()
-        ])
+        return all(
+            [
+                self.is_locked(),
+                not self.is_posted(),
+                not self.is_in_locked_period(),
+                not self.ledger_is_locked(),
+            ]
+        )
 
     def can_delete(self) -> bool:
         """Checks if the journal entry can be deleted."""
-        return all([
-            not self.is_locked(),
-            not self.is_posted(),
-        ])
+        return all(
+            [
+                not self.is_locked(),
+                not self.is_posted(),
+            ]
+        )
 
     def can_edit(self) -> bool:
         """Checks if the journal entry is editable."""
-        return all([
-            not self.is_locked(),
-
-        ])
+        return all(
+            [
+                not self.is_locked(),
+            ]
+        )
 
     def is_posted(self) -> bool:
         """Returns whether the journal entry has been posted."""
         return self.posted is True
 
-    def is_in_locked_period(self, new_timestamp: Optional[Union[date, datetime]] = None) -> bool:
+    def is_in_locked_period(
+        self, new_timestamp: Optional[Union[date, datetime]] = None
+    ) -> bool:
         """
         Checks if the current Journal Entry falls within a locked period.
 
@@ -639,11 +679,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         Returns:
             bool: True if the Journal Entry is locked, otherwise False.
         """
-        return self.is_posted() or any([
-            self.locked,
-            self.is_in_locked_period(),
-            self.ledger_is_locked()
-        ])
+        return self.is_posted() or any(
+            [self.locked, self.is_in_locked_period(), self.ledger_is_locked()]
+        )
 
     def is_verified(self) -> bool:
         """
@@ -654,7 +692,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self._verified
 
-    def is_balance_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
+    def is_balance_valid(
+        self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True
+    ) -> bool:
         """
         Validates whether the DEBITs and CREDITs of the transactions balance correctly.
 
@@ -674,16 +714,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if not is_valid:
                 if raise_exception:
                     raise JournalEntryValidationError(
-                        message='Balance of {0} CREDITs are {1} does not match DEBITs {2}.'.format(
-                            self,
-                            balances[CREDIT],
-                            balances[DEBIT]
+                        message="Balance of {0} CREDITs are {1} does not match DEBITs {2}.".format(
+                            self, balances[CREDIT], balances[DEBIT]
                         )
                     )
             return is_valid
         return True
 
-    def is_txs_qs_coa_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
+    def is_txs_qs_coa_valid(
+        self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True
+    ) -> bool:
         """
         Validates that all transactions in the QuerySet are associated with the same Chart of Accounts (COA).
 
@@ -698,12 +738,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             is_valid = coa_count == 1
             if not is_valid and raise_exception:
                 raise JournalEntryValidationError(
-                    message='All transactions in the QuerySet must be associated with the same Chart of Accounts.'
+                    message="All transactions in the QuerySet must be associated with the same Chart of Accounts."
                 )
             return is_valid
         return True
 
-    def is_txs_qs_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
+    def is_txs_qs_valid(
+        self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True
+    ) -> bool:
         """
         Validates whether the given Transaction QuerySet belongs to the current Journal Entry.
 
@@ -718,16 +760,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             JournalEntryValidationError: If validation fails and raise_exception is True.
         """
         if not isinstance(txs_qs, TransactionModelQuerySet):
-            raise JournalEntryValidationError('Must pass an instance of TransactionModelQuerySet')
+            raise JournalEntryValidationError(
+                "Must pass an instance of TransactionModelQuerySet"
+            )
 
         is_valid = all(tx.journal_entry_id == self.uuid for tx in txs_qs)
         if not is_valid and raise_exception:
             raise JournalEntryValidationError(
-                f'Invalid TransactionModelQuerySet. All transactions must be associated with Journal Entry {self.uuid}.'
+                f"Invalid TransactionModelQuerySet. All transactions must be associated with Journal Entry {self.uuid}."
             )
         return is_valid
 
-    def is_cash_involved(self, txs_qs: Optional[TransactionModelQuerySet] = None) -> bool:
+    def is_cash_involved(
+        self, txs_qs: Optional[TransactionModelQuerySet] = None
+    ) -> bool:
         """
         Checks if the transactions involve cash assets.
 
@@ -760,7 +806,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.FINANCING_LTD,
             self.FINANCING_DIVIDENDS,
             self.FINANCING_STD,
-            self.FINANCING_OTHER
+            self.FINANCING_OTHER,
         ]
 
     def is_investing(self) -> bool:
@@ -773,7 +819,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return self.activity in [
             self.INVESTING_SECURITIES,
             self.INVESTING_PPE,
-            self.INVESTING_OTHER
+            self.INVESTING_OTHER,
         ]
 
     def get_entity_unit_name(self, no_unit_name: str = "") -> str:
@@ -798,17 +844,19 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             Optional[date]: The last closing date if one exists, otherwise None.
         """
         try:
-            return getattr(self, '_entity_last_closing_date')
+            return getattr(self, "_entity_last_closing_date")
         except AttributeError:
             pass
         return self.ledger.entity.last_closing_date
 
-    def mark_as_posted(self,
-                       commit: bool = False,
-                       verify: bool = True,
-                       force_lock: bool = False,
-                       raise_exception: bool = False,
-                       **kwargs):
+    def mark_as_posted(
+        self,
+        commit: bool = False,
+        verify: bool = True,
+        force_lock: bool = False,
+        raise_exception: bool = False,
+        **kwargs,
+    ):
         """
         Posted transactions show on the EntityModel ledger and financial statements.
         Parameters
@@ -829,7 +877,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if not len(txs_qs):
                 if raise_exception:
                     raise JournalEntryValidationError(
-                        message=_('Cannot post an empty Journal Entry.')
+                        message=_("Cannot post an empty Journal Entry.")
                     )
                 return
         if force_lock and not self.is_locked():
@@ -841,24 +889,22 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 return
         if not self.can_post(ignore_verify=False):
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot post.'
-                                                  f' Is verified: {self.is_verified()}')
+                raise JournalEntryValidationError(
+                    f"Journal Entry {self.uuid} cannot post."
+                    f" Is verified: {self.is_verified()}"
+                )
             return
         if not self.is_posted():
             self.posted = True
             if self.is_posted():
                 if commit:
-                    self.save(verify=False,
-                              update_fields=[
-                                  'posted',
-                                  'locked',
-                                  'activity',
-                                  'updated'
-                              ])
-            journal_entry_posted.send_robust(sender=self.__class__,
-                                             instance=self,
-                                             commited=commit,
-                                             **kwargs)
+                    self.save(
+                        verify=False,
+                        update_fields=["posted", "locked", "activity", "updated"],
+                    )
+            journal_entry_posted.send_robust(
+                sender=self.__class__, instance=self, commited=commit, **kwargs
+            )
 
     def post(self, **kwargs):
         """
@@ -866,7 +912,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self.mark_as_posted(**kwargs)
 
-    def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+    def mark_as_unposted(
+        self, commit: bool = False, raise_exception: bool = False, **kwargs
+    ):
         """
         Un-posted JournalEntryModels do not show on the EntityModel ledger and financial statements.
 
@@ -881,7 +929,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_unpost():
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot unpost.')
+                raise JournalEntryValidationError(
+                    f"Journal Entry {self.uuid} cannot unpost."
+                )
             return
         if self.is_posted():
             self.posted = False
@@ -889,17 +939,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if not self.is_posted():
                 if commit:
                     self.save(
-                        verify=False,
-                        update_fields=[
-                            'posted',
-                            'activity',
-                            'updated'
-                        ]
+                        verify=False, update_fields=["posted", "activity", "updated"]
                     )
-            journal_entry_unposted.send_robust(sender=self.__class__,
-                                               instance=self,
-                                               commited=commit,
-                                               **kwargs)
+            journal_entry_unposted.send_robust(
+                sender=self.__class__, instance=self, commited=commit, **kwargs
+            )
 
     def unpost(self, **kwargs):
         """
@@ -907,7 +951,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self.mark_as_unposted(**kwargs)
 
-    def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+    def mark_as_locked(
+        self, commit: bool = False, raise_exception: bool = False, **kwargs
+    ):
         """
         Locked JournalEntryModels do not allow transactions to be edited.
 
@@ -923,7 +969,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.can_lock():
             if raise_exception:
                 if raise_exception:
-                    raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
+                    raise JournalEntryValidationError(
+                        f"Journal Entry {self.uuid} is already locked."
+                    )
                 return
         if not self.is_locked():
             self.generate_activity(force_update=True)
@@ -931,10 +979,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if self.is_locked():
                 if commit:
                     self.save(verify=False)
-                journal_entry_locked.send_robust(sender=self.__class__,
-                                                 instance=self,
-                                                 commited=commit,
-                                                 **kwargs)
+                journal_entry_locked.send_robust(
+                    sender=self.__class__, instance=self, commited=commit, **kwargs
+                )
 
     def lock(self, **kwargs):
         """
@@ -942,7 +989,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self.mark_as_locked(**kwargs)
 
-    def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+    def mark_as_unlocked(
+        self, commit: bool = False, raise_exception: bool = False, **kwargs
+    ):
         """
         Unlocked JournalEntryModels allow transactions to be edited.
 
@@ -957,7 +1006,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_unlock():
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
+                raise JournalEntryValidationError(
+                    f"Journal Entry {self.uuid} is already unlocked."
+                )
             return
         if self.is_locked():
             self.locked = False
@@ -965,10 +1016,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if not self.is_locked():
                 if commit:
                     self.save(verify=False)
-                journal_entry_unlocked.send_robust(sender=self.__class__,
-                                                   instance=self,
-                                                   commited=commit,
-                                                   **kwargs)
+                journal_entry_unlocked.send_robust(
+                    sender=self.__class__, instance=self, commited=commit, **kwargs
+                )
 
     def unlock(self, **kwargs):
         """
@@ -976,7 +1026,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self.mark_as_unlocked(**kwargs)
 
-    def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
+    def get_transaction_queryset(
+        self, select_accounts: bool = True
+    ) -> TransactionModelQuerySet:
         """
         Retrieves the `TransactionModelQuerySet` associated with this `JournalEntryModel` instance.
 
@@ -992,13 +1044,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             True, the accounts are included in the query as well.
         """
         if select_accounts:
-            return self.transactionmodel_set.all().select_related('account')
+            return self.transactionmodel_set.all().select_related("account")
         return self.transactionmodel_set.all()
 
     def get_txs_balances(
-            self,
-            txs_qs: Optional[TransactionModelQuerySet] = None,
-            as_dict: bool = False
+        self, txs_qs: Optional[TransactionModelQuerySet] = None, as_dict: bool = False
     ) -> Union[TransactionModelQuerySet, Dict[str, Decimal]]:
         """
         Calculates the total CREDIT and DEBIT balances for the journal entry.
@@ -1037,18 +1087,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 "Invalid TransactionModelQuerySet. All transactions must belong to the same journal entry."
             )
 
-        balances = txs_qs.values('tx_type').annotate(
-            amount__sum=Coalesce(Sum('amount'), Decimal('0.00'), output_field=models.DecimalField())
+        balances = txs_qs.values("tx_type").annotate(
+            amount__sum=Coalesce(
+                Sum("amount"), Decimal("0.00"), output_field=models.DecimalField()
+            )
         )
 
         if as_dict:
-            return {tx['tx_type']: tx['amount__sum'] for tx in balances}
+            return {tx["tx_type"]: tx["amount__sum"] for tx in balances}
         return balances
 
     def get_txs_roles(
-            self,
-            txs_qs: Optional[TransactionModelQuerySet] = None,
-            exclude_cash_role: bool = False
+        self,
+        txs_qs: Optional[TransactionModelQuerySet] = None,
+        exclude_cash_role: bool = False,
     ) -> Set[str]:
         """
         Retrieves the set of account roles involved in the journal entry's transactions.
@@ -1113,10 +1165,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     @classmethod
     def get_activity_from_roles(
-            cls,
-            role_set: Union[List[str], Set[str]],
-            validate: bool = False,
-            raise_exception: bool = True
+        cls,
+        role_set: Union[List[str], Set[str]],
+        validate: bool = False,
+        raise_exception: bool = True,
     ) -> Optional[str]:
         """
         Determines the financial activity type (e.g., operating, investing, financing)
@@ -1154,45 +1206,63 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return
 
         # determining if investing....
-        is_investing_for_ppe = all([
-            # all roles must be in group
-            all([r in GROUP_CFS_INVESTING_PPE for r in role_set]),
-            # at least one role
-            sum([r in GROUP_CFS_INVESTING_PPE for r in role_set]) > 0,
-            # at least one role
-            # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in role_set]) > 0,
-        ])
-        is_investing_for_securities = all([
-            # all roles must be in group
-            all([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]),
-            # at least one role
-            sum([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]) > 0,
-            # at least one role
-            # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in role_set]) > 0,
-        ])
+        is_investing_for_ppe = all(
+            [
+                # all roles must be in group
+                all([r in GROUP_CFS_INVESTING_PPE for r in role_set]),
+                # at least one role
+                sum([r in GROUP_CFS_INVESTING_PPE for r in role_set]) > 0,
+                # at least one role
+                # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in role_set]) > 0,
+            ]
+        )
+        is_investing_for_securities = all(
+            [
+                # all roles must be in group
+                all([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]),
+                # at least one role
+                sum([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]) > 0,
+                # at least one role
+                # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in role_set]) > 0,
+            ]
+        )
 
         # IS INVESTING OTHERS....?
 
         # determining if financing...
         is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in role_set])
-        is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in role_set])
-        is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in role_set])
-        is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in role_set])
+        is_financing_issuing_equity = all(
+            [r in GROUP_CFS_FIN_ISSUING_EQUITY for r in role_set]
+        )
+        is_financing_st_debt = all(
+            [r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in role_set]
+        )
+        is_financing_lt_debt = all(
+            [r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in role_set]
+        )
 
-        is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in role_set])
+        is_operating = all(
+            [r not in GROUP_CFS_INVESTING_AND_FINANCING for r in role_set]
+        )
 
-        if sum([
-            is_investing_for_ppe,
-            is_investing_for_securities,
-            is_financing_lt_debt,
-            is_financing_st_debt,
-            is_financing_issuing_equity,
-            is_financing_dividends,
-            is_operating
-        ]) > 1:
+        if (
+            sum(
+                [
+                    is_investing_for_ppe,
+                    is_investing_for_securities,
+                    is_financing_lt_debt,
+                    is_financing_st_debt,
+                    is_financing_issuing_equity,
+                    is_financing_dividends,
+                    is_operating,
+                ]
+            )
+            > 1
+        ):
             if raise_exception:
                 raise JournalEntryValidationError(
-                    f'Multiple activities detected in roles JE {role_set}.')
+                    f"Multiple activities detected in roles JE {role_set}."
+                )
         else:
             if is_investing_for_ppe:
                 activity = cls.INVESTING_PPE
@@ -1210,15 +1280,19 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 activity = cls.OPERATING_ACTIVITY
             else:
                 if raise_exception:
-                    raise JournalEntryValidationError(f'No activity match for roles {role_set}.'
-                                                      'Split into multiple Journal Entries or check'
-                                                      ' your account selection.')
+                    raise JournalEntryValidationError(
+                        f"No activity match for roles {role_set}."
+                        "Split into multiple Journal Entries or check"
+                        " your account selection."
+                    )
         return activity
 
-    def generate_activity(self,
-                          txs_qs: Optional[TransactionModelQuerySet] = None,
-                          raise_exception: bool = True,
-                          force_update: bool = False) -> Optional[str]:
+    def generate_activity(
+        self,
+        txs_qs: Optional[TransactionModelQuerySet] = None,
+        raise_exception: bool = True,
+        force_update: bool = False,
+    ) -> Optional[str]:
         """
         Generates the activity for the Journal Entry model based on its transactions.
 
@@ -1240,18 +1314,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception and self.is_closing_entry:
                 raise_exception = False
 
-            if any([
-                not self.has_activity(),
-                not self.is_locked(),
-                force_update
-            ]):
-
+            if any([not self.has_activity(), not self.is_locked(), force_update]):
                 txs_is_valid = True
                 if not txs_qs:
                     txs_qs = self.get_transaction_queryset(select_accounts=False)
                 else:
                     try:
-                        txs_is_valid = self.is_txs_qs_valid(txs_qs=txs_qs, raise_exception=raise_exception)
+                        txs_is_valid = self.is_txs_qs_valid(
+                            txs_qs=txs_qs, raise_exception=raise_exception
+                        )
                     except JournalEntryValidationError as e:
                         if raise_exception:
                             raise e
@@ -1263,14 +1334,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                     else:
                         role_list = self.get_txs_roles(txs_qs, exclude_cash_role=True)
                         self.activity = self.get_activity_from_roles(
-                            role_set=role_list,
-                            raise_exception=raise_exception
+                            role_set=role_list, raise_exception=raise_exception
                         )
         return self.activity
 
     # todo: add entity_model as parameter on all functions...
     # todo: outsource this function to EntityStateModel...?...
-    def _get_next_state_model(self, raise_exception: bool = True) -> Optional[EntityStateModel]:
+    def _get_next_state_model(
+        self, raise_exception: bool = True
+    ) -> Optional[EntityStateModel]:
         """
         Retrieves or creates the next state model for the Journal Entry.
 
@@ -1289,27 +1361,30 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         try:
             LOOKUP = {
-                'entity_model_id__exact': self.entity_uuid,
-                'entity_unit_id__exact': self.entity_unit_id,
-                'fiscal_year': fy_key,
-                'key__exact': EntityStateModel.KEY_JOURNAL_ENTRY
+                "entity_model_id__exact": self.entity_uuid,
+                "entity_unit_id__exact": self.entity_unit_id,
+                "fiscal_year": fy_key,
+                "key__exact": EntityStateModel.KEY_JOURNAL_ENTRY,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
-                'entity_model').select_for_update()
+            state_model_qs = (
+                EntityStateModel.objects.filter(**LOOKUP)
+                .select_related("entity_model")
+                .select_for_update()
+            )
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
+            state_model.sequence = F("sequence") + 1
             state_model.save()
             state_model.refresh_from_db()
             return state_model
 
         except ObjectDoesNotExist:
             LOOKUP = {
-                'entity_model_id': entity_model.uuid,
-                'entity_unit_id': self.entity_unit_id,
-                'fiscal_year': fy_key,
-                'key': EntityStateModel.KEY_JOURNAL_ENTRY,
-                'sequence': 1
+                "entity_model_id": entity_model.uuid,
+                "entity_unit_id": self.entity_unit_id,
+                "fiscal_year": fy_key,
+                "key": EntityStateModel.KEY_JOURNAL_ENTRY,
+                "sequence": 1,
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
             return state_model
@@ -1327,10 +1402,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         bool
             True if the Journal Entry can generate a JE number, otherwise False.
         """
-        return all([
-            self.ledger_id,
-            not self.je_number
-        ])
+        return all([self.ledger_id, not self.je_number])
 
     def generate_je_number(self, commit: bool = False) -> str:
         """
@@ -1347,9 +1419,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             The generated or existing JE number.
         """
         if self.can_generate_je_number():
-
             with transaction.atomic():
-
                 state_model = None
                 while not state_model:
                     state_model = self._get_next_state_model(raise_exception=False)
@@ -1359,20 +1429,23 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 else:
                     unit_prefix = DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
 
-                seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-                self.je_number = f'{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}'
+                seq = str(state_model.sequence).zfill(
+                    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
+                )
+                self.je_number = f"{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}"
 
                 if commit:
-                    self.save(update_fields=['je_number'])
+                    self.save(update_fields=["je_number"])
 
         return self.je_number
 
-    def verify(self,
-               txs_qs: Optional[TransactionModelQuerySet] = None,
-               force_verify: bool = False,
-               raise_exception: bool = True,
-               **kwargs) -> Tuple[TransactionModelQuerySet, bool]:
-
+    def verify(
+        self,
+        txs_qs: Optional[TransactionModelQuerySet] = None,
+        force_verify: bool = False,
+        raise_exception: bool = True,
+        **kwargs,
+    ) -> Tuple[TransactionModelQuerySet, bool]:
         """
         Verifies the validity of the Journal Entry model instance.
 
@@ -1404,7 +1477,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             else:
                 try:
                     # if provided, it is verified...
-                    is_txs_qs_valid = self.is_txs_qs_valid(raise_exception=raise_exception, txs_qs=txs_qs)
+                    is_txs_qs_valid = self.is_txs_qs_valid(
+                        raise_exception=raise_exception, txs_qs=txs_qs
+                    )
                 except JournalEntryValidationError as e:
                     raise e
 
@@ -1412,7 +1487,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             try:
                 is_balance_valid = self.is_balance_valid(txs_qs=txs_qs)
                 if not is_balance_valid:
-                    raise JournalEntryValidationError('Transaction balances are not valid!')
+                    raise JournalEntryValidationError(
+                        "Transaction balances are not valid!"
+                    )
             except JournalEntryValidationError as e:
                 raise e
 
@@ -1421,7 +1498,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             try:
                 is_coa_valid = self.is_txs_qs_coa_valid(txs_qs=txs_qs)
                 if not is_coa_valid:
-                    raise JournalEntryValidationError('Transaction COA is not valid!')
+                    raise JournalEntryValidationError("Transaction COA is not valid!")
             except JournalEntryValidationError as e:
                 raise e
 
@@ -1433,21 +1510,19 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             #     if raise_exception:
             #         raise JournalEntryValidationError('At least two transactions required.')
 
-            if all([
-                is_balance_valid,
-                is_txs_qs_valid,
-                is_coa_valid
-            ]):
+            if all([is_balance_valid, is_txs_qs_valid, is_coa_valid]):
                 # activity flag...
                 self.generate_activity(txs_qs=txs_qs, raise_exception=raise_exception)
                 self._verified = True
                 return txs_qs, self.is_verified()
         return self.get_transaction_queryset(), self.is_verified()
 
-    def clean(self,
-              verify: bool = False,
-              raise_exception: bool = True,
-              txs_qs: Optional[TransactionModelQuerySet] = None) -> Tuple[TransactionModelQuerySet, bool]:
+    def clean(
+        self,
+        verify: bool = False,
+        raise_exception: bool = True,
+        txs_qs: Optional[TransactionModelQuerySet] = None,
+    ) -> Tuple[TransactionModelQuerySet, bool]:
         """
         Cleans the JournalEntryModel instance, optionally verifying it and generating a Journal Entry (JE) number if required.
 
@@ -1479,12 +1554,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         if not self.timestamp:
             self.timestamp = get_localtime()
-        elif all([
-            self.timestamp,
-            self.timestamp > get_localtime(),
-            self.is_posted()
-        ]):
-            raise JournalEntryValidationError(message='Cannot Post JE Models with timestamp in the future.')
+        elif all([self.timestamp, self.timestamp > get_localtime(), self.is_posted()]):
+            raise JournalEntryValidationError(
+                message="Cannot Post JE Models with timestamp in the future."
+            )
 
         self.generate_je_number(commit=True)
         if verify:
@@ -1501,7 +1574,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             A confirmation message including the Journal Entry number and Ledger name.
         """
-        return _(f'Are you sure you want to delete JournalEntry Model {self.je_number} on Ledger {self.ledger.name}?')
+        return _(
+            f"Are you sure you want to delete JournalEntry Model {self.je_number} on Ledger {self.ledger.name}?"
+        )
 
     def delete(self, **kwargs):
         """
@@ -1519,17 +1594,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_delete():
             raise JournalEntryValidationError(
-                message=_(f'JournalEntryModel {self.uuid} cannot be deleted...')
+                message=_(f"JournalEntryModel {self.uuid} cannot be deleted...")
             )
         return super().delete(**kwargs)
 
-    def save(
-            self,
-            verify: bool = True,
-            post_on_verify: bool = False,
-            *args,
-            **kwargs
-    ):
+    def save(self, verify: bool = True, post_on_verify: bool = False, *args, **kwargs):
         """
         Saves the JournalEntryModel instance, with optional verification and posting prior to saving.
 
@@ -1558,24 +1627,31 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 txs_qs, is_verified = self.clean(verify=True)
                 if is_verified and post_on_verify:
                     # Mark as posted if verification succeeds and posting is requested
-                    self.mark_as_posted(commit=False, verify=False, force_lock=True, raise_exception=True)
+                    self.mark_as_posted(
+                        commit=False,
+                        verify=False,
+                        force_lock=True,
+                        raise_exception=True,
+                    )
 
         except ValidationError as e:
             if self.can_unpost():
                 self.mark_as_unposted(raise_exception=True)
             raise JournalEntryValidationError(
-                f'Error validating Journal Entry ID: {self.uuid}: {e.message}'
+                f"Error validating Journal Entry ID: {self.uuid}: {e.message}"
             )
         except Exception as e:
             # Safety net for unexpected errors during save
             self.posted = False
             self._verified = False
-            self.save(update_fields=['posted', 'updated'], verify=False)
+            self.save(update_fields=["posted", "updated"], verify=False)
             raise JournalEntryValidationError(e)
 
         # Prevent saving an unverified Journal Entry
         if not self.is_verified() and verify:
-            raise JournalEntryValidationError(message='Cannot save an unverified Journal Entry.')
+            raise JournalEntryValidationError(
+                message="Cannot save an unverified Journal Entry."
+            )
 
         return super(JournalEntryModelAbstract, self).save(*args, **kwargs)
 
@@ -1590,11 +1666,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The absolute URL for the journal entry details.
         """
-        return reverse('django_ledger:je-detail', kwargs={
-            'je_pk': self.uuid,
-            'ledger_pk': self.ledger_id,
-            'entity_slug': self.entity_slug
-        })
+        return reverse(
+            "django_ledger:je-detail",
+            kwargs={
+                "je_pk": self.uuid,
+                "ledger_pk": self.ledger_id,
+                "entity_slug": self.entity_slug,
+            },
+        )
 
     def get_detail_url(self) -> str:
         """
@@ -1617,10 +1696,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for the journal entry list.
         """
-        return reverse('django_ledger:je-list', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id
-        })
+        return reverse(
+            "django_ledger:je-list",
+            kwargs={"entity_slug": self.entity_slug, "ledger_pk": self.ledger_id},
+        )
 
     def get_journal_entry_create_url(self) -> str:
         """
@@ -1632,10 +1711,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL to create a journal entry.
         """
-        return reverse('django_ledger:je-create', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id
-        })
+        return reverse(
+            "django_ledger:je-create",
+            kwargs={"entity_slug": self.entity_slug, "ledger_pk": self.ledger_id},
+        )
 
     def get_detail_txs_url(self) -> str:
         """
@@ -1646,11 +1725,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for transaction details of the journal entry.
         """
-        return reverse('django_ledger:je-detail-txs', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id,
-            'je_pk': self.uuid
-        })
+        return reverse(
+            "django_ledger:je-detail-txs",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_unlock_url(self) -> str:
         """
@@ -1661,11 +1743,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for unlocking the journal entry.
         """
-        return reverse('django_ledger:je-mark-as-unlocked', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id,
-            'je_pk': self.uuid
-        })
+        return reverse(
+            "django_ledger:je-mark-as-unlocked",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_lock_url(self) -> str:
         """
@@ -1676,11 +1761,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for locking the journal entry.
         """
-        return reverse('django_ledger:je-mark-as-locked', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id,
-            'je_pk': self.uuid
-        })
+        return reverse(
+            "django_ledger:je-mark-as-locked",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_post_url(self) -> str:
         """
@@ -1691,11 +1779,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for posting the journal entry.
         """
-        return reverse('django_ledger:je-mark-as-posted', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id,
-            'je_pk': self.uuid
-        })
+        return reverse(
+            "django_ledger:je-mark-as-posted",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_unpost_url(self) -> str:
         """
@@ -1706,11 +1797,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for unposting the journal entry.
         """
-        return reverse('django_ledger:je-mark-as-unposted', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id,
-            'je_pk': self.uuid
-        })
+        return reverse(
+            "django_ledger:je-mark-as-unposted",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     # Action URLS....
     def get_action_post_url(self) -> str:
@@ -1722,12 +1816,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The generated URL for marking the journal entry as posted.
         """
-        return reverse('django_ledger:je-mark-as-posted',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:je-mark-as-posted",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_action_unpost_url(self) -> str:
         """
@@ -1738,12 +1834,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The generated URL for marking the journal entry as unposted.
         """
-        return reverse('django_ledger:je-mark-as-unposted',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:je-mark-as-unposted",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_action_lock_url(self) -> str:
         """
@@ -1754,12 +1852,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The generated URL for marking the journal entry as locked.
         """
-        return reverse('django_ledger:je-mark-as-locked',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:je-mark-as-locked",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
     def get_action_unlock_url(self) -> str:
         """
@@ -1770,12 +1870,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The generated URL for marking the journal entry as unlocked.
         """
-        return reverse('django_ledger:je-mark-as-unlocked',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:je-mark-as-unlocked",
+            kwargs={
+                "entity_slug": self.entity_slug,
+                "ledger_pk": self.ledger_id,
+                "je_pk": self.uuid,
+            },
+        )
 
 
 class JournalEntryModel(JournalEntryModelAbstract):
@@ -1792,7 +1894,9 @@ def journalentrymodel_presave(instance: JournalEntryModel, **kwargs):
         # cannot add journal entries to a locked ledger...
         if instance.ledger_is_locked():
             raise JournalEntryValidationError(
-                message=_(f'Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}')
+                message=_(
+                    f"Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}"
+                )
             )
     instance.generate_je_number(commit=False)
 

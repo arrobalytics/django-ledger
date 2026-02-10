@@ -109,18 +109,17 @@ from django.utils.timezone import is_naive, localdate, localtime, make_aware
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger import settings
-from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
+from django_ledger.exceptions import (InvalidDateInputError,
+                                      TransactionNotInBalanceError)
 from django_ledger.io import CREDIT, DEBIT
 from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import IODigestContextManager
-from django_ledger.io.io_middleware import (
-    AccountGroupIOMiddleware,
-    AccountRoleIOMiddleware,
-    BalanceSheetIOMiddleware,
-    CashFlowStatementIOMiddleware,
-    IncomeStatementIOMiddleware,
-    JEActivityIOMiddleware,
-)
+from django_ledger.io.io_middleware import (AccountGroupIOMiddleware,
+                                            AccountRoleIOMiddleware,
+                                            BalanceSheetIOMiddleware,
+                                            CashFlowStatementIOMiddleware,
+                                            IncomeStatementIOMiddleware,
+                                            JEActivityIOMiddleware)
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
 
@@ -174,10 +173,10 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
         debits = sum(tx.amount for tx in tx_data if tx.tx_type == DEBIT)
         IS_TX_MODEL = True
     elif isinstance(tx_data[0], dict):
-        credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == CREDIT)
-        debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == DEBIT)
+        credits = sum(tx["amount"] for tx in tx_data if tx["tx_type"] == CREDIT)
+        debits = sum(tx["amount"] for tx in tx_data if tx["tx_type"] == DEBIT)
     else:
-        raise ValidationError('Only Dictionary or TransactionModel allowed.')
+        raise ValidationError("Only Dictionary or TransactionModel allowed.")
 
     is_valid = credits == debits
     diff = credits - debits
@@ -185,8 +184,8 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
         if raise_exception:
             raise TransactionNotInBalanceError(
-                f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.'
-                f'Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
+                f"Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}."
+                f"Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}"
             )
 
     return IS_TX_MODEL, is_valid, diff
@@ -237,7 +236,7 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
                 )
             else:
                 txs_candidates = list(
-                    tx for tx in tx_data if tx['tx_type'] == tx_type_choice
+                    tx for tx in tx_data if tx["tx_type"] == tx_type_choice
                 )
 
             if len(txs_candidates) > 0:
@@ -252,7 +251,7 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
                     if IS_TX_MODEL:
                         tx.amount += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
-                        tx['amount'] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
+                        tx["amount"] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
 
                 elif any(
                     [
@@ -263,7 +262,7 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
                     if IS_TX_MODEL:
                         tx.amount -= settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
-                        tx['amount'] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
+                        tx["amount"] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
 
                 IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
 
@@ -363,7 +362,7 @@ def validate_io_timestamp(
 
     if isinstance(dt, datetime):
         if is_naive(dt):
-            return make_aware(value=dt, timezone=ZoneInfo('UTC'))
+            return make_aware(value=dt, timezone=ZoneInfo("UTC"))
         return dt
 
     elif isinstance(dt, str):
@@ -373,7 +372,7 @@ def validate_io_timestamp(
             # try to parse a datetime object from string...
             fdt = parse_datetime(dt)
             if not fdt:
-                raise InvalidDateInputError(message=f'Could not parse date from {dt}')
+                raise InvalidDateInputError(message=f"Could not parse date from {dt}")
             elif is_naive(fdt):
                 fdt = make_aware(fdt)
         if global_settings.USE_TZ:
@@ -463,7 +462,7 @@ def validate_activity(activity: str, raise_404: bool = False):
     valid = activity in JournalEntryModel.VALID_ACTIVITIES
     if activity and not valid:
         exception = ValidationError(
-            f'{activity} is invalid. Choices are {JournalEntryModel.VALID_ACTIVITIES}.'
+            f"{activity} is invalid. Choices are {JournalEntryModel.VALID_ACTIVITIES}."
         )
         if raise_404:
             raise Http404(exception)
@@ -608,12 +607,12 @@ class IODatabaseMixIn:
         if self.is_entity_model():
             return self
         elif self.is_ledger_model():
-            return getattr(self, 'entity')
+            return getattr(self, "entity")
         elif self.is_entity_unit_model():
-            return getattr(self, 'entity')
+            return getattr(self, "entity")
         raise IOValidationError(
             message=_(
-                f'IODatabaseMixIn not compatible with {self.__class__.__name__} model.'
+                f"IODatabaseMixIn not compatible with {self.__class__.__name__} model."
             )
         )
 
@@ -764,8 +763,8 @@ class IODatabaseMixIn:
             if entity_slug:
                 if entity_slug != self.slug:
                     raise IOValidationError(
-                        'Inconsistent entity_slug. '
-                        f'Provided {entity_slug} does not match actual {self.slug}'
+                        "Inconsistent entity_slug. "
+                        f"Provided {entity_slug} does not match actual {self.slug}"
                     )
             if unit_slug:
                 txs_queryset_init = TransactionModel.objects.for_entity(
@@ -779,7 +778,7 @@ class IODatabaseMixIn:
         elif self.is_entity_unit_model():
             if not entity_slug:
                 raise IOValidationError(
-                    'Calling digest from Entity Unit requires entity_slug explicitly for safety'
+                    "Calling digest from Entity Unit requires entity_slug explicitly for safety"
                 )
 
             txs_queryset_init = TransactionModel.objects.for_entity(
@@ -789,7 +788,7 @@ class IODatabaseMixIn:
         elif self.is_ledger_model():
             if not entity_slug:
                 raise IOValidationError(
-                    'Calling digest from Ledger Model requires entity_slug explicitly for safety'
+                    "Calling digest from Ledger Model requires entity_slug explicitly for safety"
                 )
 
             txs_queryset_init = TransactionModel.objects.for_entity(
@@ -798,7 +797,7 @@ class IODatabaseMixIn:
 
         else:
             raise IOValidationError(
-                message=f'Cannot call digest from {self.__class__.__name__}'
+                message=f"Cannot call digest from {self.__class__.__name__}"
             )
 
         io_result = IOResult(db_to_date=to_date, db_from_date=from_date)
@@ -908,7 +907,7 @@ class IODatabaseMixIn:
             txs_queryset = txs_queryset.for_roles(role_list=role)
 
         # Cleared transaction filter via KWARGS....
-        cleared_filter = kwargs.get('cleared')
+        cleared_filter = kwargs.get("cleared")
         if cleared_filter is not None:
             if cleared_filter in [True, False]:
                 txs_queryset = (
@@ -918,12 +917,12 @@ class IODatabaseMixIn:
                 )
             else:
                 raise IOValidationError(
-                    message=f'Invalid value for cleared filter: {cleared_filter}. '
-                    f'Valid values are True, False'
+                    message=f"Invalid value for cleared filter: {cleared_filter}. "
+                    f"Valid values are True, False"
                 )
 
         # Reconciled transaction filter via KWARGS....
-        reconciled_filter = kwargs.get('reconciled')
+        reconciled_filter = kwargs.get("reconciled")
         if reconciled_filter is not None:
             if reconciled_filter in [True, False]:
                 txs_queryset = (
@@ -933,59 +932,59 @@ class IODatabaseMixIn:
                 )
             else:
                 raise IOValidationError(
-                    message=f'Invalid value for reconciled filter: {reconciled_filter}. '
-                    f'Valid values are True, False'
+                    message=f"Invalid value for reconciled filter: {reconciled_filter}. "
+                    f"Valid values are True, False"
                 )
 
         if io_result.is_bounded:
             txs_queryset = txs_queryset.annotate(
                 amount_io=Case(
                     When(
-                        journal_entry__timestamp__date=ce_from_date, then=-F('amount')
+                        journal_entry__timestamp__date=ce_from_date, then=-F("amount")
                     ),
-                    default=F('amount'),
+                    default=F("amount"),
                     output_field=DecimalField(),
                 )
             )
 
         VALUES = [
-            'account__uuid',
-            'account__balance_type',
-            'account__code',
-            'account__name',
-            'account__role',
-            'account__coa_model__slug',
-            'tx_type',
+            "account__uuid",
+            "account__balance_type",
+            "account__code",
+            "account__name",
+            "account__role",
+            "account__coa_model__slug",
+            "tx_type",
         ]
 
-        if kwargs.get('for_test'):
-            VALUES.append('journal_entry__ledger_id')
-            VALUES.append('journal_entry__ledger__entity_id')
+        if kwargs.get("for_test"):
+            VALUES.append("journal_entry__ledger_id")
+            VALUES.append("journal_entry__ledger__entity_id")
 
-        ANNOTATE = {'balance': Sum('amount')}
+        ANNOTATE = {"balance": Sum("amount")}
         if io_result.is_bounded:
-            ANNOTATE = {'balance': Sum('amount_io')}
+            ANNOTATE = {"balance": Sum("amount_io")}
 
-        ORDER_BY = ['account__uuid']
+        ORDER_BY = ["account__uuid"]
 
         if by_unit:
-            ORDER_BY.append('journal_entry__entity_unit__uuid')
+            ORDER_BY.append("journal_entry__entity_unit__uuid")
             VALUES += [
-                'journal_entry__entity_unit__uuid',
-                'journal_entry__entity_unit__name',
+                "journal_entry__entity_unit__uuid",
+                "journal_entry__entity_unit__name",
             ]
 
         if by_period:
-            ORDER_BY.append('journal_entry__timestamp')
-            ANNOTATE['dt_idx'] = TruncMonth('journal_entry__timestamp')
+            ORDER_BY.append("journal_entry__timestamp")
+            ANNOTATE["dt_idx"] = TruncMonth("journal_entry__timestamp")
 
         if by_activity:
-            ORDER_BY.append('journal_entry__activity')
-            VALUES.append('journal_entry__activity')
+            ORDER_BY.append("journal_entry__activity")
+            VALUES.append("journal_entry__activity")
 
         if by_tx_type:
-            ORDER_BY.append('tx_type')
-            VALUES.append('tx_type')
+            ORDER_BY.append("tx_type")
+            VALUES.append("tx_type")
 
         io_result.txs_queryset = (
             txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
@@ -1083,16 +1082,16 @@ class IODatabaseMixIn:
         )
 
         for tx_model in io_result.txs_queryset:
-            if tx_model['account__balance_type'] != tx_model['tx_type']:
-                tx_model['balance'] = -tx_model['balance']
+            if tx_model["account__balance_type"] != tx_model["tx_type"]:
+                tx_model["balance"] = -tx_model["balance"]
 
         gb_key = lambda a: (
-            a['account__uuid'],
-            a.get('journal_entry__entity_unit__uuid') if by_unit else None,
-            a.get('dt_idx').year if by_period else None,
-            a.get('dt_idx').month if by_period else None,
-            a.get('journal_entry__activity') if by_activity else None,
-            a.get('tx_type') if by_tx_type else None,
+            a["account__uuid"],
+            a.get("journal_entry__entity_unit__uuid") if by_unit else None,
+            a.get("dt_idx").year if by_period else None,
+            a.get("dt_idx").month if by_period else None,
+            a.get("journal_entry__activity") if by_activity else None,
+            a.get("tx_type") if by_tx_type else None,
         )
 
         if force_queryset_sorting:
@@ -1103,7 +1102,7 @@ class IODatabaseMixIn:
         accounts_digest = [self.aggregate_balances(k, g) for k, g in accounts_gb_code]
 
         for acc in accounts_digest:
-            acc['balance_abs'] = abs(acc['balance'])
+            acc["balance_abs"] = abs(acc["balance"])
 
         if signs:
             for acc in accounts_digest:
@@ -1111,23 +1110,23 @@ class IODatabaseMixIn:
                     [
                         all(
                             [
-                                acc['role_bs'] == roles_module.BS_ASSET_ROLE,
-                                acc['balance_type'] == CREDIT,
+                                acc["role_bs"] == roles_module.BS_ASSET_ROLE,
+                                acc["balance_type"] == CREDIT,
                             ]
                         ),
                         all(
                             [
-                                acc['role_bs']
+                                acc["role_bs"]
                                 in (
                                     roles_module.BS_LIABILITIES_ROLE,
                                     roles_module.BS_EQUITY_ROLE,
                                 ),
-                                acc['balance_type'] == DEBIT,
+                                acc["balance_type"] == DEBIT,
                             ]
                         ),
                     ]
                 ):
-                    acc['balance'] = -acc['balance']
+                    acc["balance"] = -acc["balance"]
 
         io_result.accounts_digest = accounts_digest
         return io_result
@@ -1175,20 +1174,20 @@ class IODatabaseMixIn:
         """
         gl = list(g)
         return {
-            'account_uuid': k[0],
-            'coa_slug': gl[0]['account__coa_model__slug'],
-            'unit_uuid': k[1],
-            'unit_name': gl[0].get('journal_entry__entity_unit__name'),
-            'activity': gl[0].get('journal_entry__activity'),
-            'period_year': k[2],
-            'period_month': k[3],
-            'role_bs': roles_module.BS_ROLES.get(gl[0]['account__role']),
-            'role': gl[0]['account__role'],
-            'code': gl[0]['account__code'],
-            'name': gl[0]['account__name'],
-            'balance_type': gl[0]['account__balance_type'],
-            'tx_type': k[5],
-            'balance': sum(a['balance'] for a in gl),
+            "account_uuid": k[0],
+            "coa_slug": gl[0]["account__coa_model__slug"],
+            "unit_uuid": k[1],
+            "unit_name": gl[0].get("journal_entry__entity_unit__name"),
+            "activity": gl[0].get("journal_entry__activity"),
+            "period_year": k[2],
+            "period_month": k[3],
+            "role_bs": roles_module.BS_ROLES.get(gl[0]["account__role"]),
+            "role": gl[0]["account__role"],
+            "code": gl[0]["account__code"],
+            "name": gl[0]["account__name"],
+            "balance_type": gl[0]["account__balance_type"],
+            "tx_type": k[5],
+            "balance": sum(a["balance"] for a in gl),
         }
 
     def digest(
@@ -1294,15 +1293,15 @@ class IODatabaseMixIn:
         from_date, to_date = validate_dates(from_date, to_date)
 
         io_state = dict()
-        io_state['io_model'] = self
-        io_state['from_date'] = from_date
-        io_state['to_date'] = to_date
-        io_state['by_unit'] = by_unit
-        io_state['unit_slug'] = unit_slug
-        io_state['entity_slug'] = entity_slug
-        io_state['by_period'] = by_period
-        io_state['by_activity'] = by_activity
-        io_state['by_tx_type'] = by_tx_type
+        io_state["io_model"] = self
+        io_state["from_date"] = from_date
+        io_state["to_date"] = to_date
+        io_state["by_unit"] = by_unit
+        io_state["unit_slug"] = unit_slug
+        io_state["entity_slug"] = entity_slug
+        io_state["by_period"] = by_period
+        io_state["by_activity"] = by_activity
+        io_state["by_tx_type"] = by_tx_type
 
         io_result: IOResult = self.python_digest(
             accounts=accounts,
@@ -1322,8 +1321,8 @@ class IODatabaseMixIn:
             **kwargs,
         )
 
-        io_state['io_result'] = io_result
-        io_state['accounts'] = io_result.accounts_digest
+        io_state["io_result"] = io_result
+        io_state["accounts"] = io_result.accounts_digest
 
         # IO Middleware...
 
@@ -1348,14 +1347,14 @@ class IODatabaseMixIn:
             io_state = group_mgr.digest()
 
             # todo: migrate this to group manager...
-            io_state['group_account']['GROUP_ASSETS'].sort(
-                key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role'])
+            io_state["group_account"]["GROUP_ASSETS"].sort(
+                key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc["role"])
             )
-            io_state['group_account']['GROUP_LIABILITIES'].sort(
-                key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role'])
+            io_state["group_account"]["GROUP_LIABILITIES"].sort(
+                key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc["role"])
             )
-            io_state['group_account']['GROUP_CAPITAL'].sort(
-                key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role'])
+            io_state["group_account"]["GROUP_CAPITAL"].sort(
+                key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc["role"])
             )
 
         if process_ratios:
@@ -1459,20 +1458,20 @@ class IODatabaseMixIn:
                     if entity_model.last_closing_date >= je_timestamp.date():
                         raise IOValidationError(
                             message=_(
-                                f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.'
+                                f"Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period."
                             )
                         )
                 elif isinstance(je_timestamp, date):
                     if entity_model.last_closing_date >= je_timestamp:
                         raise IOValidationError(
                             message=_(
-                                f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.'
+                                f"Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period."
                             )
                         )
 
             if self.is_ledger_model():
                 if self.is_locked():
-                    raise IOValidationError(message=_('Cannot commit on locked ledger'))
+                    raise IOValidationError(message=_("Cannot commit on locked ledger"))
 
             # if calling from EntityModel must pass an instance of LedgerModel...
             if all(
@@ -1482,7 +1481,7 @@ class IODatabaseMixIn:
                 ]
             ):
                 raise IOValidationError(
-                    'Committing from EntityModel requires an instance of LedgerModel'
+                    "Committing from EntityModel requires an instance of LedgerModel"
                 )
 
             # Validates that the provided LedgerModel id valid...
@@ -1494,7 +1493,7 @@ class IODatabaseMixIn:
             ):
                 if je_ledger_model.entity_id != self.uuid:
                     raise IOValidationError(
-                        f'LedgerModel {je_ledger_model} does not belong to {self}'
+                        f"LedgerModel {je_ledger_model} does not belong to {self}"
                     )
 
             # Validates that the provided EntityUnitModel id valid...
@@ -1506,7 +1505,7 @@ class IODatabaseMixIn:
             ):
                 if je_unit_model.entity_id != self.uuid:
                     raise IOValidationError(
-                        f'EntityUnitModel {je_unit_model} does not belong to {self}'
+                        f"EntityUnitModel {je_unit_model} does not belong to {self}"
                     )
 
             if not je_ledger_model:
@@ -1524,12 +1523,12 @@ class IODatabaseMixIn:
                         )
                     else:
                         raise IOValidationError(
-                            message=_(f'Invalid timestamp type {type(je_timestamp)}')
+                            message=_(f"Invalid timestamp type {type(je_timestamp)}")
                         )
                 except ObjectDoesNotExist:
                     raise IOValidationError(
                         message=_(
-                            f'Unable to retrieve Journal Entry model with Timestamp {je_timestamp}'
+                            f"Unable to retrieve Journal Entry model with Timestamp {je_timestamp}"
                         )
                     )
             else:
@@ -1548,10 +1547,10 @@ class IODatabaseMixIn:
             txs_models = [
                 (
                     TransactionModel(
-                        account=txm_kwargs['account'],
-                        amount=txm_kwargs['amount'],
-                        tx_type=txm_kwargs['tx_type'],
-                        description=txm_kwargs['description'],
+                        account=txm_kwargs["account"],
+                        amount=txm_kwargs["amount"],
+                        tx_type=txm_kwargs["tx_type"],
+                        description=txm_kwargs["description"],
                         journal_entry=je_model,
                     ),
                     txm_kwargs,
@@ -1560,11 +1559,11 @@ class IODatabaseMixIn:
             ]
 
             for tx, txm_kwargs in txs_models:
-                if not getattr(tx, 'ledger_id', None):
+                if not getattr(tx, "ledger_id", None):
                     tx.ledger_id = je_model.ledger_id
-                if not getattr(tx, 'timestamp', None):
+                if not getattr(tx, "timestamp", None):
                     tx.timestamp = je_model.timestamp
-                staged_tx_model = txm_kwargs.get('staged_tx_model')
+                staged_tx_model = txm_kwargs.get("staged_tx_model")
 
                 if staged_tx_model:
                     staged_tx_model.transaction_model = tx
@@ -1601,16 +1600,16 @@ class IOReportMixIn:
         respective financial report.
     """
 
-    PDF_REPORT_ORIENTATION = 'P'
-    PDF_REPORT_MEASURE_UNIT = 'mm'
-    PDF_REPORT_PAGE_SIZE = 'Letter'
+    PDF_REPORT_ORIENTATION = "P"
+    PDF_REPORT_MEASURE_UNIT = "mm"
+    PDF_REPORT_PAGE_SIZE = "Letter"
 
     ReportTuple = namedtuple(
-        'ReportTuple',
+        "ReportTuple",
         field_names=[
-            'balance_sheet_statement',
-            'income_statement',
-            'cash_flow_statement',
+            "balance_sheet_statement",
+            "income_statement",
+            "cash_flow_statement",
         ],
     )
 
@@ -2038,7 +2037,7 @@ class IOReportMixIn:
         self,
         from_date: Union[date, datetime],
         to_date: Union[date, datetime],
-        dt_strfmt: str = '%Y%m%d',
+        dt_strfmt: str = "%Y%m%d",
         user_model: Optional[UserModel] = None,
         save_pdf: bool = False,
         filepath: Optional[Path] = None,

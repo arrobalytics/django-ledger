@@ -6,65 +6,101 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('django_ledger', '0024_billmodel_entity_model_invoicemodel_entity_model'),
+        ("django_ledger", "0024_billmodel_entity_model_invoicemodel_entity_model"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='billmodel',
-            name='cash_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='bill_cash_account', to='django_ledger.accountmodel',
-                                    verbose_name='Cash Account'),
+            model_name="billmodel",
+            name="cash_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="bill_cash_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Cash Account",
+            ),
         ),
         migrations.AlterField(
-            model_name='billmodel',
-            name='prepaid_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='bill_prepaid_account', to='django_ledger.accountmodel',
-                                    verbose_name='Prepaid Account'),
+            model_name="billmodel",
+            name="prepaid_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="bill_prepaid_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Prepaid Account",
+            ),
         ),
         migrations.AlterField(
-            model_name='billmodel',
-            name='unearned_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='bill_unearned_account', to='django_ledger.accountmodel',
-                                    verbose_name='Unearned Account'),
+            model_name="billmodel",
+            name="unearned_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="bill_unearned_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Unearned Account",
+            ),
         ),
         migrations.AlterField(
-            model_name='customermodel',
-            name='address_1',
-            field=models.CharField(blank=True, max_length=70, null=True, verbose_name='Address Line 1'),
+            model_name="customermodel",
+            name="address_1",
+            field=models.CharField(
+                blank=True, max_length=70, null=True, verbose_name="Address Line 1"
+            ),
         ),
         migrations.AlterField(
-            model_name='entitymodel',
-            name='address_1',
-            field=models.CharField(blank=True, max_length=70, null=True, verbose_name='Address Line 1'),
+            model_name="entitymodel",
+            name="address_1",
+            field=models.CharField(
+                blank=True, max_length=70, null=True, verbose_name="Address Line 1"
+            ),
         ),
         migrations.AlterField(
-            model_name='invoicemodel',
-            name='cash_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='invoice_cash_account', to='django_ledger.accountmodel',
-                                    verbose_name='Cash Account'),
+            model_name="invoicemodel",
+            name="cash_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="invoice_cash_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Cash Account",
+            ),
         ),
         migrations.AlterField(
-            model_name='invoicemodel',
-            name='prepaid_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='invoice_prepaid_account', to='django_ledger.accountmodel',
-                                    verbose_name='Prepaid Account'),
+            model_name="invoicemodel",
+            name="prepaid_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="invoice_prepaid_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Prepaid Account",
+            ),
         ),
         migrations.AlterField(
-            model_name='invoicemodel',
-            name='unearned_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='invoice_unearned_account', to='django_ledger.accountmodel',
-                                    verbose_name='Unearned Account'),
+            model_name="invoicemodel",
+            name="unearned_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="invoice_unearned_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Unearned Account",
+            ),
         ),
         migrations.AlterField(
-            model_name='vendormodel',
-            name='address_1',
-            field=models.CharField(blank=True, max_length=70, null=True, verbose_name='Address Line 1'),
+            model_name="vendormodel",
+            name="address_1",
+            field=models.CharField(
+                blank=True, max_length=70, null=True, verbose_name="Address Line 1"
+            ),
         ),
     ]

@@ -5,33 +5,40 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0017_alter_accountmodel_unique_together_and_more'),
+        ("django_ledger", "0017_alter_accountmodel_unique_together_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transactionmodel',
-            name='cleared',
-            field=models.BooleanField(default=False, verbose_name='Cleared'),
+            model_name="transactionmodel",
+            name="cleared",
+            field=models.BooleanField(default=False, verbose_name="Cleared"),
         ),
         migrations.AddField(
-            model_name='transactionmodel',
-            name='reconciled',
-            field=models.BooleanField(default=False, verbose_name='Reconciled'),
+            model_name="transactionmodel",
+            name="reconciled",
+            field=models.BooleanField(default=False, verbose_name="Reconciled"),
         ),
         migrations.AlterField(
-            model_name='chartofaccountmodel',
-            name='entity',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel', verbose_name='Entity'),
+            model_name="chartofaccountmodel",
+            name="entity",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.entitymodel",
+                verbose_name="Entity",
+            ),
         ),
         migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['cleared'], name='django_ledg_cleared_335c0b_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["cleared"], name="django_ledg_cleared_335c0b_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['reconciled'], name='django_ledg_reconci_75dbc7_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["reconciled"], name="django_ledg_reconci_75dbc7_idx"
+            ),
         ),
     ]

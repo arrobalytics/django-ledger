@@ -4,22 +4,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0003_remove_accountmodel_django_ledg_role_1bff96_idx_and_more'),
+        (
+            "django_ledger",
+            "0003_remove_accountmodel_django_ledg_role_1bff96_idx_and_more",
+        ),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='itemmodel',
-            name='depth',
+            model_name="itemmodel",
+            name="depth",
         ),
         migrations.RemoveField(
-            model_name='itemmodel',
-            name='numchild',
+            model_name="itemmodel",
+            name="numchild",
         ),
         migrations.RemoveField(
-            model_name='itemmodel',
-            name='path',
+            model_name="itemmodel",
+            name="path",
         ),
     ]

@@ -4,25 +4,35 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0028_stagedtransactionmodel_matched_transaction_model_and_more'),
+        (
+            "django_ledger",
+            "0028_stagedtransactionmodel_matched_transaction_model_and_more",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stagedtransactionmodel',
-            name='matched_transaction',
-            field=models.BooleanField(default=False, help_text='Indicates whether this transaction is matched to another.', verbose_name='Matched Transaction'),
+            model_name="stagedtransactionmodel",
+            name="matched_transaction",
+            field=models.BooleanField(
+                default=False,
+                help_text="Indicates whether this transaction is matched to another.",
+                verbose_name="Matched Transaction",
+            ),
         ),
         migrations.AddField(
-            model_name='stagedtransactionmodel',
-            name='notes',
-            field=models.TextField(blank=True, null=True, verbose_name='Transaction Notes'),
+            model_name="stagedtransactionmodel",
+            name="notes",
+            field=models.TextField(
+                blank=True, null=True, verbose_name="Transaction Notes"
+            ),
         ),
         migrations.AlterField(
-            model_name='journalentrymodel',
-            name='description',
-            field=models.CharField(blank=True, max_length=120, null=True, verbose_name='Description'),
+            model_name="journalentrymodel",
+            name="description",
+            field=models.CharField(
+                blank=True, max_length=120, null=True, verbose_name="Description"
+            ),
         ),
     ]

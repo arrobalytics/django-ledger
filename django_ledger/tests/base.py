@@ -1,9 +1,9 @@
-from datetime import date, timedelta, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from itertools import cycle
-from logging import getLogger, DEBUG
-from random import randint, choice
-from typing import Optional, Literal
+from logging import DEBUG, getLogger
+from random import choice, randint
+from typing import Literal, Optional
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -14,8 +14,11 @@ from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
 from django_ledger.io.io_generator import EntityDataGenerator
-from django_ledger.models import JournalEntryModel, LedgerModel, TransactionModel, AccountModel, AccountModelQuerySet
-from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
+from django_ledger.models import (AccountModel, AccountModelQuerySet,
+                                  JournalEntryModel, LedgerModel,
+                                  TransactionModel)
+from django_ledger.models.entity import (EntityModel, EntityModelQuerySet,
+                                         UserModel)
 
 UserModel = get_user_model()
 
@@ -39,13 +42,12 @@ class DjangoLedgerBaseTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
         cls.logger = getLogger(__name__)
         cls.logger.setLevel(level=DEBUG)
 
-        cls.USERNAME: str = 'testuser'
-        cls.PASSWORD: str = 'NeverUseThisPassword12345'
-        cls.USER_EMAIL: str = 'testuser@djangoledger.com'
+        cls.USERNAME: str = "testuser"
+        cls.PASSWORD: str = "NeverUseThisPassword12345"
+        cls.USER_EMAIL: str = "testuser@djangoledger.com"
 
         cls.DAYS_FWD: int = randint(180, 180 * 3)
         cls.TZ = get_default_timezone()
@@ -64,7 +66,7 @@ class DjangoLedgerBaseTest(TestCase):
 
         cls.FY_STARTS = list(str(i) for i in range(1, 13))
         cls.TEST_DATA = list()
-        cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
+        cls.CAPITAL_CONTRIBUTION = Decimal("50000.00")
         cls.ENTITY_MODEL_QUERYSET: Optional[EntityModelQuerySet] = None
 
         cls.create_entity_models(n=cls.N)
@@ -75,34 +77,25 @@ class DjangoLedgerBaseTest(TestCase):
         dt = date(
             year=choice(range(1990, 2020)),
             month=choice(range(1, 13)),
-            day=choice(range(1, 28))
+            day=choice(range(1, 28)),
         )
         if as_datetime:
             if not settings.USE_TZ:
                 return datetime.combine(
                     dt,
-                    time(
-                        hour=randint(1, 23),
-                        minute=randint(1, 59)
-                    ),
+                    time(hour=randint(1, 23), minute=randint(1, 59)),
                 )
             return datetime.combine(
                 dt,
-                time(
-                    hour=randint(1, 23),
-                    minute=randint(1, 59)
-                ),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
+                time(hour=randint(1, 23), minute=randint(1, 59)),
+                tzinfo=ZoneInfo(settings.TIME_ZONE),
             )
         return dt
 
     @classmethod
     def login_client(cls):
         # cls.logger.info('Logging in client...')
-        cls.CLIENT.login(
-            username=cls.USERNAME,
-            password=cls.PASSWORD
-        )
+        cls.CLIENT.login(username=cls.USERNAME, password=cls.PASSWORD)
 
     @classmethod
     def logout_client(cls):
@@ -117,27 +110,29 @@ class DjangoLedgerBaseTest(TestCase):
     @classmethod
     def get_random_entity_data(cls) -> dict:
         return {
-            'slug': f'a-cool-slug-{randint(10000, 99999)}',
-            'name': f'Testing Inc-{randint(100000, 999999)}',
-            'address_1': f'{randint(100000, 999999)} Main St',
-            'address_2': f'Suite {randint(1000, 9999)}',
-            'city': 'Charlotte',
-            'state': 'NC',
-            'zip_code': '28202',
-            'country': 'US',
-            'email': 'mytest@testinginc.com',
-            'website': 'http://www.mytestingco.com',
-            'fy_start_month': choice(cls.FY_STARTS),
-            'admin': cls.user_model,
-            'accrual_method': next(cls.accrual_cycle)
+            "slug": f"a-cool-slug-{randint(10000, 99999)}",
+            "name": f"Testing Inc-{randint(100000, 999999)}",
+            "address_1": f"{randint(100000, 999999)} Main St",
+            "address_2": f"Suite {randint(1000, 9999)}",
+            "city": "Charlotte",
+            "state": "NC",
+            "zip_code": "28202",
+            "country": "US",
+            "email": "mytest@testinginc.com",
+            "website": "http://www.mytestingco.com",
+            "fy_start_month": choice(cls.FY_STARTS),
+            "admin": cls.user_model,
+            "accrual_method": next(cls.accrual_cycle),
         }
 
     def get_random_entity_model(self) -> EntityModel:
         if self.ENTITY_MODEL_QUERYSET:
             return choice(self.ENTITY_MODEL_QUERYSET)
-        raise ValueError('EntityModels have not been populated.')
+        raise ValueError("EntityModels have not been populated.")
 
-    def create_entity_model(self, use_accrual_method: bool = False, fy_start_month: int = 1) -> EntityModel:
+    def create_entity_model(
+        self, use_accrual_method: bool = False, fy_start_month: int = 1
+    ) -> EntityModel:
         """
         Creates a new blank EntityModel for testing purposes.
 
@@ -153,10 +148,10 @@ class DjangoLedgerBaseTest(TestCase):
         EntityModel
         """
         return EntityModel.create_entity(
-            name='Testing Inc-{randint(100000, 999999)',
+            name="Testing Inc-{randint(100000, 999999)",
             use_accrual_method=use_accrual_method,
             fy_start_month=fy_start_month,
-            admin=self.user_model
+            admin=self.user_model,
         )
 
     @classmethod
@@ -179,36 +174,40 @@ class DjangoLedgerBaseTest(TestCase):
                 start_dttm=cls.START_DATE,
                 capital_contribution=cls.CAPITAL_CONTRIBUTION,
                 days_forward=cls.DAYS_FORWARD,
-                tx_quantity=cls.TX_QUANTITY
+                tx_quantity=cls.TX_QUANTITY,
             )
-            cls.logger.info(f'Populating Entity {entity_model.name}...')
+            cls.logger.info(f"Populating Entity {entity_model.name}...")
             data_generator.populate_entity()
         cls.ENTITY_MODEL_QUERYSET = entities_qs
 
     def get_random_draft_date(self):
         return self.START_DATE + timedelta(days=randint(0, 365))
 
-    def get_random_account(self,
-                           entity_model: EntityModel,
-                           balance_type: Literal['credit', 'debit', None] = None,
-                           active: bool = True,
-                           locked: bool = False) -> AccountModel:
+    def get_random_account(
+        self,
+        entity_model: EntityModel,
+        balance_type: Literal["credit", "debit", None] = None,
+        active: bool = True,
+        locked: bool = False,
+    ) -> AccountModel:
         """
         Returns 1 random AccountModel with the specified balance_type.
         """
-        account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=active, locked=locked)
-        account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
+        account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(
+            active=active, locked=locked
+        )
+        account_qs = (
+            account_qs.filter(balance_type=balance_type) if balance_type else account_qs
+        )
         return choice(account_qs)
 
-    def get_random_ledger(self,
-                          entity_model: EntityModel,
-                          qs_limit: int = 100,
-                          posted: bool = True) -> LedgerModel:
+    def get_random_ledger(
+        self, entity_model: EntityModel, qs_limit: int = 100, posted: bool = True
+    ) -> LedgerModel:
         """
         Returns 1 random LedgerModel object.
         """
-        ledger_model_qs = entity_model.get_ledgers(
-            posted=posted).filter(
+        ledger_model_qs = entity_model.get_ledgers(posted=posted).filter(
             journal_entries__count__gt=0
         )
 
@@ -224,12 +223,13 @@ class DjangoLedgerBaseTest(TestCase):
         # limits the queryset in case of large querysets...
         return choice(ledger_model_qs[:qs_limit])
 
-    def get_random_je(self,
-                      entity_model: EntityModel,
-                      ledger_model: Optional[LedgerModel] = None,
-                      posted: bool = True,
-                      qs_limit: int = 100
-                      ) -> JournalEntryModel:
+    def get_random_je(
+        self,
+        entity_model: EntityModel,
+        ledger_model: Optional[LedgerModel] = None,
+        posted: bool = True,
+        qs_limit: int = 100,
+    ) -> JournalEntryModel:
         """.
         Returns 1 random JournalEntryModel object.
         """
@@ -259,15 +259,17 @@ class DjangoLedgerBaseTest(TestCase):
         if posted:
             journal_entry_qs = journal_entry_qs.posted()
 
-        journal_entry_qs = journal_entry_qs.select_related('ledger', 'ledger__entity')
+        journal_entry_qs = journal_entry_qs.select_related("ledger", "ledger__entity")
         # limits the queryset in case of large querysets...
         return choice(journal_entry_qs[:qs_limit])
 
-    def get_random_transaction(self,
-                               entity_model: EntityModel,
-                               je_model: Optional[JournalEntryModel] = None,
-                               posted: bool = True,
-                               qs_limit: int = 100) -> TransactionModel:
+    def get_random_transaction(
+        self,
+        entity_model: EntityModel,
+        je_model: Optional[JournalEntryModel] = None,
+        posted: bool = True,
+        qs_limit: int = 100,
+    ) -> TransactionModel:
         """
         Returns all TransactionModel related to a random or specified JournalEntryModel.
         """
@@ -285,12 +287,10 @@ class DjangoLedgerBaseTest(TestCase):
         }
 
     def resolve_url_kwars(self):
-        url_patterns = getattr(self, 'URL_PATTERNS', None)
+        url_patterns = getattr(self, "URL_PATTERNS", None)
         if not url_patterns:
             raise ValidationError(
-                message='Must call resolve_url_patterns before calling resolve_url_kwars.'
+                message="Must call resolve_url_patterns before calling resolve_url_kwars."
             )
 
-        return set.union(*[
-            set(v) for v in self.URL_PATTERNS.values()
-        ])
+        return set.union(*[set(v) for v in self.URL_PATTERNS.values()])

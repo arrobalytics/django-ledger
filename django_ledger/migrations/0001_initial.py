@@ -23,1370 +23,3159 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AccountModel',
+            name="AccountModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('path', models.CharField(max_length=255, unique=True)),
-                ('depth', models.PositiveIntegerField()),
-                ('numchild', models.PositiveIntegerField(default=0)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('code', models.CharField(max_length=10, verbose_name='Account Code')),
-                ('name', models.CharField(max_length=100, verbose_name='Account Name')),
-                ('role', models.CharField(choices=[('Assets', (
-                ('asset_ca_cash', 'Current Asset'), ('asset_ca_mkt_sec', 'Marketable Securities'),
-                ('asset_ca_recv', 'Receivables'), ('asset_ca_inv', 'Inventory'), ('asset_ca_uncoll', 'Uncollectibles'),
-                ('asset_ca_prepaid', 'Prepaid'), ('asset_ca_other', 'Other Liquid Assets'),
-                ('asset_lti_notes', 'Notes Receivable'), ('asset_lti_land', 'Land'), ('asset_lti_sec', 'Securities'),
-                ('asset_ppe_build', 'Buildings'), ('asset_ppe_build_accum_depr', 'Buildings - Accum. Depreciation'),
-                ('asset_ppe_plant', 'Plant'), ('asset_ppe_plant_depr', 'Plant - Accum. Depreciation'),
-                ('asset_ppe_equip', 'Equipment'), ('asset_ppe_equip_accum_depr', 'Equipment - Accum. Depreciation'),
-                ('asset_ia', 'Intangible Assets'), ('asset_ia_accum_amort', 'Intangible Assets - Accum. Amortization'),
-                ('asset_adjustment', 'Other Assets'))), ('Liabilities', (
-                ('lia_cl_acc_payable', 'Accounts Payable'), ('lia_cl_wages_payable', 'Wages Payable'),
-                ('lia_cl_int_payable', 'Interest Payable'), ('lia_cl_taxes_payable', 'Taxes Payable'),
-                ('lia_cl_st_notes_payable', 'Notes Payable'),
-                ('lia_cl_ltd_mat', 'Current Maturities of Long Term Debt'), ('lia_cl_def_rev', 'Deferred Revenue'),
-                ('lia_cl_other', 'Other Liabilities'), ('lia_ltl_notes', 'Notes Payable'),
-                ('lia_ltl_bonds', 'Bonds Payable'), ('lia_ltl_mortgage', 'Mortgage Payable'))), ('Equity', (
-                ('eq_capital', 'Capital'), ('eq_stock_common', 'Common Stock'),
-                ('eq_stock_preferred', 'Preferred Stock'), ('eq_adjustment', 'Other Equity Adjustments'),
-                ('eq_dividends', 'Dividends & Distributions to Shareholders'), ('in_operational', 'Operational Income'),
-                ('in_passive', 'Investing/Passive Income'), ('in_interest', 'Interest Income'),
-                ('in_gain_loss', 'Capital Gain/Loss Income'), ('in_other', 'Other Income'),
-                ('ex_cogs', 'Cost of Goods Sold'), ('ex_regular', 'Regular Expense'),
-                ('ex_interest', 'Interest Expense'), ('ex_taxes', 'Tax Expense'), ('ex_capital', 'Capital Expense'),
-                ('ex_depreciation', 'Depreciation Expense'), ('ex_amortization', 'Amortization Expense'),
-                ('ex_other', 'Other Expense')))], max_length=30, verbose_name='Account Role')),
-                ('balance_type', models.CharField(choices=[('credit', 'Credit'), ('debit', 'Debit')], max_length=6,
-                                                  verbose_name='Account Balance Type')),
-                ('locked', models.BooleanField(default=False, verbose_name='Locked')),
-                ('active', models.BooleanField(default=False, verbose_name='Active')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                ("path", models.CharField(max_length=255, unique=True)),
+                ("depth", models.PositiveIntegerField()),
+                ("numchild", models.PositiveIntegerField(default=0)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("code", models.CharField(max_length=10, verbose_name="Account Code")),
+                ("name", models.CharField(max_length=100, verbose_name="Account Name")),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            (
+                                "Assets",
+                                (
+                                    ("asset_ca_cash", "Current Asset"),
+                                    ("asset_ca_mkt_sec", "Marketable Securities"),
+                                    ("asset_ca_recv", "Receivables"),
+                                    ("asset_ca_inv", "Inventory"),
+                                    ("asset_ca_uncoll", "Uncollectibles"),
+                                    ("asset_ca_prepaid", "Prepaid"),
+                                    ("asset_ca_other", "Other Liquid Assets"),
+                                    ("asset_lti_notes", "Notes Receivable"),
+                                    ("asset_lti_land", "Land"),
+                                    ("asset_lti_sec", "Securities"),
+                                    ("asset_ppe_build", "Buildings"),
+                                    (
+                                        "asset_ppe_build_accum_depr",
+                                        "Buildings - Accum. Depreciation",
+                                    ),
+                                    ("asset_ppe_plant", "Plant"),
+                                    (
+                                        "asset_ppe_plant_depr",
+                                        "Plant - Accum. Depreciation",
+                                    ),
+                                    ("asset_ppe_equip", "Equipment"),
+                                    (
+                                        "asset_ppe_equip_accum_depr",
+                                        "Equipment - Accum. Depreciation",
+                                    ),
+                                    ("asset_ia", "Intangible Assets"),
+                                    (
+                                        "asset_ia_accum_amort",
+                                        "Intangible Assets - Accum. Amortization",
+                                    ),
+                                    ("asset_adjustment", "Other Assets"),
+                                ),
+                            ),
+                            (
+                                "Liabilities",
+                                (
+                                    ("lia_cl_acc_payable", "Accounts Payable"),
+                                    ("lia_cl_wages_payable", "Wages Payable"),
+                                    ("lia_cl_int_payable", "Interest Payable"),
+                                    ("lia_cl_taxes_payable", "Taxes Payable"),
+                                    ("lia_cl_st_notes_payable", "Notes Payable"),
+                                    (
+                                        "lia_cl_ltd_mat",
+                                        "Current Maturities of Long Term Debt",
+                                    ),
+                                    ("lia_cl_def_rev", "Deferred Revenue"),
+                                    ("lia_cl_other", "Other Liabilities"),
+                                    ("lia_ltl_notes", "Notes Payable"),
+                                    ("lia_ltl_bonds", "Bonds Payable"),
+                                    ("lia_ltl_mortgage", "Mortgage Payable"),
+                                ),
+                            ),
+                            (
+                                "Equity",
+                                (
+                                    ("eq_capital", "Capital"),
+                                    ("eq_stock_common", "Common Stock"),
+                                    ("eq_stock_preferred", "Preferred Stock"),
+                                    ("eq_adjustment", "Other Equity Adjustments"),
+                                    (
+                                        "eq_dividends",
+                                        "Dividends & Distributions to Shareholders",
+                                    ),
+                                    ("in_operational", "Operational Income"),
+                                    ("in_passive", "Investing/Passive Income"),
+                                    ("in_interest", "Interest Income"),
+                                    ("in_gain_loss", "Capital Gain/Loss Income"),
+                                    ("in_other", "Other Income"),
+                                    ("ex_cogs", "Cost of Goods Sold"),
+                                    ("ex_regular", "Regular Expense"),
+                                    ("ex_interest", "Interest Expense"),
+                                    ("ex_taxes", "Tax Expense"),
+                                    ("ex_capital", "Capital Expense"),
+                                    ("ex_depreciation", "Depreciation Expense"),
+                                    ("ex_amortization", "Amortization Expense"),
+                                    ("ex_other", "Other Expense"),
+                                ),
+                            ),
+                        ],
+                        max_length=30,
+                        verbose_name="Account Role",
+                    ),
+                ),
+                (
+                    "balance_type",
+                    models.CharField(
+                        choices=[("credit", "Credit"), ("debit", "Debit")],
+                        max_length=6,
+                        verbose_name="Account Balance Type",
+                    ),
+                ),
+                ("locked", models.BooleanField(default=False, verbose_name="Locked")),
+                ("active", models.BooleanField(default=False, verbose_name="Active")),
             ],
             options={
-                'verbose_name': 'Account',
-                'verbose_name_plural': 'Accounts',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Account",
+                "verbose_name_plural": "Accounts",
+                "ordering": ["-created"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='BillModel',
+            name="BillModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('amount_due',
-                 models.DecimalField(decimal_places=2, default=0, max_digits=20, verbose_name='Amount Due')),
-                ('amount_paid', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Paid')),
-                ('amount_receivable', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Receivable')),
-                ('amount_unearned', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Unearned')),
-                ('amount_earned', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Earned')),
-                ('accrue', models.BooleanField(default=False, verbose_name='Accrue')),
-                ('progress', models.DecimalField(decimal_places=2, default=0, max_digits=3,
-                                                 validators=[django.core.validators.MinValueValidator(limit_value=0),
-                                                             django.core.validators.MaxValueValidator(limit_value=1)],
-                                                 verbose_name='Progress Amount')),
-                ('terms', models.CharField(
-                    choices=[('on_receipt', 'Due On Receipt'), ('net_30', 'Net 30 Days'), ('net_60', 'Net 60 Days'),
-                             ('net_90', 'Net 90 Days')], default='on_receipt', max_length=10, verbose_name='Terms')),
-                ('date_due', models.DateField(blank=True, null=True, verbose_name='Due Date')),
-                ('markdown_notes', models.TextField(blank=True, null=True, verbose_name='Markdown Notes')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('bill_number', models.SlugField(editable=False, max_length=20, verbose_name='Bill Number')),
-                ('bill_status', models.CharField(
-                    choices=[('draft', 'Draft'), ('in_review', 'In Review'), ('approved', 'Approved'), ('paid', 'Paid'),
-                             ('canceled', 'Canceled'), ('void', 'Void')], default='draft', max_length=10,
-                    verbose_name='Bill Status')),
-                ('xref', models.SlugField(blank=True, null=True, verbose_name='External Reference Number')),
-                ('additional_info',
-                 models.JSONField(blank=True, default=dict, null=True, verbose_name='Bill Additional Info')),
-                ('date_draft', models.DateField(blank=True, null=True, verbose_name='Draft Date')),
-                ('date_in_review', models.DateField(blank=True, null=True, verbose_name='In Review Date')),
-                ('date_approved', models.DateField(blank=True, null=True, verbose_name='Approved Date')),
-                ('date_paid', models.DateField(blank=True, null=True, verbose_name='Paid Date')),
-                ('date_void', models.DateField(blank=True, null=True, verbose_name='Void Date')),
-                ('date_canceled', models.DateField(blank=True, null=True, verbose_name='Canceled Date')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "amount_due",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        verbose_name="Amount Due",
+                    ),
+                ),
+                (
+                    "amount_paid",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Paid",
+                    ),
+                ),
+                (
+                    "amount_receivable",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Receivable",
+                    ),
+                ),
+                (
+                    "amount_unearned",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Unearned",
+                    ),
+                ),
+                (
+                    "amount_earned",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Earned",
+                    ),
+                ),
+                ("accrue", models.BooleanField(default=False, verbose_name="Accrue")),
+                (
+                    "progress",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=3,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0),
+                            django.core.validators.MaxValueValidator(limit_value=1),
+                        ],
+                        verbose_name="Progress Amount",
+                    ),
+                ),
+                (
+                    "terms",
+                    models.CharField(
+                        choices=[
+                            ("on_receipt", "Due On Receipt"),
+                            ("net_30", "Net 30 Days"),
+                            ("net_60", "Net 60 Days"),
+                            ("net_90", "Net 90 Days"),
+                        ],
+                        default="on_receipt",
+                        max_length=10,
+                        verbose_name="Terms",
+                    ),
+                ),
+                (
+                    "date_due",
+                    models.DateField(blank=True, null=True, verbose_name="Due Date"),
+                ),
+                (
+                    "markdown_notes",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Markdown Notes"
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "bill_number",
+                    models.SlugField(
+                        editable=False, max_length=20, verbose_name="Bill Number"
+                    ),
+                ),
+                (
+                    "bill_status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("in_review", "In Review"),
+                            ("approved", "Approved"),
+                            ("paid", "Paid"),
+                            ("canceled", "Canceled"),
+                            ("void", "Void"),
+                        ],
+                        default="draft",
+                        max_length=10,
+                        verbose_name="Bill Status",
+                    ),
+                ),
+                (
+                    "xref",
+                    models.SlugField(
+                        blank=True, null=True, verbose_name="External Reference Number"
+                    ),
+                ),
+                (
+                    "additional_info",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        null=True,
+                        verbose_name="Bill Additional Info",
+                    ),
+                ),
+                (
+                    "date_draft",
+                    models.DateField(blank=True, null=True, verbose_name="Draft Date"),
+                ),
+                (
+                    "date_in_review",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="In Review Date"
+                    ),
+                ),
+                (
+                    "date_approved",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Approved Date"
+                    ),
+                ),
+                (
+                    "date_paid",
+                    models.DateField(blank=True, null=True, verbose_name="Paid Date"),
+                ),
+                (
+                    "date_void",
+                    models.DateField(blank=True, null=True, verbose_name="Void Date"),
+                ),
+                (
+                    "date_canceled",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Canceled Date"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Bill',
-                'verbose_name_plural': 'Bills',
-                'ordering': ['-updated'],
-                'abstract': False,
+                "verbose_name": "Bill",
+                "verbose_name_plural": "Bills",
+                "ordering": ["-updated"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ChartOfAccountModel',
+            name="ChartOfAccountModel",
             fields=[
-                ('slug', models.SlugField(editable=False, unique=True, validators=[
-                    django.core.validators.MinLengthValidator(limit_value=10,
-                                                              message='Slug field must contain at least 10 characters.')])),
-                ('name', models.CharField(blank=True, max_length=150, null=True)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('locked', models.BooleanField(default=False, verbose_name='Locked')),
-                ('description', models.TextField(blank=True, null=True, verbose_name='CoA Description')),
+                (
+                    "slug",
+                    models.SlugField(
+                        editable=False,
+                        unique=True,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                limit_value=10,
+                                message="Slug field must contain at least 10 characters.",
+                            )
+                        ],
+                    ),
+                ),
+                ("name", models.CharField(blank=True, max_length=150, null=True)),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("locked", models.BooleanField(default=False, verbose_name="Locked")),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="CoA Description"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Chart of Account',
-                'verbose_name_plural': 'Chart of Accounts',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Chart of Account",
+                "verbose_name_plural": "Chart of Accounts",
+                "ordering": ["-created"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='CustomerModel',
+            name="CustomerModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('address_1', models.CharField(max_length=70, verbose_name='Address Line 1')),
-                ('address_2', models.CharField(blank=True, max_length=70, null=True, verbose_name='Address Line 2')),
-                ('city', models.CharField(blank=True, max_length=70, null=True, verbose_name='City')),
-                ('state', models.CharField(blank=True, max_length=70, null=True, verbose_name='State/Province')),
-                ('zip_code', models.CharField(blank=True, max_length=20, null=True, verbose_name='Zip Code')),
-                ('country', models.CharField(blank=True, max_length=70, null=True, verbose_name='Country')),
-                ('email', models.EmailField(blank=True, max_length=254, null=True, verbose_name='Email')),
-                ('website', models.URLField(blank=True, null=True, verbose_name='Website')),
-                ('phone', models.CharField(blank=True, max_length=30, null=True, verbose_name='Phone Number')),
-                ('sales_tax_rate', models.FloatField(blank=True, default=0.0, null=True, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0.0),
-                    django.core.validators.MaxValueValidator(limit_value=1.0)], verbose_name='Sales Tax Rate')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('customer_name', models.CharField(max_length=100)),
-                ('customer_number', models.CharField(editable=False, max_length=30, verbose_name='Customer Number')),
-                ('description', models.TextField()),
-                ('active', models.BooleanField(default=True)),
-                ('hidden', models.BooleanField(default=False)),
-                ('additional_info', models.JSONField(blank=True, default=dict, null=True)),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "address_1",
+                    models.CharField(max_length=70, verbose_name="Address Line 1"),
+                ),
+                (
+                    "address_2",
+                    models.CharField(
+                        blank=True,
+                        max_length=70,
+                        null=True,
+                        verbose_name="Address Line 2",
+                    ),
+                ),
+                (
+                    "city",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="City"
+                    ),
+                ),
+                (
+                    "state",
+                    models.CharField(
+                        blank=True,
+                        max_length=70,
+                        null=True,
+                        verbose_name="State/Province",
+                    ),
+                ),
+                (
+                    "zip_code",
+                    models.CharField(
+                        blank=True, max_length=20, null=True, verbose_name="Zip Code"
+                    ),
+                ),
+                (
+                    "country",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="Country"
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, null=True, verbose_name="Email"
+                    ),
+                ),
+                (
+                    "website",
+                    models.URLField(blank=True, null=True, verbose_name="Website"),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        verbose_name="Phone Number",
+                    ),
+                ),
+                (
+                    "sales_tax_rate",
+                    models.FloatField(
+                        blank=True,
+                        default=0.0,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0),
+                            django.core.validators.MaxValueValidator(limit_value=1.0),
+                        ],
+                        verbose_name="Sales Tax Rate",
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("customer_name", models.CharField(max_length=100)),
+                (
+                    "customer_number",
+                    models.CharField(
+                        editable=False, max_length=30, verbose_name="Customer Number"
+                    ),
+                ),
+                ("description", models.TextField()),
+                ("active", models.BooleanField(default=True)),
+                ("hidden", models.BooleanField(default=False)),
+                (
+                    "additional_info",
+                    models.JSONField(blank=True, default=dict, null=True),
+                ),
             ],
             options={
-                'verbose_name': 'Customer',
-                'abstract': False,
+                "verbose_name": "Customer",
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='EntityManagementModel',
+            name="EntityManagementModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('permission_level', models.CharField(
-                    choices=[('read', 'Read Permissions'), ('write', 'Read/Write Permissions'),
-                             ('suspended', 'No Permissions')], default='read', max_length=10,
-                    verbose_name='Permission Level')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "permission_level",
+                    models.CharField(
+                        choices=[
+                            ("read", "Read Permissions"),
+                            ("write", "Read/Write Permissions"),
+                            ("suspended", "No Permissions"),
+                        ],
+                        default="read",
+                        max_length=10,
+                        verbose_name="Permission Level",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='EntityModel',
+            name="EntityModel",
             fields=[
-                ('slug', models.SlugField(editable=False, unique=True, validators=[
-                    django.core.validators.MinLengthValidator(limit_value=10,
-                                                              message='Slug field must contain at least 10 characters.')])),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('address_1', models.CharField(max_length=70, verbose_name='Address Line 1')),
-                ('address_2', models.CharField(blank=True, max_length=70, null=True, verbose_name='Address Line 2')),
-                ('city', models.CharField(blank=True, max_length=70, null=True, verbose_name='City')),
-                ('state', models.CharField(blank=True, max_length=70, null=True, verbose_name='State/Province')),
-                ('zip_code', models.CharField(blank=True, max_length=20, null=True, verbose_name='Zip Code')),
-                ('country', models.CharField(blank=True, max_length=70, null=True, verbose_name='Country')),
-                ('email', models.EmailField(blank=True, max_length=254, null=True, verbose_name='Email')),
-                ('website', models.URLField(blank=True, null=True, verbose_name='Website')),
-                ('phone', models.CharField(blank=True, max_length=30, null=True, verbose_name='Phone Number')),
-                ('path', models.CharField(max_length=255, unique=True)),
-                ('depth', models.PositiveIntegerField()),
-                ('numchild', models.PositiveIntegerField(default=0)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=150, verbose_name='Entity Name')),
-                ('hidden', models.BooleanField(default=False)),
-                ('accrual_method', models.BooleanField(default=False, verbose_name='Use Accrual Method')),
-                ('fy_start_month', models.IntegerField(
-                    choices=[(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'),
-                             (7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'),
-                             (12, 'December')], default=1, verbose_name='Fiscal Year Start')),
-                ('picture', models.ImageField(blank=True, null=True, upload_to='')),
-                ('admin', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='admin_of',
-                                            to=settings.AUTH_USER_MODEL, verbose_name='Admin')),
-                ('default_coa', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
-                                                     to='django_ledger.chartofaccountmodel',
-                                                     verbose_name='Default Chart of Accounts')),
-                ('managers',
-                 models.ManyToManyField(related_name='managed_by', through='django_ledger.EntityManagementModel',
-                                        to=settings.AUTH_USER_MODEL, verbose_name='Managers')),
+                (
+                    "slug",
+                    models.SlugField(
+                        editable=False,
+                        unique=True,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                limit_value=10,
+                                message="Slug field must contain at least 10 characters.",
+                            )
+                        ],
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "address_1",
+                    models.CharField(max_length=70, verbose_name="Address Line 1"),
+                ),
+                (
+                    "address_2",
+                    models.CharField(
+                        blank=True,
+                        max_length=70,
+                        null=True,
+                        verbose_name="Address Line 2",
+                    ),
+                ),
+                (
+                    "city",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="City"
+                    ),
+                ),
+                (
+                    "state",
+                    models.CharField(
+                        blank=True,
+                        max_length=70,
+                        null=True,
+                        verbose_name="State/Province",
+                    ),
+                ),
+                (
+                    "zip_code",
+                    models.CharField(
+                        blank=True, max_length=20, null=True, verbose_name="Zip Code"
+                    ),
+                ),
+                (
+                    "country",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="Country"
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, null=True, verbose_name="Email"
+                    ),
+                ),
+                (
+                    "website",
+                    models.URLField(blank=True, null=True, verbose_name="Website"),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        verbose_name="Phone Number",
+                    ),
+                ),
+                ("path", models.CharField(max_length=255, unique=True)),
+                ("depth", models.PositiveIntegerField()),
+                ("numchild", models.PositiveIntegerField(default=0)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=150, verbose_name="Entity Name")),
+                ("hidden", models.BooleanField(default=False)),
+                (
+                    "accrual_method",
+                    models.BooleanField(
+                        default=False, verbose_name="Use Accrual Method"
+                    ),
+                ),
+                (
+                    "fy_start_month",
+                    models.IntegerField(
+                        choices=[
+                            (1, "January"),
+                            (2, "February"),
+                            (3, "March"),
+                            (4, "April"),
+                            (5, "May"),
+                            (6, "June"),
+                            (7, "July"),
+                            (8, "August"),
+                            (9, "September"),
+                            (10, "October"),
+                            (11, "November"),
+                            (12, "December"),
+                        ],
+                        default=1,
+                        verbose_name="Fiscal Year Start",
+                    ),
+                ),
+                ("picture", models.ImageField(blank=True, null=True, upload_to="")),
+                (
+                    "admin",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="admin_of",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Admin",
+                    ),
+                ),
+                (
+                    "default_coa",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="django_ledger.chartofaccountmodel",
+                        verbose_name="Default Chart of Accounts",
+                    ),
+                ),
+                (
+                    "managers",
+                    models.ManyToManyField(
+                        related_name="managed_by",
+                        through="django_ledger.EntityManagementModel",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Managers",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Entity',
-                'verbose_name_plural': 'Entities',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Entity",
+                "verbose_name_plural": "Entities",
+                "ordering": ["-created"],
+                "abstract": False,
             },
-            bases=(models.Model, django_ledger.io.io_core.IOMixIn, django_ledger.models.mixins.LoggingMixIn,
-                   django_ledger.models.entity.EntityModelFiscalPeriodMixIn),
+            bases=(
+                models.Model,
+                django_ledger.io.io_core.IOMixIn,
+                django_ledger.models.mixins.LoggingMixIn,
+                django_ledger.models.entity.EntityModelFiscalPeriodMixIn,
+            ),
         ),
         migrations.CreateModel(
-            name='EntityUnitModel',
+            name="EntityUnitModel",
             fields=[
-                ('name', models.CharField(blank=True, max_length=150, null=True)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('path', models.CharField(max_length=255, unique=True)),
-                ('depth', models.PositiveIntegerField()),
-                ('numchild', models.PositiveIntegerField(default=0)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('slug', models.SlugField()),
-                ('document_prefix', models.CharField(max_length=3)),
-                ('active', models.BooleanField(default=True, verbose_name='Is Active')),
-                ('hidden', models.BooleanField(default=False, verbose_name='Is Hidden')),
-                ('entity', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                             to='django_ledger.entitymodel', verbose_name='Unit Entity')),
+                ("name", models.CharField(blank=True, max_length=150, null=True)),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                ("path", models.CharField(max_length=255, unique=True)),
+                ("depth", models.PositiveIntegerField()),
+                ("numchild", models.PositiveIntegerField(default=0)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("slug", models.SlugField()),
+                ("document_prefix", models.CharField(max_length=3)),
+                ("active", models.BooleanField(default=True, verbose_name="Is Active")),
+                (
+                    "hidden",
+                    models.BooleanField(default=False, verbose_name="Is Hidden"),
+                ),
+                (
+                    "entity",
+                    models.ForeignKey(
+                        editable=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Unit Entity",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Entity Unit Model',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Entity Unit Model",
+                "ordering": ["-created"],
+                "abstract": False,
             },
             bases=(django_ledger.io.io_core.IOMixIn, models.Model),
         ),
         migrations.CreateModel(
-            name='EstimateModel',
+            name="EstimateModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('markdown_notes', models.TextField(blank=True, null=True, verbose_name='Markdown Notes')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('estimate_number', models.SlugField(editable=False, max_length=20, verbose_name='Estimate Number')),
-                ('terms', models.CharField(
-                    choices=[('fixed', 'Fixed Price'), ('target', 'Target Price'), ('t&m', 'Time & Materials'),
-                             ('other', 'Other')], max_length=10, verbose_name='Contract Terms')),
-                ('title', models.CharField(max_length=250, validators=[
-                    django.core.validators.MinLengthValidator(limit_value=5,
-                                                              message='PO Title length must be greater than 5')],
-                                           verbose_name='Customer Estimate Title')),
-                ('status', models.CharField(
-                    choices=[('draft', 'Draft'), ('in_review', 'In Review'), ('approved', 'Approved'),
-                             ('completed', 'Completed'), ('void', 'Void'), ('canceled', 'Canceled')], default='draft',
-                    max_length=10, verbose_name='Customer Estimate Status')),
-                ('date_draft', models.DateField(blank=True, null=True, verbose_name='Date Draft')),
-                ('date_in_review', models.DateField(blank=True, null=True, verbose_name='Date In Review')),
-                ('date_approved', models.DateField(blank=True, null=True, verbose_name='Date Approved')),
-                ('date_completed', models.DateField(blank=True, null=True, verbose_name='Date Completed')),
-                ('date_canceled', models.DateField(blank=True, null=True, verbose_name='Date Canceled')),
-                ('date_void', models.DateField(blank=True, null=True, verbose_name='Date Void')),
-                ('revenue_estimate', models.DecimalField(decimal_places=2, default=Decimal('0.00'),
-                                                         help_text='Estimated cost to complete the quoted work.',
-                                                         max_digits=20,
-                                                         validators=[django.core.validators.MinValueValidator(0)],
-                                                         verbose_name='Total revenue estimate')),
-                ('labor_estimate', models.DecimalField(decimal_places=2, default=Decimal('0.00'),
-                                                       help_text='Estimated labor cost to complete the quoted work.',
-                                                       max_digits=20,
-                                                       validators=[django.core.validators.MinValueValidator(0)],
-                                                       verbose_name='Labor Cost of labor estimate')),
-                ('material_estimate', models.DecimalField(decimal_places=2, default=0.0,
-                                                          help_text='Estimated material cost to complete the quoted work.',
-                                                          max_digits=20,
-                                                          validators=[django.core.validators.MinValueValidator(0)],
-                                                          verbose_name='Material Cost Estimate')),
-                ('equipment_estimate', models.DecimalField(decimal_places=2, default=Decimal('0.00'),
-                                                           help_text='Estimated equipment cost to complete the quoted work.',
-                                                           max_digits=20,
-                                                           validators=[django.core.validators.MinValueValidator(0)],
-                                                           verbose_name='Equipment Cost Estimate')),
-                ('other_estimate', models.DecimalField(decimal_places=2, default=Decimal('0.00'),
-                                                       help_text='Estimated equipment cost to complete the quoted work.',
-                                                       max_digits=20,
-                                                       validators=[django.core.validators.MinValueValidator(0)],
-                                                       verbose_name='Other Cost Estimate')),
-                ('customer',
-                 models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='django_ledger.customermodel',
-                                   verbose_name='Customer')),
-                ('entity', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                             to='django_ledger.entitymodel', verbose_name='Entity Model')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "markdown_notes",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Markdown Notes"
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "estimate_number",
+                    models.SlugField(
+                        editable=False, max_length=20, verbose_name="Estimate Number"
+                    ),
+                ),
+                (
+                    "terms",
+                    models.CharField(
+                        choices=[
+                            ("fixed", "Fixed Price"),
+                            ("target", "Target Price"),
+                            ("t&m", "Time & Materials"),
+                            ("other", "Other"),
+                        ],
+                        max_length=10,
+                        verbose_name="Contract Terms",
+                    ),
+                ),
+                (
+                    "title",
+                    models.CharField(
+                        max_length=250,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                limit_value=5,
+                                message="PO Title length must be greater than 5",
+                            )
+                        ],
+                        verbose_name="Customer Estimate Title",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("in_review", "In Review"),
+                            ("approved", "Approved"),
+                            ("completed", "Completed"),
+                            ("void", "Void"),
+                            ("canceled", "Canceled"),
+                        ],
+                        default="draft",
+                        max_length=10,
+                        verbose_name="Customer Estimate Status",
+                    ),
+                ),
+                (
+                    "date_draft",
+                    models.DateField(blank=True, null=True, verbose_name="Date Draft"),
+                ),
+                (
+                    "date_in_review",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Date In Review"
+                    ),
+                ),
+                (
+                    "date_approved",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Date Approved"
+                    ),
+                ),
+                (
+                    "date_completed",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Date Completed"
+                    ),
+                ),
+                (
+                    "date_canceled",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Date Canceled"
+                    ),
+                ),
+                (
+                    "date_void",
+                    models.DateField(blank=True, null=True, verbose_name="Date Void"),
+                ),
+                (
+                    "revenue_estimate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.00"),
+                        help_text="Estimated cost to complete the quoted work.",
+                        max_digits=20,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Total revenue estimate",
+                    ),
+                ),
+                (
+                    "labor_estimate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.00"),
+                        help_text="Estimated labor cost to complete the quoted work.",
+                        max_digits=20,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Labor Cost of labor estimate",
+                    ),
+                ),
+                (
+                    "material_estimate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0.0,
+                        help_text="Estimated material cost to complete the quoted work.",
+                        max_digits=20,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Material Cost Estimate",
+                    ),
+                ),
+                (
+                    "equipment_estimate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.00"),
+                        help_text="Estimated equipment cost to complete the quoted work.",
+                        max_digits=20,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Equipment Cost Estimate",
+                    ),
+                ),
+                (
+                    "other_estimate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.00"),
+                        help_text="Estimated equipment cost to complete the quoted work.",
+                        max_digits=20,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Other Cost Estimate",
+                    ),
+                ),
+                (
+                    "customer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.customermodel",
+                        verbose_name="Customer",
+                    ),
+                ),
+                (
+                    "entity",
+                    models.ForeignKey(
+                        editable=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Entity Model",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Customer Job',
-                'verbose_name_plural': 'Customer Jobs',
-                'ordering': ['-updated'],
-                'abstract': False,
+                "verbose_name": "Customer Job",
+                "verbose_name_plural": "Customer Jobs",
+                "ordering": ["-updated"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ImportJobModel',
+            name="ImportJobModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('description', models.CharField(max_length=200, verbose_name='Description')),
-                ('completed', models.BooleanField(default=False, verbose_name='Import Job Completed')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "description",
+                    models.CharField(max_length=200, verbose_name="Description"),
+                ),
+                (
+                    "completed",
+                    models.BooleanField(
+                        default=False, verbose_name="Import Job Completed"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Import Job Model',
-                'abstract': False,
+                "verbose_name": "Import Job Model",
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='InvoiceModel',
+            name="InvoiceModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('amount_due',
-                 models.DecimalField(decimal_places=2, default=0, max_digits=20, verbose_name='Amount Due')),
-                ('amount_paid', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Paid')),
-                ('amount_receivable', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Receivable')),
-                ('amount_unearned', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Unearned')),
-                ('amount_earned', models.DecimalField(decimal_places=2, default=0, max_digits=20, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)], verbose_name='Amount Earned')),
-                ('accrue', models.BooleanField(default=False, verbose_name='Accrue')),
-                ('progress', models.DecimalField(decimal_places=2, default=0, max_digits=3,
-                                                 validators=[django.core.validators.MinValueValidator(limit_value=0),
-                                                             django.core.validators.MaxValueValidator(limit_value=1)],
-                                                 verbose_name='Progress Amount')),
-                ('terms', models.CharField(
-                    choices=[('on_receipt', 'Due On Receipt'), ('net_30', 'Net 30 Days'), ('net_60', 'Net 60 Days'),
-                             ('net_90', 'Net 90 Days')], default='on_receipt', max_length=10, verbose_name='Terms')),
-                ('date_due', models.DateField(blank=True, null=True, verbose_name='Due Date')),
-                ('markdown_notes', models.TextField(blank=True, null=True, verbose_name='Markdown Notes')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('invoice_number', models.SlugField(editable=False, max_length=20, verbose_name='Invoice Number')),
-                ('invoice_status', models.CharField(
-                    choices=[('draft', 'Draft'), ('in_review', 'In Review'), ('approved', 'Approved'), ('paid', 'Paid'),
-                             ('void', 'Void'), ('canceled', 'Canceled')], default='draft', max_length=10,
-                    verbose_name='Invoice Status')),
-                ('additional_info',
-                 models.JSONField(blank=True, default=dict, null=True, verbose_name='Invoice Additional Info')),
-                ('date_draft', models.DateField(blank=True, null=True, verbose_name='Draft Date')),
-                ('date_in_review', models.DateField(blank=True, null=True, verbose_name='In Review Date')),
-                ('date_approved', models.DateField(blank=True, null=True, verbose_name='Approved Date')),
-                ('date_paid', models.DateField(blank=True, null=True, verbose_name='Paid Date')),
-                ('date_void', models.DateField(blank=True, null=True, verbose_name='Void Date')),
-                ('date_canceled', models.DateField(blank=True, null=True, verbose_name='Canceled Date')),
-                ('cash_account',
-                 models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, related_name='invoice_cash_account',
-                                   to='django_ledger.accountmodel', verbose_name='Cash Account')),
-                ('ce_model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                               to='django_ledger.estimatemodel',
-                                               verbose_name='Associated Customer Job/Estimate')),
-                ('customer',
-                 models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='django_ledger.customermodel',
-                                   verbose_name='Customer')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "amount_due",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        verbose_name="Amount Due",
+                    ),
+                ),
+                (
+                    "amount_paid",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Paid",
+                    ),
+                ),
+                (
+                    "amount_receivable",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Receivable",
+                    ),
+                ),
+                (
+                    "amount_unearned",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Unearned",
+                    ),
+                ),
+                (
+                    "amount_earned",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                        verbose_name="Amount Earned",
+                    ),
+                ),
+                ("accrue", models.BooleanField(default=False, verbose_name="Accrue")),
+                (
+                    "progress",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=3,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0),
+                            django.core.validators.MaxValueValidator(limit_value=1),
+                        ],
+                        verbose_name="Progress Amount",
+                    ),
+                ),
+                (
+                    "terms",
+                    models.CharField(
+                        choices=[
+                            ("on_receipt", "Due On Receipt"),
+                            ("net_30", "Net 30 Days"),
+                            ("net_60", "Net 60 Days"),
+                            ("net_90", "Net 90 Days"),
+                        ],
+                        default="on_receipt",
+                        max_length=10,
+                        verbose_name="Terms",
+                    ),
+                ),
+                (
+                    "date_due",
+                    models.DateField(blank=True, null=True, verbose_name="Due Date"),
+                ),
+                (
+                    "markdown_notes",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Markdown Notes"
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "invoice_number",
+                    models.SlugField(
+                        editable=False, max_length=20, verbose_name="Invoice Number"
+                    ),
+                ),
+                (
+                    "invoice_status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("in_review", "In Review"),
+                            ("approved", "Approved"),
+                            ("paid", "Paid"),
+                            ("void", "Void"),
+                            ("canceled", "Canceled"),
+                        ],
+                        default="draft",
+                        max_length=10,
+                        verbose_name="Invoice Status",
+                    ),
+                ),
+                (
+                    "additional_info",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        null=True,
+                        verbose_name="Invoice Additional Info",
+                    ),
+                ),
+                (
+                    "date_draft",
+                    models.DateField(blank=True, null=True, verbose_name="Draft Date"),
+                ),
+                (
+                    "date_in_review",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="In Review Date"
+                    ),
+                ),
+                (
+                    "date_approved",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Approved Date"
+                    ),
+                ),
+                (
+                    "date_paid",
+                    models.DateField(blank=True, null=True, verbose_name="Paid Date"),
+                ),
+                (
+                    "date_void",
+                    models.DateField(blank=True, null=True, verbose_name="Void Date"),
+                ),
+                (
+                    "date_canceled",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Canceled Date"
+                    ),
+                ),
+                (
+                    "cash_account",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="invoice_cash_account",
+                        to="django_ledger.accountmodel",
+                        verbose_name="Cash Account",
+                    ),
+                ),
+                (
+                    "ce_model",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.estimatemodel",
+                        verbose_name="Associated Customer Job/Estimate",
+                    ),
+                ),
+                (
+                    "customer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.customermodel",
+                        verbose_name="Customer",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Invoice',
-                'verbose_name_plural': 'Invoices',
-                'ordering': ['-updated'],
-                'abstract': False,
+                "verbose_name": "Invoice",
+                "verbose_name_plural": "Invoices",
+                "ordering": ["-updated"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ItemModel',
+            name="ItemModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('path', models.CharField(max_length=255, unique=True)),
-                ('depth', models.PositiveIntegerField()),
-                ('numchild', models.PositiveIntegerField(default=0)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=100, verbose_name='Item Name')),
-                ('item_type', models.CharField(blank=True,
-                                               choices=[('L', 'Labor'), ('M', 'Material'), ('E', 'Equipment'),
-                                                        ('S', 'Lump Sum'), ('O', 'Other')], max_length=1, null=True)),
-                ('sku', models.CharField(blank=True, max_length=50, null=True, verbose_name='SKU Code')),
-                ('upc', models.CharField(blank=True, max_length=50, null=True, verbose_name='UPC Code')),
-                ('item_id', models.CharField(blank=True, max_length=50, null=True, verbose_name='Internal ID')),
-                ('item_number', models.CharField(editable=False, max_length=30, verbose_name='Item Number')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Is Active')),
-                ('default_amount', models.DecimalField(decimal_places=2, default=0, max_digits=20,
-                                                       validators=[django.core.validators.MinValueValidator(0)],
-                                                       verbose_name='Default monetary value per unit of measure')),
-                ('for_inventory', models.BooleanField(help_text='It is an item you require for your inventory.',
-                                                      verbose_name='Is an item for inventory')),
-                ('is_product_or_service',
-                 models.BooleanField(help_text='Is a product or service you sell or provide to customers.',
-                                     verbose_name='Is a product or service.')),
-                ('sold_as_unit', models.BooleanField(default=False)),
-                ('inventory_received', models.DecimalField(blank=True, decimal_places=3, max_digits=20, null=True,
-                                                           verbose_name='Total inventory received.')),
-                ('inventory_received_value', models.DecimalField(blank=True, decimal_places=2, max_digits=20, null=True,
-                                                                 verbose_name='Total value of inventory received.')),
-                ('additional_info',
-                 models.JSONField(blank=True, default=dict, null=True, verbose_name='Item Additional Info')),
-                ('cogs_account', models.ForeignKey(blank=True,
-                                                   help_text='COGS account where cost will be recognized on Income Statement.',
-                                                   null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                   related_name='item_cogs_account', to='django_ledger.accountmodel',
-                                                   verbose_name='COGS Account')),
-                ('earnings_account', models.ForeignKey(blank=True,
-                                                       help_text='Earnings account where revenue will be recognized on Income Statement.',
-                                                       null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                       related_name='item_earnings_account',
-                                                       to='django_ledger.accountmodel',
-                                                       verbose_name='Earnings Account')),
-                ('entity', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                             to='django_ledger.entitymodel', verbose_name='Item Entity')),
-                ('expense_account', models.ForeignKey(blank=True,
-                                                      help_text='Expense account where cost will be recognized on Income Statement.',
-                                                      null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                      related_name='item_expense_account',
-                                                      to='django_ledger.accountmodel', verbose_name='Expense Account')),
-                ('inventory_account',
-                 models.ForeignKey(blank=True, help_text='Inventory account where cost will be capitalized.', null=True,
-                                   on_delete=django.db.models.deletion.RESTRICT, related_name='item_inventory_account',
-                                   to='django_ledger.accountmodel', verbose_name='Inventory Account')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                ("path", models.CharField(max_length=255, unique=True)),
+                ("depth", models.PositiveIntegerField()),
+                ("numchild", models.PositiveIntegerField(default=0)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=100, verbose_name="Item Name")),
+                (
+                    "item_type",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("L", "Labor"),
+                            ("M", "Material"),
+                            ("E", "Equipment"),
+                            ("S", "Lump Sum"),
+                            ("O", "Other"),
+                        ],
+                        max_length=1,
+                        null=True,
+                    ),
+                ),
+                (
+                    "sku",
+                    models.CharField(
+                        blank=True, max_length=50, null=True, verbose_name="SKU Code"
+                    ),
+                ),
+                (
+                    "upc",
+                    models.CharField(
+                        blank=True, max_length=50, null=True, verbose_name="UPC Code"
+                    ),
+                ),
+                (
+                    "item_id",
+                    models.CharField(
+                        blank=True, max_length=50, null=True, verbose_name="Internal ID"
+                    ),
+                ),
+                (
+                    "item_number",
+                    models.CharField(
+                        editable=False, max_length=30, verbose_name="Item Number"
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(default=True, verbose_name="Is Active"),
+                ),
+                (
+                    "default_amount",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Default monetary value per unit of measure",
+                    ),
+                ),
+                (
+                    "for_inventory",
+                    models.BooleanField(
+                        help_text="It is an item you require for your inventory.",
+                        verbose_name="Is an item for inventory",
+                    ),
+                ),
+                (
+                    "is_product_or_service",
+                    models.BooleanField(
+                        help_text="Is a product or service you sell or provide to customers.",
+                        verbose_name="Is a product or service.",
+                    ),
+                ),
+                ("sold_as_unit", models.BooleanField(default=False)),
+                (
+                    "inventory_received",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=3,
+                        max_digits=20,
+                        null=True,
+                        verbose_name="Total inventory received.",
+                    ),
+                ),
+                (
+                    "inventory_received_value",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=20,
+                        null=True,
+                        verbose_name="Total value of inventory received.",
+                    ),
+                ),
+                (
+                    "additional_info",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        null=True,
+                        verbose_name="Item Additional Info",
+                    ),
+                ),
+                (
+                    "cogs_account",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="COGS account where cost will be recognized on Income Statement.",
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="item_cogs_account",
+                        to="django_ledger.accountmodel",
+                        verbose_name="COGS Account",
+                    ),
+                ),
+                (
+                    "earnings_account",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Earnings account where revenue will be recognized on Income Statement.",
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="item_earnings_account",
+                        to="django_ledger.accountmodel",
+                        verbose_name="Earnings Account",
+                    ),
+                ),
+                (
+                    "entity",
+                    models.ForeignKey(
+                        editable=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Item Entity",
+                    ),
+                ),
+                (
+                    "expense_account",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Expense account where cost will be recognized on Income Statement.",
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="item_expense_account",
+                        to="django_ledger.accountmodel",
+                        verbose_name="Expense Account",
+                    ),
+                ),
+                (
+                    "inventory_account",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Inventory account where cost will be capitalized.",
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="item_inventory_account",
+                        to="django_ledger.accountmodel",
+                        verbose_name="Inventory Account",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='ItemTransactionModel',
+            name="ItemTransactionModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('quantity', models.FloatField(blank=True, null=True,
-                                               validators=[django.core.validators.MinValueValidator(limit_value=0.0)],
-                                               verbose_name='Quantity')),
-                ('unit_cost', models.FloatField(blank=True, null=True,
-                                                validators=[django.core.validators.MinValueValidator(limit_value=0.0)],
-                                                verbose_name='Cost Per Unit')),
-                ('total_amount',
-                 models.DecimalField(blank=True, decimal_places=2, editable=False, max_digits=20, null=True,
-                                     validators=[django.core.validators.MinValueValidator(limit_value=0.0)],
-                                     verbose_name='Total Amount QTY x UnitCost')),
-                ('po_quantity',
-                 models.FloatField(blank=True, help_text='Authorized item quantity for purchasing.', null=True,
-                                   validators=[django.core.validators.MinValueValidator(limit_value=0.0)],
-                                   verbose_name='PO Quantity')),
-                ('po_unit_cost', models.FloatField(blank=True, help_text='Purchase Order unit cost.', null=True,
-                                                   validators=[
-                                                       django.core.validators.MinValueValidator(limit_value=0.0)],
-                                                   verbose_name='PO Unit Cost')),
-                ('po_total_amount', models.DecimalField(blank=True, decimal_places=2, editable=False,
-                                                        help_text='Maximum authorized cost per Purchase Order.',
-                                                        max_digits=20, null=True, validators=[
-                        django.core.validators.MinValueValidator(limit_value=0.0)],
-                                                        verbose_name='Authorized maximum item cost per Purchase Order')),
-                ('po_item_status', models.CharField(blank=True,
-                                                    choices=[('not_ordered', 'Not Ordered'), ('ordered', 'Ordered'),
-                                                             ('in_transit', 'In Transit'), ('received', 'Received'),
-                                                             ('cancelled', 'Canceled')], max_length=15, null=True,
-                                                    verbose_name='PO Item Status')),
-                ('ce_quantity', models.FloatField(blank=True, null=True, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0.0)],
-                                                  verbose_name='Estimated/Contract Quantity')),
-                ('ce_unit_cost_estimate', models.FloatField(blank=True, null=True, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0.0)],
-                                                            verbose_name='Estimate/Contract Cost per Unit.')),
-                ('ce_cost_estimate',
-                 models.DecimalField(blank=True, decimal_places=2, editable=False, max_digits=20, null=True,
-                                     validators=[django.core.validators.MinValueValidator(limit_value=0.0)],
-                                     verbose_name='Total Estimate/Contract Cost.')),
-                ('ce_unit_revenue_estimate', models.FloatField(blank=True, null=True, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0.0)],
-                                                               verbose_name='Estimate/Contract Revenue per Unit.')),
-                ('ce_revenue_estimate',
-                 models.DecimalField(blank=True, decimal_places=2, editable=False, max_digits=20, null=True,
-                                     validators=[django.core.validators.MinValueValidator(limit_value=0.0)],
-                                     verbose_name='Total Estimate/Contract Revenue.')),
-                ('item_notes', models.CharField(blank=True, max_length=400, null=True, verbose_name='Description')),
-                ('bill_model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                 to='django_ledger.billmodel', verbose_name='Bill Model')),
-                ('ce_model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                               to='django_ledger.estimatemodel', verbose_name='Customer Estimate')),
-                ('entity_unit', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                  to='django_ledger.entityunitmodel',
-                                                  verbose_name='Associated Entity Unit')),
-                ('invoice_model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                    to='django_ledger.invoicemodel', verbose_name='Invoice Model')),
-                ('item_model',
-                 models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='django_ledger.itemmodel',
-                                   verbose_name='Item Model')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "quantity",
+                    models.FloatField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Quantity",
+                    ),
+                ),
+                (
+                    "unit_cost",
+                    models.FloatField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Cost Per Unit",
+                    ),
+                ),
+                (
+                    "total_amount",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        editable=False,
+                        max_digits=20,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Total Amount QTY x UnitCost",
+                    ),
+                ),
+                (
+                    "po_quantity",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Authorized item quantity for purchasing.",
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="PO Quantity",
+                    ),
+                ),
+                (
+                    "po_unit_cost",
+                    models.FloatField(
+                        blank=True,
+                        help_text="Purchase Order unit cost.",
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="PO Unit Cost",
+                    ),
+                ),
+                (
+                    "po_total_amount",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        editable=False,
+                        help_text="Maximum authorized cost per Purchase Order.",
+                        max_digits=20,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Authorized maximum item cost per Purchase Order",
+                    ),
+                ),
+                (
+                    "po_item_status",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("not_ordered", "Not Ordered"),
+                            ("ordered", "Ordered"),
+                            ("in_transit", "In Transit"),
+                            ("received", "Received"),
+                            ("cancelled", "Canceled"),
+                        ],
+                        max_length=15,
+                        null=True,
+                        verbose_name="PO Item Status",
+                    ),
+                ),
+                (
+                    "ce_quantity",
+                    models.FloatField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Estimated/Contract Quantity",
+                    ),
+                ),
+                (
+                    "ce_unit_cost_estimate",
+                    models.FloatField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Estimate/Contract Cost per Unit.",
+                    ),
+                ),
+                (
+                    "ce_cost_estimate",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        editable=False,
+                        max_digits=20,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Total Estimate/Contract Cost.",
+                    ),
+                ),
+                (
+                    "ce_unit_revenue_estimate",
+                    models.FloatField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Estimate/Contract Revenue per Unit.",
+                    ),
+                ),
+                (
+                    "ce_revenue_estimate",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        editable=False,
+                        max_digits=20,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0.0)
+                        ],
+                        verbose_name="Total Estimate/Contract Revenue.",
+                    ),
+                ),
+                (
+                    "item_notes",
+                    models.CharField(
+                        blank=True,
+                        max_length=400,
+                        null=True,
+                        verbose_name="Description",
+                    ),
+                ),
+                (
+                    "bill_model",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.billmodel",
+                        verbose_name="Bill Model",
+                    ),
+                ),
+                (
+                    "ce_model",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.estimatemodel",
+                        verbose_name="Customer Estimate",
+                    ),
+                ),
+                (
+                    "entity_unit",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.entityunitmodel",
+                        verbose_name="Associated Entity Unit",
+                    ),
+                ),
+                (
+                    "invoice_model",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.invoicemodel",
+                        verbose_name="Invoice Model",
+                    ),
+                ),
+                (
+                    "item_model",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.itemmodel",
+                        verbose_name="Item Model",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='JournalEntryModel',
+            name="JournalEntryModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('je_number', models.SlugField(editable=False, max_length=20, verbose_name='Journal Entry Number')),
-                ('timestamp', models.DateTimeField(verbose_name='Date')),
-                ('description', models.CharField(blank=True, max_length=70, null=True, verbose_name='Description')),
-                ('activity', models.CharField(blank=True, choices=[('Operating', (('op', 'Operating'),)), ('Investing',
-                                                                                                           (('inv_ppe',
-                                                                                                             'Purchase/Disposition of PPE'),
-                                                                                                            (
-                                                                                                            'inv_securities',
-                                                                                                            'Purchase/Disposition of Securities'),
-                                                                                                            ('inv',
-                                                                                                             'Investing Activity Other'))),
-                                                                   ('Financing', (
-                                                                   ('fin_std', 'Payoff of Short Term Debt'),
-                                                                   ('fin_ltd', 'Payoff of Long Term Debt'), (
-                                                                   'fin_equity',
-                                                                   'Issuance of Common Stock, Preferred Stock or Capital Contribution'),
-                                                                   ('fin_dividends',
-                                                                    'Dividends or Distributions to Shareholders'),
-                                                                   ('fin', 'Financing Activity Other')))],
-                                              editable=False, max_length=20, null=True, verbose_name='Activity')),
-                ('origin', models.CharField(blank=True, max_length=30, null=True, verbose_name='Origin')),
-                ('posted', models.BooleanField(default=False, verbose_name='Posted')),
-                ('locked', models.BooleanField(default=False, verbose_name='Locked')),
-                ('entity_unit', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                  to='django_ledger.entityunitmodel',
-                                                  verbose_name='Associated Entity Unit')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "je_number",
+                    models.SlugField(
+                        editable=False,
+                        max_length=20,
+                        verbose_name="Journal Entry Number",
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(verbose_name="Date")),
+                (
+                    "description",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="Description"
+                    ),
+                ),
+                (
+                    "activity",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("Operating", (("op", "Operating"),)),
+                            (
+                                "Investing",
+                                (
+                                    ("inv_ppe", "Purchase/Disposition of PPE"),
+                                    (
+                                        "inv_securities",
+                                        "Purchase/Disposition of Securities",
+                                    ),
+                                    ("inv", "Investing Activity Other"),
+                                ),
+                            ),
+                            (
+                                "Financing",
+                                (
+                                    ("fin_std", "Payoff of Short Term Debt"),
+                                    ("fin_ltd", "Payoff of Long Term Debt"),
+                                    (
+                                        "fin_equity",
+                                        "Issuance of Common Stock, Preferred Stock or Capital Contribution",
+                                    ),
+                                    (
+                                        "fin_dividends",
+                                        "Dividends or Distributions to Shareholders",
+                                    ),
+                                    ("fin", "Financing Activity Other"),
+                                ),
+                            ),
+                        ],
+                        editable=False,
+                        max_length=20,
+                        null=True,
+                        verbose_name="Activity",
+                    ),
+                ),
+                (
+                    "origin",
+                    models.CharField(
+                        blank=True, max_length=30, null=True, verbose_name="Origin"
+                    ),
+                ),
+                ("posted", models.BooleanField(default=False, verbose_name="Posted")),
+                ("locked", models.BooleanField(default=False, verbose_name="Locked")),
+                (
+                    "entity_unit",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.entityunitmodel",
+                        verbose_name="Associated Entity Unit",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Journal Entry',
-                'verbose_name_plural': 'Journal Entries',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Journal Entry",
+                "verbose_name_plural": "Journal Entries",
+                "ordering": ["-created"],
+                "abstract": False,
             },
             managers=[
-                ('on_coa', django.db.models.manager.Manager()),
+                ("on_coa", django.db.models.manager.Manager()),
             ],
         ),
         migrations.CreateModel(
-            name='VendorModel',
+            name="VendorModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('address_1', models.CharField(max_length=70, verbose_name='Address Line 1')),
-                ('address_2', models.CharField(blank=True, max_length=70, null=True, verbose_name='Address Line 2')),
-                ('city', models.CharField(blank=True, max_length=70, null=True, verbose_name='City')),
-                ('state', models.CharField(blank=True, max_length=70, null=True, verbose_name='State/Province')),
-                ('zip_code', models.CharField(blank=True, max_length=20, null=True, verbose_name='Zip Code')),
-                ('country', models.CharField(blank=True, max_length=70, null=True, verbose_name='Country')),
-                ('email', models.EmailField(blank=True, max_length=254, null=True, verbose_name='Email')),
-                ('website', models.URLField(blank=True, null=True, verbose_name='Website')),
-                ('phone', models.CharField(blank=True, max_length=30, null=True, verbose_name='Phone Number')),
-                ('account_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
-                                                          message='Only digits allowed')],
-                                                    verbose_name='Account Number')),
-                ('routing_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
-                                                          message='Only digits allowed')],
-                                                    verbose_name='Routing Number')),
-                ('aba_number', models.CharField(blank=True, max_length=30, null=True, verbose_name='ABA Number')),
-                ('swift_number', models.CharField(blank=True, max_length=30, null=True, verbose_name='SWIFT Number')),
-                ('account_type',
-                 models.CharField(choices=[('checking', 'Checking'), ('savings', 'Savings')], default='checking',
-                                  max_length=10, verbose_name='Account Type')),
-                ('tax_id_number',
-                 models.CharField(blank=True, max_length=30, null=True, verbose_name='Tax Registration Number')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('vendor_number', models.CharField(blank=True, max_length=30, null=True)),
-                ('vendor_name', models.CharField(max_length=100)),
-                ('description', models.TextField()),
-                ('active', models.BooleanField(default=True)),
-                ('hidden', models.BooleanField(default=False)),
-                ('additional_info', models.JSONField(blank=True, default=dict, null=True)),
-                ('entity_model',
-                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel',
-                                   verbose_name='Vendor Entity')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "address_1",
+                    models.CharField(max_length=70, verbose_name="Address Line 1"),
+                ),
+                (
+                    "address_2",
+                    models.CharField(
+                        blank=True,
+                        max_length=70,
+                        null=True,
+                        verbose_name="Address Line 2",
+                    ),
+                ),
+                (
+                    "city",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="City"
+                    ),
+                ),
+                (
+                    "state",
+                    models.CharField(
+                        blank=True,
+                        max_length=70,
+                        null=True,
+                        verbose_name="State/Province",
+                    ),
+                ),
+                (
+                    "zip_code",
+                    models.CharField(
+                        blank=True, max_length=20, null=True, verbose_name="Zip Code"
+                    ),
+                ),
+                (
+                    "country",
+                    models.CharField(
+                        blank=True, max_length=70, null=True, verbose_name="Country"
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, null=True, verbose_name="Email"
+                    ),
+                ),
+                (
+                    "website",
+                    models.URLField(blank=True, null=True, verbose_name="Website"),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        verbose_name="Phone Number",
+                    ),
+                ),
+                (
+                    "account_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                re.compile("^\\d+(?:\\d+)*\\Z"),
+                                code="invalid",
+                                message="Only digits allowed",
+                            )
+                        ],
+                        verbose_name="Account Number",
+                    ),
+                ),
+                (
+                    "routing_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                re.compile("^\\d+(?:\\d+)*\\Z"),
+                                code="invalid",
+                                message="Only digits allowed",
+                            )
+                        ],
+                        verbose_name="Routing Number",
+                    ),
+                ),
+                (
+                    "aba_number",
+                    models.CharField(
+                        blank=True, max_length=30, null=True, verbose_name="ABA Number"
+                    ),
+                ),
+                (
+                    "swift_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        verbose_name="SWIFT Number",
+                    ),
+                ),
+                (
+                    "account_type",
+                    models.CharField(
+                        choices=[("checking", "Checking"), ("savings", "Savings")],
+                        default="checking",
+                        max_length=10,
+                        verbose_name="Account Type",
+                    ),
+                ),
+                (
+                    "tax_id_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        verbose_name="Tax Registration Number",
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "vendor_number",
+                    models.CharField(blank=True, max_length=30, null=True),
+                ),
+                ("vendor_name", models.CharField(max_length=100)),
+                ("description", models.TextField()),
+                ("active", models.BooleanField(default=True)),
+                ("hidden", models.BooleanField(default=False)),
+                (
+                    "additional_info",
+                    models.JSONField(blank=True, default=dict, null=True),
+                ),
+                (
+                    "entity_model",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Vendor Entity",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Vendor',
-                'abstract': False,
+                "verbose_name": "Vendor",
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='UnitOfMeasureModel',
+            name="UnitOfMeasureModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=50, verbose_name='Unit of Measure Name')),
-                ('unit_abbr', models.SlugField(max_length=10, verbose_name='UoM Abbreviation')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Is Active')),
-                ('entity', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                             to='django_ledger.entitymodel', verbose_name='UoM Entity')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=50, verbose_name="Unit of Measure Name"
+                    ),
+                ),
+                (
+                    "unit_abbr",
+                    models.SlugField(max_length=10, verbose_name="UoM Abbreviation"),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(default=True, verbose_name="Is Active"),
+                ),
+                (
+                    "entity",
+                    models.ForeignKey(
+                        editable=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="UoM Entity",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='TransactionModel',
+            name="TransactionModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('tx_type', models.CharField(choices=[('credit', 'Credit'), ('debit', 'Debit')], max_length=10,
-                                             verbose_name='Tx Type')),
-                ('amount', models.DecimalField(blank=True, decimal_places=2, help_text='Account of the transaction.',
-                                               max_digits=20, null=True,
-                                               validators=[django.core.validators.MinValueValidator(0)],
-                                               verbose_name='Amount')),
-                ('description',
-                 models.CharField(blank=True, help_text='A description to be included with this individual transaction',
-                                  max_length=100, null=True, verbose_name='Tx Description')),
-                ('account',
-                 models.ForeignKey(help_text='Account from Chart of Accounts to be associated with this transaction.',
-                                   on_delete=django.db.models.deletion.PROTECT, to='django_ledger.accountmodel',
-                                   verbose_name='Account')),
-                ('journal_entry',
-                 models.ForeignKey(editable=False, help_text='Journal Entry to be associated with this transaction.',
-                                   on_delete=django.db.models.deletion.PROTECT, to='django_ledger.journalentrymodel',
-                                   verbose_name='Journal Entry')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "tx_type",
+                    models.CharField(
+                        choices=[("credit", "Credit"), ("debit", "Debit")],
+                        max_length=10,
+                        verbose_name="Tx Type",
+                    ),
+                ),
+                (
+                    "amount",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        help_text="Account of the transaction.",
+                        max_digits=20,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Amount",
+                    ),
+                ),
+                (
+                    "description",
+                    models.CharField(
+                        blank=True,
+                        help_text="A description to be included with this individual transaction",
+                        max_length=100,
+                        null=True,
+                        verbose_name="Tx Description",
+                    ),
+                ),
+                (
+                    "account",
+                    models.ForeignKey(
+                        help_text="Account from Chart of Accounts to be associated with this transaction.",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="django_ledger.accountmodel",
+                        verbose_name="Account",
+                    ),
+                ),
+                (
+                    "journal_entry",
+                    models.ForeignKey(
+                        editable=False,
+                        help_text="Journal Entry to be associated with this transaction.",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="django_ledger.journalentrymodel",
+                        verbose_name="Journal Entry",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Transaction',
-                'verbose_name_plural': 'Transactions',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Transaction",
+                "verbose_name_plural": "Transactions",
+                "ordering": ["-created"],
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='StagedTransactionModel',
+            name="StagedTransactionModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('fitid', models.CharField(max_length=100)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=15)),
-                ('date_posted', models.DateField()),
-                ('name', models.CharField(blank=True, max_length=200, null=True)),
-                ('memo', models.CharField(blank=True, max_length=200, null=True)),
-                ('earnings_account',
-                 models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
-                                   to='django_ledger.accountmodel')),
-                ('import_job',
-                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.importjobmodel')),
-                ('tx', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
-                                            to='django_ledger.transactionmodel')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("fitid", models.CharField(max_length=100)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=15)),
+                ("date_posted", models.DateField()),
+                ("name", models.CharField(blank=True, max_length=200, null=True)),
+                ("memo", models.CharField(blank=True, max_length=200, null=True)),
+                (
+                    "earnings_account",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.accountmodel",
+                    ),
+                ),
+                (
+                    "import_job",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.importjobmodel",
+                    ),
+                ),
+                (
+                    "tx",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="django_ledger.transactionmodel",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Staged Transaction Model',
-                'abstract': False,
+                "verbose_name": "Staged Transaction Model",
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='PurchaseOrderModel',
+            name="PurchaseOrderModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('markdown_notes', models.TextField(blank=True, null=True, verbose_name='Markdown Notes')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('po_number', models.SlugField(editable=False, max_length=20, verbose_name='Purchase Order Number')),
-                ('po_title', models.CharField(max_length=250, validators=[
-                    django.core.validators.MinLengthValidator(limit_value=5,
-                                                              message='PO Title must be greater than 5')],
-                                              verbose_name='Purchase Order Title')),
-                ('po_status', models.CharField(
-                    choices=[('draft', 'Draft'), ('in_review', 'In Review'), ('approved', 'Approved'),
-                             ('fulfilled', 'Fulfilled'), ('canceled', 'Canceled'), ('void', 'Void')], default='draft',
-                    max_length=10)),
-                ('po_amount',
-                 models.DecimalField(decimal_places=2, default=0, max_digits=20, verbose_name='Purchase Order Amount')),
-                ('po_amount_received',
-                 models.DecimalField(decimal_places=2, default=0, max_digits=20, verbose_name='Received Amount')),
-                ('date_draft', models.DateField(blank=True, null=True, verbose_name='Draft Date')),
-                ('date_in_review', models.DateField(blank=True, null=True, verbose_name='In Review Date')),
-                ('date_approved', models.DateField(blank=True, null=True, verbose_name='Approved Date')),
-                ('date_void', models.DateField(blank=True, null=True, verbose_name='Void Date')),
-                ('date_fulfilled', models.DateField(blank=True, null=True, verbose_name='Fulfillment Date')),
-                ('date_canceled', models.DateField(blank=True, null=True, verbose_name='Canceled Date')),
-                ('ce_model', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                               to='django_ledger.estimatemodel',
-                                               verbose_name='Associated Customer Job/Estimate')),
-                ('entity',
-                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel',
-                                   verbose_name='Entity')),
-                ('po_items',
-                 models.ManyToManyField(through='django_ledger.ItemTransactionModel', to='django_ledger.itemmodel',
-                                        verbose_name='Purchase Order Items')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "markdown_notes",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Markdown Notes"
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "po_number",
+                    models.SlugField(
+                        editable=False,
+                        max_length=20,
+                        verbose_name="Purchase Order Number",
+                    ),
+                ),
+                (
+                    "po_title",
+                    models.CharField(
+                        max_length=250,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                limit_value=5, message="PO Title must be greater than 5"
+                            )
+                        ],
+                        verbose_name="Purchase Order Title",
+                    ),
+                ),
+                (
+                    "po_status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("in_review", "In Review"),
+                            ("approved", "Approved"),
+                            ("fulfilled", "Fulfilled"),
+                            ("canceled", "Canceled"),
+                            ("void", "Void"),
+                        ],
+                        default="draft",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "po_amount",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        verbose_name="Purchase Order Amount",
+                    ),
+                ),
+                (
+                    "po_amount_received",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=20,
+                        verbose_name="Received Amount",
+                    ),
+                ),
+                (
+                    "date_draft",
+                    models.DateField(blank=True, null=True, verbose_name="Draft Date"),
+                ),
+                (
+                    "date_in_review",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="In Review Date"
+                    ),
+                ),
+                (
+                    "date_approved",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Approved Date"
+                    ),
+                ),
+                (
+                    "date_void",
+                    models.DateField(blank=True, null=True, verbose_name="Void Date"),
+                ),
+                (
+                    "date_fulfilled",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Fulfillment Date"
+                    ),
+                ),
+                (
+                    "date_canceled",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Canceled Date"
+                    ),
+                ),
+                (
+                    "ce_model",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.estimatemodel",
+                        verbose_name="Associated Customer Job/Estimate",
+                    ),
+                ),
+                (
+                    "entity",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Entity",
+                    ),
+                ),
+                (
+                    "po_items",
+                    models.ManyToManyField(
+                        through="django_ledger.ItemTransactionModel",
+                        to="django_ledger.itemmodel",
+                        verbose_name="Purchase Order Items",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='LedgerModel',
+            name="LedgerModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(blank=True, max_length=150, null=True, verbose_name='Ledger Name')),
-                ('posted', models.BooleanField(default=False, verbose_name='Posted Ledger')),
-                ('locked', models.BooleanField(default=False, verbose_name='Locked Ledger')),
-                ('hidden', models.BooleanField(default=False, verbose_name='Hidden Ledger')),
-                ('entity', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                             to='django_ledger.entitymodel', verbose_name='Ledger Entity')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        max_length=150,
+                        null=True,
+                        verbose_name="Ledger Name",
+                    ),
+                ),
+                (
+                    "posted",
+                    models.BooleanField(default=False, verbose_name="Posted Ledger"),
+                ),
+                (
+                    "locked",
+                    models.BooleanField(default=False, verbose_name="Locked Ledger"),
+                ),
+                (
+                    "hidden",
+                    models.BooleanField(default=False, verbose_name="Hidden Ledger"),
+                ),
+                (
+                    "entity",
+                    models.ForeignKey(
+                        editable=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Ledger Entity",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Ledger',
-                'verbose_name_plural': 'Ledgers',
-                'ordering': ['-created'],
-                'abstract': False,
+                "verbose_name": "Ledger",
+                "verbose_name_plural": "Ledgers",
+                "ordering": ["-created"],
+                "abstract": False,
             },
             bases=(models.Model, django_ledger.io.io_core.IOMixIn),
         ),
         migrations.AddField(
-            model_name='journalentrymodel',
-            name='ledger',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='journal_entries',
-                                    to='django_ledger.ledgermodel', verbose_name='Ledger'),
+            model_name="journalentrymodel",
+            name="ledger",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="journal_entries",
+                to="django_ledger.ledgermodel",
+                verbose_name="Ledger",
+            ),
         ),
         migrations.AddField(
-            model_name='itemtransactionmodel',
-            name='po_model',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    to='django_ledger.purchaseordermodel', verbose_name='Purchase Order Model'),
+            model_name="itemtransactionmodel",
+            name="po_model",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                to="django_ledger.purchaseordermodel",
+                verbose_name="Purchase Order Model",
+            ),
         ),
         migrations.AddField(
-            model_name='itemmodel',
-            name='uom',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='django_ledger.unitofmeasuremodel',
-                                    verbose_name='Unit of Measure'),
+            model_name="itemmodel",
+            name="uom",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.RESTRICT,
+                to="django_ledger.unitofmeasuremodel",
+                verbose_name="Unit of Measure",
+            ),
         ),
         migrations.AddField(
-            model_name='invoicemodel',
-            name='invoice_items',
-            field=models.ManyToManyField(through='django_ledger.ItemTransactionModel', to='django_ledger.itemmodel',
-                                         verbose_name='Invoice Items'),
+            model_name="invoicemodel",
+            name="invoice_items",
+            field=models.ManyToManyField(
+                through="django_ledger.ItemTransactionModel",
+                to="django_ledger.itemmodel",
+                verbose_name="Invoice Items",
+            ),
         ),
         migrations.AddField(
-            model_name='invoicemodel',
-            name='ledger',
-            field=models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                       to='django_ledger.ledgermodel', verbose_name='Ledger'),
+            model_name="invoicemodel",
+            name="ledger",
+            field=models.OneToOneField(
+                editable=False,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.ledgermodel",
+                verbose_name="Ledger",
+            ),
         ),
         migrations.AddField(
-            model_name='invoicemodel',
-            name='prepaid_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='invoice_prepaid_account', to='django_ledger.accountmodel',
-                                    verbose_name='Prepaid Account'),
+            model_name="invoicemodel",
+            name="prepaid_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="invoice_prepaid_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Prepaid Account",
+            ),
         ),
         migrations.AddField(
-            model_name='invoicemodel',
-            name='unearned_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='invoice_unearned_account', to='django_ledger.accountmodel',
-                                    verbose_name='Unearned Account'),
+            model_name="invoicemodel",
+            name="unearned_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="invoice_unearned_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Unearned Account",
+            ),
         ),
         migrations.AddField(
-            model_name='importjobmodel',
-            name='ledger',
-            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                    to='django_ledger.ledgermodel', verbose_name='Ledger'),
+            model_name="importjobmodel",
+            name="ledger",
+            field=models.ForeignKey(
+                editable=False,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.ledgermodel",
+                verbose_name="Ledger",
+            ),
         ),
         migrations.CreateModel(
-            name='EntityStateModel',
+            name="EntityStateModel",
             fields=[
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('fiscal_year', models.SmallIntegerField(blank=True, null=True, validators=[
-                    django.core.validators.MinValueValidator(limit_value=1900)], verbose_name='Fiscal Year')),
-                ('key', models.CharField(choices=[('je', 'Journal Entry'), ('po', 'Purchase Order'), ('bill', 'Bill'),
-                                                  ('invoice', 'Invoice'), ('estimate', 'Estimate')], max_length=10)),
-                ('sequence', models.BigIntegerField(default=0, validators=[
-                    django.core.validators.MinValueValidator(limit_value=0)])),
-                ('entity_model',
-                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel',
-                                   verbose_name='Entity Model')),
-                ('entity_unit', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                                  to='django_ledger.entityunitmodel', verbose_name='Entity Unit')),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "fiscal_year",
+                    models.SmallIntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=1900)
+                        ],
+                        verbose_name="Fiscal Year",
+                    ),
+                ),
+                (
+                    "key",
+                    models.CharField(
+                        choices=[
+                            ("je", "Journal Entry"),
+                            ("po", "Purchase Order"),
+                            ("bill", "Bill"),
+                            ("invoice", "Invoice"),
+                            ("estimate", "Estimate"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "sequence",
+                    models.BigIntegerField(
+                        default=0,
+                        validators=[
+                            django.core.validators.MinValueValidator(limit_value=0)
+                        ],
+                    ),
+                ),
+                (
+                    "entity_model",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Entity Model",
+                    ),
+                ),
+                (
+                    "entity_unit",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="django_ledger.entityunitmodel",
+                        verbose_name="Entity Unit",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='entitymanagementmodel',
-            name='entity',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='entity_permissions',
-                                    to='django_ledger.entitymodel', verbose_name='Entity'),
+            model_name="entitymanagementmodel",
+            name="entity",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="entity_permissions",
+                to="django_ledger.entitymodel",
+                verbose_name="Entity",
+            ),
         ),
         migrations.AddField(
-            model_name='entitymanagementmodel',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='entity_permissions',
-                                    to=settings.AUTH_USER_MODEL, verbose_name='Manager'),
+            model_name="entitymanagementmodel",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="entity_permissions",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Manager",
+            ),
         ),
         migrations.AddField(
-            model_name='customermodel',
-            name='entity_model',
-            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                    to='django_ledger.entitymodel', verbose_name='Customer Entity'),
+            model_name="customermodel",
+            name="entity_model",
+            field=models.ForeignKey(
+                editable=False,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.entitymodel",
+                verbose_name="Customer Entity",
+            ),
         ),
         migrations.AddField(
-            model_name='chartofaccountmodel',
-            name='entity',
-            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                    to='django_ledger.entitymodel', verbose_name='Entity'),
+            model_name="chartofaccountmodel",
+            name="entity",
+            field=models.ForeignKey(
+                editable=False,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.entitymodel",
+                verbose_name="Entity",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='bill_items',
-            field=models.ManyToManyField(through='django_ledger.ItemTransactionModel', to='django_ledger.itemmodel',
-                                         verbose_name='Bill Items'),
+            model_name="billmodel",
+            name="bill_items",
+            field=models.ManyToManyField(
+                through="django_ledger.ItemTransactionModel",
+                to="django_ledger.itemmodel",
+                verbose_name="Bill Items",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='cash_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='None_cash_account', to='django_ledger.accountmodel',
-                                    verbose_name='Cash Account'),
+            model_name="billmodel",
+            name="cash_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="None_cash_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Cash Account",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='ce_model',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    to='django_ledger.estimatemodel', verbose_name='Associated Customer Job/Estimate'),
+            model_name="billmodel",
+            name="ce_model",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                to="django_ledger.estimatemodel",
+                verbose_name="Associated Customer Job/Estimate",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='ledger',
-            field=models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                       to='django_ledger.ledgermodel', verbose_name='Ledger'),
+            model_name="billmodel",
+            name="ledger",
+            field=models.OneToOneField(
+                editable=False,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.ledgermodel",
+                verbose_name="Ledger",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='prepaid_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='None_prepaid_account', to='django_ledger.accountmodel',
-                                    verbose_name='Prepaid Account'),
+            model_name="billmodel",
+            name="prepaid_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="None_prepaid_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Prepaid Account",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='unearned_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
-                                    related_name='None_unearned_account', to='django_ledger.accountmodel',
-                                    verbose_name='Unearned Account'),
+            model_name="billmodel",
+            name="unearned_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.RESTRICT,
+                related_name="None_unearned_account",
+                to="django_ledger.accountmodel",
+                verbose_name="Unearned Account",
+            ),
         ),
         migrations.AddField(
-            model_name='billmodel',
-            name='vendor',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.vendormodel',
-                                    verbose_name='Vendor'),
+            model_name="billmodel",
+            name="vendor",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.vendormodel",
+                verbose_name="Vendor",
+            ),
         ),
         migrations.CreateModel(
-            name='BankAccountModel',
+            name="BankAccountModel",
             fields=[
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True, null=True)),
-                ('account_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
-                                                          message='Only digits allowed')],
-                                                    verbose_name='Account Number')),
-                ('routing_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
-                                                          message='Only digits allowed')],
-                                                    verbose_name='Routing Number')),
-                ('aba_number', models.CharField(blank=True, max_length=30, null=True, verbose_name='ABA Number')),
-                ('swift_number', models.CharField(blank=True, max_length=30, null=True, verbose_name='SWIFT Number')),
-                ('account_type',
-                 models.CharField(choices=[('checking', 'Checking'), ('savings', 'Savings')], default='checking',
-                                  max_length=10, verbose_name='Account Type')),
-                ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(blank=True, max_length=150, null=True)),
-                ('active', models.BooleanField(default=False)),
-                ('hidden', models.BooleanField(default=False)),
-                ('cash_account',
-                 models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, related_name='bank_cash_account',
-                                   to='django_ledger.accountmodel', verbose_name='Cash Account')),
-                ('entity_model',
-                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel',
-                                   verbose_name='Entity Model')),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True, null=True)),
+                (
+                    "account_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                re.compile("^\\d+(?:\\d+)*\\Z"),
+                                code="invalid",
+                                message="Only digits allowed",
+                            )
+                        ],
+                        verbose_name="Account Number",
+                    ),
+                ),
+                (
+                    "routing_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                re.compile("^\\d+(?:\\d+)*\\Z"),
+                                code="invalid",
+                                message="Only digits allowed",
+                            )
+                        ],
+                        verbose_name="Routing Number",
+                    ),
+                ),
+                (
+                    "aba_number",
+                    models.CharField(
+                        blank=True, max_length=30, null=True, verbose_name="ABA Number"
+                    ),
+                ),
+                (
+                    "swift_number",
+                    models.CharField(
+                        blank=True,
+                        max_length=30,
+                        null=True,
+                        verbose_name="SWIFT Number",
+                    ),
+                ),
+                (
+                    "account_type",
+                    models.CharField(
+                        choices=[("checking", "Checking"), ("savings", "Savings")],
+                        default="checking",
+                        max_length=10,
+                        verbose_name="Account Type",
+                    ),
+                ),
+                (
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(blank=True, max_length=150, null=True)),
+                ("active", models.BooleanField(default=False)),
+                ("hidden", models.BooleanField(default=False)),
+                (
+                    "cash_account",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="bank_cash_account",
+                        to="django_ledger.accountmodel",
+                        verbose_name="Cash Account",
+                    ),
+                ),
+                (
+                    "entity_model",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_ledger.entitymodel",
+                        verbose_name="Entity Model",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Bank Account',
-                'abstract': False,
+                "verbose_name": "Bank Account",
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='accountmodel',
-            name='coa_model',
-            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
-                                    to='django_ledger.chartofaccountmodel', verbose_name='Chart of Accounts'),
+            model_name="accountmodel",
+            name="coa_model",
+            field=models.ForeignKey(
+                editable=False,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.chartofaccountmodel",
+                verbose_name="Chart of Accounts",
+            ),
         ),
         migrations.AddIndex(
-            model_name='vendormodel',
-            index=models.Index(fields=['created'], name='django_ledg_created_6a5d9d_idx'),
+            model_name="vendormodel",
+            index=models.Index(
+                fields=["created"], name="django_ledg_created_6a5d9d_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='vendormodel',
-            index=models.Index(fields=['updated'], name='django_ledg_updated_736f82_idx'),
+            model_name="vendormodel",
+            index=models.Index(
+                fields=["updated"], name="django_ledg_updated_736f82_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='vendormodel',
-            index=models.Index(fields=['active'], name='django_ledg_active_25e3b1_idx'),
+            model_name="vendormodel",
+            index=models.Index(fields=["active"], name="django_ledg_active_25e3b1_idx"),
         ),
         migrations.AddIndex(
-            model_name='vendormodel',
-            index=models.Index(fields=['hidden'], name='django_ledg_hidden_379b0a_idx'),
-        ),
-        migrations.AlterUniqueTogether(
-            name='vendormodel',
-            unique_together={('entity_model', 'vendor_number')},
-        ),
-        migrations.AddIndex(
-            model_name='unitofmeasuremodel',
-            index=models.Index(fields=['entity'], name='django_ledg_entity__1c8986_idx'),
-        ),
-        migrations.AlterUniqueTogether(
-            name='unitofmeasuremodel',
-            unique_together={('entity', 'unit_abbr')},
-        ),
-        migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['tx_type'], name='django_ledg_tx_type_da7ba9_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['account'], name='django_ledg_account_c4bb7e_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['journal_entry'], name='django_ledg_journal_46c77f_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['created'], name='django_ledg_created_b74538_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='transactionmodel',
-            index=models.Index(fields=['updated'], name='django_ledg_updated_494252_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='stagedtransactionmodel',
-            index=models.Index(fields=['import_job'], name='django_ledg_import__8e6511_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['entity'], name='django_ledg_entity__9ab6ba_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['po_number'], name='django_ledg_po_numb_20b7d1_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['po_status'], name='django_ledg_po_stat_ab8d41_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['ce_model'], name='django_ledg_ce_mode_66c2cc_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['date_draft'], name='django_ledg_date_dr_6fd15b_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['date_in_review'], name='django_ledg_date_in_b6a1f3_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['date_approved'], name='django_ledg_date_ap_4667c6_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['date_fulfilled'], name='django_ledg_date_fu_b29b08_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['date_canceled'], name='django_ledg_date_ca_3edc4b_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='purchaseordermodel',
-            index=models.Index(fields=['date_void'], name='django_ledg_date_vo_56612f_idx'),
+            model_name="vendormodel",
+            index=models.Index(fields=["hidden"], name="django_ledg_hidden_379b0a_idx"),
         ),
         migrations.AlterUniqueTogether(
-            name='purchaseordermodel',
-            unique_together={('entity', 'po_number')},
+            name="vendormodel",
+            unique_together={("entity_model", "vendor_number")},
         ),
         migrations.AddIndex(
-            model_name='ledgermodel',
-            index=models.Index(fields=['entity'], name='django_ledg_entity__e21c5d_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='ledgermodel',
-            index=models.Index(fields=['entity', 'posted'], name='django_ledg_entity__040422_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='ledgermodel',
-            index=models.Index(fields=['entity', 'locked'], name='django_ledg_entity__cde962_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['ledger'], name='django_ledg_ledger__ecaa89_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['timestamp'], name='django_ledg_timesta_ab91e8_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['activity'], name='django_ledg_activit_bae3bb_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['entity_unit'], name='django_ledg_entity__557f42_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['locked'], name='django_ledg_locked_5cc524_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['posted'], name='django_ledg_posted_097e54_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='journalentrymodel',
-            index=models.Index(fields=['je_number'], name='django_ledg_je_numb_987c8b_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemtransactionmodel',
-            index=models.Index(fields=['bill_model', 'item_model'], name='django_ledg_bill_mo_479f1f_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemtransactionmodel',
-            index=models.Index(fields=['invoice_model', 'item_model'], name='django_ledg_invoice_13ac3b_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemtransactionmodel',
-            index=models.Index(fields=['po_model', 'item_model'], name='django_ledg_po_mode_2675c9_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemtransactionmodel',
-            index=models.Index(fields=['ce_model', 'item_model'], name='django_ledg_ce_mode_ae4efd_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemtransactionmodel',
-            index=models.Index(fields=['po_item_status'], name='django_ledg_po_item_ac9475_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['inventory_account'], name='django_ledg_invento_dbf206_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['cogs_account'], name='django_ledg_cogs_ac_82d441_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['earnings_account'], name='django_ledg_earning_229a60_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['expense_account'], name='django_ledg_expense_f65128_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['for_inventory'], name='django_ledg_for_inv_c93303_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['is_product_or_service'], name='django_ledg_is_prod_4b9941_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['is_active'], name='django_ledg_is_acti_ffc9c6_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['item_type'], name='django_ledg_item_ty_0cef58_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['sku'], name='django_ledg_sku_02b4d8_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['upc'], name='django_ledg_upc_c19d0a_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['item_id'], name='django_ledg_item_id_972760_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='itemmodel',
-            index=models.Index(fields=['item_number'], name='django_ledg_item_nu_1e3c20_idx'),
+            model_name="unitofmeasuremodel",
+            index=models.Index(
+                fields=["entity"], name="django_ledg_entity__1c8986_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='itemmodel',
-            unique_together={('entity', 'item_number')},
+            name="unitofmeasuremodel",
+            unique_together={("entity", "unit_abbr")},
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['invoice_status'], name='django_ledg_invoice_e349d0_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["tx_type"], name="django_ledg_tx_type_da7ba9_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['terms'], name='django_ledg_terms_3b6577_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["account"], name="django_ledg_account_c4bb7e_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['cash_account'], name='django_ledg_cash_ac_00d697_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["journal_entry"], name="django_ledg_journal_46c77f_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['prepaid_account'], name='django_ledg_prepaid_470f67_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["created"], name="django_ledg_created_b74538_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['unearned_account'], name='django_ledg_unearne_bc18fd_idx'),
+            model_name="transactionmodel",
+            index=models.Index(
+                fields=["updated"], name="django_ledg_updated_494252_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_due'], name='django_ledg_date_du_c72892_idx'),
+            model_name="stagedtransactionmodel",
+            index=models.Index(
+                fields=["import_job"], name="django_ledg_import__8e6511_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_draft'], name='django_ledg_date_dr_ad2569_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["entity"], name="django_ledg_entity__9ab6ba_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_in_review'], name='django_ledg_date_in_e738b8_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["po_number"], name="django_ledg_po_numb_20b7d1_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_approved'], name='django_ledg_date_ap_ae90e1_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["po_status"], name="django_ledg_po_stat_ab8d41_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_paid'], name='django_ledg_date_pa_34b872_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["ce_model"], name="django_ledg_ce_mode_66c2cc_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_canceled'], name='django_ledg_date_ca_0f65e8_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["date_draft"], name="django_ledg_date_dr_6fd15b_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['date_void'], name='django_ledg_date_vo_57c444_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["date_in_review"], name="django_ledg_date_in_b6a1f3_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['customer'], name='django_ledg_custome_34c881_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["date_approved"], name="django_ledg_date_ap_4667c6_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoicemodel',
-            index=models.Index(fields=['invoice_number'], name='django_ledg_invoice_d0881e_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["date_fulfilled"], name="django_ledg_date_fu_b29b08_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='importjobmodel',
-            index=models.Index(fields=['ledger'], name='django_ledg_ledger__1e8758_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["date_canceled"], name="django_ledg_date_ca_3edc4b_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['status'], name='django_ledg_status_6aa955_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['customer'], name='django_ledg_custome_a2793e_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['terms'], name='django_ledg_terms_9507f6_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['entity'], name='django_ledg_entity__e2e967_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['date_draft'], name='django_ledg_date_dr_502e29_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['date_in_review'], name='django_ledg_date_in_b24ddd_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['date_approved'], name='django_ledg_date_ap_a754e5_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['date_canceled'], name='django_ledg_date_ca_9af3db_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['date_void'], name='django_ledg_date_vo_74c7c8_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estimatemodel',
-            index=models.Index(fields=['estimate_number'], name='django_ledg_estimat_9ff8a5_idx'),
+            model_name="purchaseordermodel",
+            index=models.Index(
+                fields=["date_void"], name="django_ledg_date_vo_56612f_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='estimatemodel',
-            unique_together={('entity', 'estimate_number')},
+            name="purchaseordermodel",
+            unique_together={("entity", "po_number")},
         ),
         migrations.AddIndex(
-            model_name='entityunitmodel',
-            index=models.Index(fields=['active'], name='django_ledg_active_2c2caa_idx'),
+            model_name="ledgermodel",
+            index=models.Index(
+                fields=["entity"], name="django_ledg_entity__e21c5d_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='entityunitmodel',
-            index=models.Index(fields=['hidden'], name='django_ledg_hidden_a01d42_idx'),
+            model_name="ledgermodel",
+            index=models.Index(
+                fields=["entity", "posted"], name="django_ledg_entity__040422_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='entityunitmodel',
-            index=models.Index(fields=['entity'], name='django_ledg_entity__0bdfdc_idx'),
+            model_name="ledgermodel",
+            index=models.Index(
+                fields=["entity", "locked"], name="django_ledg_entity__cde962_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(
+                fields=["ledger"], name="django_ledg_ledger__ecaa89_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(
+                fields=["timestamp"], name="django_ledg_timesta_ab91e8_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(
+                fields=["activity"], name="django_ledg_activit_bae3bb_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(
+                fields=["entity_unit"], name="django_ledg_entity__557f42_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(fields=["locked"], name="django_ledg_locked_5cc524_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(fields=["posted"], name="django_ledg_posted_097e54_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="journalentrymodel",
+            index=models.Index(
+                fields=["je_number"], name="django_ledg_je_numb_987c8b_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemtransactionmodel",
+            index=models.Index(
+                fields=["bill_model", "item_model"],
+                name="django_ledg_bill_mo_479f1f_idx",
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemtransactionmodel",
+            index=models.Index(
+                fields=["invoice_model", "item_model"],
+                name="django_ledg_invoice_13ac3b_idx",
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemtransactionmodel",
+            index=models.Index(
+                fields=["po_model", "item_model"], name="django_ledg_po_mode_2675c9_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemtransactionmodel",
+            index=models.Index(
+                fields=["ce_model", "item_model"], name="django_ledg_ce_mode_ae4efd_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemtransactionmodel",
+            index=models.Index(
+                fields=["po_item_status"], name="django_ledg_po_item_ac9475_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["inventory_account"], name="django_ledg_invento_dbf206_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["cogs_account"], name="django_ledg_cogs_ac_82d441_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["earnings_account"], name="django_ledg_earning_229a60_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["expense_account"], name="django_ledg_expense_f65128_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["for_inventory"], name="django_ledg_for_inv_c93303_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["is_product_or_service"], name="django_ledg_is_prod_4b9941_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["is_active"], name="django_ledg_is_acti_ffc9c6_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["item_type"], name="django_ledg_item_ty_0cef58_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(fields=["sku"], name="django_ledg_sku_02b4d8_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(fields=["upc"], name="django_ledg_upc_c19d0a_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["item_id"], name="django_ledg_item_id_972760_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="itemmodel",
+            index=models.Index(
+                fields=["item_number"], name="django_ledg_item_nu_1e3c20_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='entityunitmodel',
-            unique_together={('entity', 'slug'), ('entity', 'document_prefix')},
+            name="itemmodel",
+            unique_together={("entity", "item_number")},
         ),
         migrations.AddIndex(
-            model_name='entitystatemodel',
-            index=models.Index(fields=['key'], name='django_ledg_key_ac156a_idx'),
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["invoice_status"], name="django_ledg_invoice_e349d0_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='entitystatemodel',
-            index=models.Index(fields=['entity_model', 'fiscal_year', 'entity_unit', 'key'],
-                               name='django_ledg_entity__eeae49_idx'),
+            model_name="invoicemodel",
+            index=models.Index(fields=["terms"], name="django_ledg_terms_3b6577_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["cash_account"], name="django_ledg_cash_ac_00d697_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["prepaid_account"], name="django_ledg_prepaid_470f67_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["unearned_account"], name="django_ledg_unearne_bc18fd_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_due"], name="django_ledg_date_du_c72892_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_draft"], name="django_ledg_date_dr_ad2569_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_in_review"], name="django_ledg_date_in_e738b8_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_approved"], name="django_ledg_date_ap_ae90e1_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_paid"], name="django_ledg_date_pa_34b872_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_canceled"], name="django_ledg_date_ca_0f65e8_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["date_void"], name="django_ledg_date_vo_57c444_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["customer"], name="django_ledg_custome_34c881_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="invoicemodel",
+            index=models.Index(
+                fields=["invoice_number"], name="django_ledg_invoice_d0881e_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="importjobmodel",
+            index=models.Index(
+                fields=["ledger"], name="django_ledg_ledger__1e8758_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(fields=["status"], name="django_ledg_status_6aa955_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["customer"], name="django_ledg_custome_a2793e_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(fields=["terms"], name="django_ledg_terms_9507f6_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["entity"], name="django_ledg_entity__e2e967_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["date_draft"], name="django_ledg_date_dr_502e29_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["date_in_review"], name="django_ledg_date_in_b24ddd_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["date_approved"], name="django_ledg_date_ap_a754e5_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["date_canceled"], name="django_ledg_date_ca_9af3db_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["date_void"], name="django_ledg_date_vo_74c7c8_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="estimatemodel",
+            index=models.Index(
+                fields=["estimate_number"], name="django_ledg_estimat_9ff8a5_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='entitystatemodel',
-            unique_together={('entity_model', 'entity_unit', 'fiscal_year', 'key')},
+            name="estimatemodel",
+            unique_together={("entity", "estimate_number")},
         ),
         migrations.AddIndex(
-            model_name='entitymodel',
-            index=models.Index(fields=['admin'], name='django_ledg_admin_i_09f5c9_idx'),
+            model_name="entityunitmodel",
+            index=models.Index(fields=["active"], name="django_ledg_active_2c2caa_idx"),
         ),
         migrations.AddIndex(
-            model_name='entitymanagementmodel',
-            index=models.Index(fields=['entity', 'user'], name='django_ledg_entity__9541e6_idx'),
+            model_name="entityunitmodel",
+            index=models.Index(fields=["hidden"], name="django_ledg_hidden_a01d42_idx"),
         ),
         migrations.AddIndex(
-            model_name='entitymanagementmodel',
-            index=models.Index(fields=['user', 'entity'], name='django_ledg_user_id_b7497b_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='customermodel',
-            index=models.Index(fields=['created'], name='django_ledg_created_ba7f4c_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='customermodel',
-            index=models.Index(fields=['updated'], name='django_ledg_updated_f9ac90_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='customermodel',
-            index=models.Index(fields=['active'], name='django_ledg_active_967a81_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='customermodel',
-            index=models.Index(fields=['hidden'], name='django_ledg_hidden_dda722_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='customermodel',
-            index=models.Index(fields=['customer_number'], name='django_ledg_custome_16f95a_idx'),
+            model_name="entityunitmodel",
+            index=models.Index(
+                fields=["entity"], name="django_ledg_entity__0bdfdc_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='customermodel',
-            unique_together={('entity_model', 'customer_number')},
+            name="entityunitmodel",
+            unique_together={("entity", "slug"), ("entity", "document_prefix")},
         ),
         migrations.AddIndex(
-            model_name='chartofaccountmodel',
-            index=models.Index(fields=['entity'], name='django_ledg_entity__48d6e0_idx'),
+            model_name="entitystatemodel",
+            index=models.Index(fields=["key"], name="django_ledg_key_ac156a_idx"),
         ),
         migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['bill_status'], name='django_ledg_bill_st_9e158c_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['terms'], name='django_ledg_terms_752251_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['cash_account'], name='django_ledg_cash_ac_82021a_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['prepaid_account'], name='django_ledg_prepaid_5230e5_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['unearned_account'], name='django_ledg_unearne_806444_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_due'], name='django_ledg_date_du_a8c481_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_draft'], name='django_ledg_date_dr_7a448e_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_in_review'], name='django_ledg_date_in_8887cb_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_approved'], name='django_ledg_date_ap_3208a1_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_paid'], name='django_ledg_date_pa_daf06c_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_canceled'], name='django_ledg_date_ca_e43055_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['date_void'], name='django_ledg_date_vo_14c747_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['vendor'], name='django_ledg_vendor__28be85_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='billmodel',
-            index=models.Index(fields=['bill_number'], name='django_ledg_bill_nu_6b97b4_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='bankaccountmodel',
-            index=models.Index(fields=['account_type'], name='django_ledg_account_009a4a_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='bankaccountmodel',
-            index=models.Index(fields=['cash_account'], name='django_ledg_cash_ac_59a8af_idx'),
+            model_name="entitystatemodel",
+            index=models.Index(
+                fields=["entity_model", "fiscal_year", "entity_unit", "key"],
+                name="django_ledg_entity__eeae49_idx",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='bankaccountmodel',
-            unique_together={('entity_model', 'account_number'),
-                             ('entity_model', 'cash_account', 'account_number', 'routing_number')},
+            name="entitystatemodel",
+            unique_together={("entity_model", "entity_unit", "fiscal_year", "key")},
         ),
         migrations.AddIndex(
-            model_name='accountmodel',
-            index=models.Index(fields=['role'], name='django_ledg_role_812d08_idx'),
+            model_name="entitymodel",
+            index=models.Index(fields=["admin"], name="django_ledg_admin_i_09f5c9_idx"),
         ),
         migrations.AddIndex(
-            model_name='accountmodel',
-            index=models.Index(fields=['balance_type'], name='django_ledg_balance_daddac_idx'),
+            model_name="entitymanagementmodel",
+            index=models.Index(
+                fields=["entity", "user"], name="django_ledg_entity__9541e6_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='accountmodel',
-            index=models.Index(fields=['active'], name='django_ledg_active_f8adc2_idx'),
+            model_name="entitymanagementmodel",
+            index=models.Index(
+                fields=["user", "entity"], name="django_ledg_user_id_b7497b_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='accountmodel',
-            index=models.Index(fields=['coa_model'], name='django_ledg_coa_mod_e19964_idx'),
+            model_name="customermodel",
+            index=models.Index(
+                fields=["created"], name="django_ledg_created_ba7f4c_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='accountmodel',
-            index=models.Index(fields=['role', 'balance_type', 'active'], name='django_ledg_role_1bff96_idx'),
+            model_name="customermodel",
+            index=models.Index(
+                fields=["updated"], name="django_ledg_updated_f9ac90_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="customermodel",
+            index=models.Index(fields=["active"], name="django_ledg_active_967a81_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="customermodel",
+            index=models.Index(fields=["hidden"], name="django_ledg_hidden_dda722_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="customermodel",
+            index=models.Index(
+                fields=["customer_number"], name="django_ledg_custome_16f95a_idx"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='accountmodel',
-            unique_together={('coa_model', 'code')},
+            name="customermodel",
+            unique_together={("entity_model", "customer_number")},
+        ),
+        migrations.AddIndex(
+            model_name="chartofaccountmodel",
+            index=models.Index(
+                fields=["entity"], name="django_ledg_entity__48d6e0_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["bill_status"], name="django_ledg_bill_st_9e158c_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(fields=["terms"], name="django_ledg_terms_752251_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["cash_account"], name="django_ledg_cash_ac_82021a_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["prepaid_account"], name="django_ledg_prepaid_5230e5_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["unearned_account"], name="django_ledg_unearne_806444_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_due"], name="django_ledg_date_du_a8c481_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_draft"], name="django_ledg_date_dr_7a448e_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_in_review"], name="django_ledg_date_in_8887cb_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_approved"], name="django_ledg_date_ap_3208a1_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_paid"], name="django_ledg_date_pa_daf06c_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_canceled"], name="django_ledg_date_ca_e43055_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["date_void"], name="django_ledg_date_vo_14c747_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["vendor"], name="django_ledg_vendor__28be85_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="billmodel",
+            index=models.Index(
+                fields=["bill_number"], name="django_ledg_bill_nu_6b97b4_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="bankaccountmodel",
+            index=models.Index(
+                fields=["account_type"], name="django_ledg_account_009a4a_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="bankaccountmodel",
+            index=models.Index(
+                fields=["cash_account"], name="django_ledg_cash_ac_59a8af_idx"
+            ),
+        ),
+        migrations.AlterUniqueTogether(
+            name="bankaccountmodel",
+            unique_together={
+                ("entity_model", "account_number"),
+                ("entity_model", "cash_account", "account_number", "routing_number"),
+            },
+        ),
+        migrations.AddIndex(
+            model_name="accountmodel",
+            index=models.Index(fields=["role"], name="django_ledg_role_812d08_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="accountmodel",
+            index=models.Index(
+                fields=["balance_type"], name="django_ledg_balance_daddac_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="accountmodel",
+            index=models.Index(fields=["active"], name="django_ledg_active_f8adc2_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="accountmodel",
+            index=models.Index(
+                fields=["coa_model"], name="django_ledg_coa_mod_e19964_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="accountmodel",
+            index=models.Index(
+                fields=["role", "balance_type", "active"],
+                name="django_ledg_role_1bff96_idx",
+            ),
+        ),
+        migrations.AlterUniqueTogether(
+            name="accountmodel",
+            unique_together={("coa_model", "code")},
         ),
     ]

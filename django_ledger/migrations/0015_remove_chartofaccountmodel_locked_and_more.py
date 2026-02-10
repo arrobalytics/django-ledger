@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0014_ledgermodel_ledger_xid_and_more'),
+        ("django_ledger", "0014_ledgermodel_ledger_xid_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='chartofaccountmodel',
-            name='locked',
+            model_name="chartofaccountmodel",
+            name="locked",
         ),
         migrations.AddField(
-            model_name='chartofaccountmodel',
-            name='active',
-            field=models.BooleanField(default=True, verbose_name='Is Active'),
+            model_name="chartofaccountmodel",
+            name="active",
+            field=models.BooleanField(default=True, verbose_name="Is Active"),
         ),
     ]

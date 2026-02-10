@@ -6,114 +6,132 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import (ModelForm, TextInput, BooleanField, ValidationError, IntegerField,
-                          EmailInput, URLInput, CheckboxInput, Select, Form)
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.forms import (BooleanField, CheckboxInput, EmailInput, Form,
+                          IntegerField, ModelForm, Select, TextInput, URLInput,
+                          ValidationError)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
-from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class EntityModelCreateForm(ModelForm):
-    default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
-    activate_all_accounts = BooleanField(required=False, initial=False, label=_('Activate All Accounts'))
-    generate_sample_data = BooleanField(required=False, initial=False, label=_('Fill With Sample Data?'))
+    default_coa = BooleanField(
+        required=False, initial=False, label=_("Populate Default CoA")
+    )
+    activate_all_accounts = BooleanField(
+        required=False, initial=False, label=_("Activate All Accounts")
+    )
+    generate_sample_data = BooleanField(
+        required=False, initial=False, label=_("Fill With Sample Data?")
+    )
 
     def clean_name(self):
-        name = self.cleaned_data.get('name')
+        name = self.cleaned_data.get("name")
         if not name:
-            raise ValidationError(_('Please provide a valid name for new Entity.'))
+            raise ValidationError(_("Please provide a valid name for new Entity."))
         if len(name) < 3:
-            raise ValidationError(_('Looks like this entity name is too short...'))
+            raise ValidationError(_("Looks like this entity name is too short..."))
         return name
 
     def clean(self):
-        populate_coa = self.cleaned_data['default_coa']
-        activate_all_accounts = self.cleaned_data['activate_all_accounts']
-        sample_data = self.cleaned_data['generate_sample_data']
+        populate_coa = self.cleaned_data["default_coa"]
+        activate_all_accounts = self.cleaned_data["activate_all_accounts"]
+        sample_data = self.cleaned_data["generate_sample_data"]
 
-        if sample_data and not all([
-            populate_coa,
-            activate_all_accounts
-        ]):
-            raise ValidationError(f'Filling sample data requires using default CoA and activate all accounts.')
+        if sample_data and not all([populate_coa, activate_all_accounts]):
+            raise ValidationError(
+                f"Filling sample data requires using default CoA and activate all accounts."
+            )
         validate_cszc(self.cleaned_data)
 
     class Meta:
         model = EntityModel
         fields = [
-            'name',
-            'address_1',
-            'address_2',
-            'city',
-            'state',
-            'zip_code',
-            'country',
-            'email',
-            'website',
-            'phone',
-            'fy_start_month',
-            'activate_all_accounts',
-            'accrual_method'
+            "name",
+            "address_1",
+            "address_2",
+            "city",
+            "state",
+            "zip_code",
+            "country",
+            "email",
+            "website",
+            "phone",
+            "fy_start_month",
+            "activate_all_accounts",
+            "accrual_method",
         ]
         labels = {
-            'name': _('Entity Name'),
+            "name": _("Entity Name"),
         }
         widgets = {
-            'name': TextInput(
+            "name": TextInput(
                 attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
-                    'placeholder': _('Entity name...'),
-                    'required': True
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES + " is-large",
+                    "placeholder": _("Entity name..."),
+                    "required": True,
                 }
             ),
-            'address_1': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Address line 1')
-            }),
-            'address_2': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Address line 2')
-            }),
-            'city': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('City')
-            }),
-            'state': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('State')
-            }),
-            'zip_code': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Zip Code')
-            }),
-            'country': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Country')
-            }),
-            'phone': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Phone number...')
-            }),
-            'email': EmailInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Entity email...')
-            }),
-            'website': URLInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('http://www.mywebsite.com...')
-            }),
-            'default_coa': CheckboxInput(attrs={
-                'class': 'checkbox'
-            }),
-            'fy_start_month': Select(attrs={
-                'class': 'input'
-            }),
-            'accrual_method': CheckboxInput(attrs={
-                'class': 'checkbook'
-            })
+            "address_1": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Address line 1"),
+                }
+            ),
+            "address_2": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Address line 2"),
+                }
+            ),
+            "city": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("City"),
+                }
+            ),
+            "state": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("State"),
+                }
+            ),
+            "zip_code": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Zip Code"),
+                }
+            ),
+            "country": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Country"),
+                }
+            ),
+            "phone": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Phone number..."),
+                }
+            ),
+            "email": EmailInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Entity email..."),
+                }
+            ),
+            "website": URLInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("http://www.mywebsite.com..."),
+                }
+            ),
+            "default_coa": CheckboxInput(attrs={"class": "checkbox"}),
+            "fy_start_month": Select(attrs={"class": "input"}),
+            "accrual_method": CheckboxInput(attrs={"class": "checkbook"}),
         }
 
 
@@ -121,78 +139,79 @@ class EntityModelUpdateForm(ModelForm):
     class Meta:
         model = EntityModel
         fields = [
-            'name',
-            'address_1',
-            'address_2',
-            'city',
-            'state',
-            'zip_code',
-            'country',
-            'email',
-            'phone',
-            'website',
-            'fy_start_month'
+            "name",
+            "address_1",
+            "address_2",
+            "city",
+            "state",
+            "zip_code",
+            "country",
+            "email",
+            "phone",
+            "website",
+            "fy_start_month",
         ]
-        labels = {
-            'name': _('Entity Name')
-        }
+        labels = {"name": _("Entity Name")}
         widgets = {
-            'name': TextInput(
+            "name": TextInput(
                 attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Entity name...')
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Entity name..."),
                 }
             ),
-            'address_1': TextInput(
+            "address_1": TextInput(
                 attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Address line 1')
-                }),
-            'address_2': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Address line 2')
-                }),
-            'city': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('City')
-                }),
-            'state': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('State')
-                }),
-            'zip_code': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Zip Code')
-                }),
-            'country': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Country')
-                }),
-            'email': EmailInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Email...')
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Address line 1"),
                 }
             ),
-            'phone': TextInput(
+            "address_2": TextInput(
                 attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Phone...')
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Address line 2"),
                 }
             ),
-            'website': URLInput(
+            "city": TextInput(
                 attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Website...')
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("City"),
                 }
             ),
-            'fy_start_month': Select(
+            "state": TextInput(
                 attrs={
-                    'class': 'input'
-                })
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("State"),
+                }
+            ),
+            "zip_code": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Zip Code"),
+                }
+            ),
+            "country": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Country"),
+                }
+            ),
+            "email": EmailInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Email..."),
+                }
+            ),
+            "phone": TextInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Phone..."),
+                }
+            ),
+            "website": URLInput(
+                attrs={
+                    "class": DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    "placeholder": _("Website..."),
+                }
+            ),
+            "fy_start_month": Select(attrs={"class": "input"}),
         }

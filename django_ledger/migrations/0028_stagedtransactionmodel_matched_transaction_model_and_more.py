@@ -5,24 +5,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0027_alter_accountmodel_role_alter_receiptmodel_amount_and_more'),
+        (
+            "django_ledger",
+            "0027_alter_accountmodel_role_alter_receiptmodel_amount_and_more",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stagedtransactionmodel',
-            name='matched_transaction_model',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='matchedtransaction_model', to='django_ledger.transactionmodel', verbose_name='Matched Transaction Model'),
+            model_name="stagedtransactionmodel",
+            name="matched_transaction_model",
+            field=models.OneToOneField(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="matchedtransaction_model",
+                to="django_ledger.transactionmodel",
+                verbose_name="Matched Transaction Model",
+            ),
         ),
         migrations.AlterField(
-            model_name='stagedtransactionmodel',
-            name='transaction_model',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='django_ledger.transactionmodel', verbose_name='Transaction Model'),
+            model_name="stagedtransactionmodel",
+            name="transaction_model",
+            field=models.OneToOneField(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="django_ledger.transactionmodel",
+                verbose_name="Transaction Model",
+            ),
         ),
         migrations.AddIndex(
-            model_name='stagedtransactionmodel',
-            index=models.Index(fields=['matched_transaction_model'], name='django_ledg_matched_dde2a7_idx'),
+            model_name="stagedtransactionmodel",
+            index=models.Index(
+                fields=["matched_transaction_model"],
+                name="django_ledg_matched_dde2a7_idx",
+            ),
         ),
     ]

@@ -4,19 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0013_stagedtransactionmodel_bundle_split'),
+        ("django_ledger", "0013_stagedtransactionmodel_bundle_split"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ledgermodel',
-            name='ledger_xid',
-            field=models.SlugField(allow_unicode=True, blank=True, help_text='User Defined Ledger ID', max_length=150, null=True, verbose_name='Ledger Slug'),
+            model_name="ledgermodel",
+            name="ledger_xid",
+            field=models.SlugField(
+                allow_unicode=True,
+                blank=True,
+                help_text="User Defined Ledger ID",
+                max_length=150,
+                null=True,
+                verbose_name="Ledger Slug",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='ledgermodel',
-            unique_together={('entity', 'ledger_xid')},
+            name="ledgermodel",
+            unique_together={("entity", "ledger_xid")},
         ),
     ]

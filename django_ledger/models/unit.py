@@ -49,7 +49,7 @@ class EntityUnitModelValidationError(ValidationError):
 
 
 class EntityUnitModelQuerySet(MP_NodeQuerySet):
-    def for_user(self, user_model) -> 'EntityUnitModelQuerySet':
+    def for_user(self, user_model) -> "EntityUnitModelQuerySet":
         if user_model.is_superuser:
             return self
         return self.filter(
@@ -61,12 +61,12 @@ class EntityUnitModelManager(MP_NodeManager):
     def get_queryset(self):
         qs = EntityUnitModelQuerySet(self.model, using=self._db)
         return qs.annotate(
-            _entity_slug=F('entity__slug'),
-            _entity_name=F('entity__name'),
+            _entity_slug=F("entity__slug"),
+            _entity_name=F("entity__name"),
         )
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+    def for_entity(self, entity_model: "EntityModel | str | UUID" = None, **kwargs):
         """
         Filter the queryset based on the provided entity model, its slug, or its UUID.
 
@@ -99,15 +99,15 @@ class EntityUnitModelManager(MP_NodeManager):
         EntityModel = lazy_loader.get_entity_model()
 
         qs = self.get_queryset()
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
                 stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             qs = qs.filter(entity=entity_model)
@@ -117,7 +117,7 @@ class EntityUnitModelManager(MP_NodeManager):
             qs = qs.filter(entity_id=entity_model)
         else:
             raise EntityUnitModelValidationError(
-                message='Must pass EntityModel, slug or UUID'
+                message="Must pass EntityModel, slug or UUID"
             )
         return qs
 
@@ -151,14 +151,14 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     slug = models.SlugField(max_length=50)
     entity = models.ForeignKey(
-        'django_ledger.EntityModel',
+        "django_ledger.EntityModel",
         editable=False,
         on_delete=models.CASCADE,
-        verbose_name=_('Unit Entity'),
+        verbose_name=_("Unit Entity"),
     )
     document_prefix = models.CharField(max_length=3)
-    active = models.BooleanField(default=True, verbose_name=_('Is Active'))
-    hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
+    active = models.BooleanField(default=True, verbose_name=_("Is Active"))
+    hidden = models.BooleanField(default=False, verbose_name=_("Is Hidden"))
 
     objects = EntityUnitModelManager.from_queryset(
         queryset_class=EntityUnitModelQuerySet
@@ -166,25 +166,25 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
 
     class Meta:
         abstract = True
-        ordering = ['-created']
-        verbose_name = _('Entity Unit Model')
+        ordering = ["-created"]
+        verbose_name = _("Entity Unit Model")
         unique_together = [
-            ('entity', 'slug'),
-            ('entity', 'document_prefix'),
+            ("entity", "slug"),
+            ("entity", "document_prefix"),
         ]
         indexes = [
-            models.Index(fields=['active']),
-            models.Index(fields=['hidden']),
-            models.Index(fields=['entity']),
+            models.Index(fields=["active"]),
+            models.Index(fields=["hidden"]),
+            models.Index(fields=["entity"]),
         ]
 
     def __str__(self):
-        return f'{self.entity_name}: {self.name}'
+        return f"{self.entity_name}: {self.name}"
 
     @property
     def entity_slug(self):
         try:
-            return getattr(self, '_entity_slug')
+            return getattr(self, "_entity_slug")
         except AttributeError:
             pass
         return self.entity.slug
@@ -192,7 +192,7 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
     @property
     def entity_name(self):
         try:
-            return getattr(self, '_entity_name')
+            return getattr(self, "_entity_name")
         except AttributeError:
             pass
         return self.entity.name
@@ -201,7 +201,7 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
         self.create_entity_unit_slug()
 
         if not self.document_prefix:
-            self.document_prefix = ''.join(choices(ascii_uppercase, k=3))
+            self.document_prefix = "".join(choices(ascii_uppercase, k=3))
 
     def get_dashboard_url(self) -> str:
         """
@@ -213,7 +213,7 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
             The EntityModelUnit instance dashboard URL.
         """
         return reverse(
-            'django_ledger:unit-dashboard', kwargs={'entity_slug': self.slug}
+            "django_ledger:unit-dashboard", kwargs={"entity_slug": self.slug}
         )
 
     def get_entity_name(self) -> str:
@@ -248,15 +248,15 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
         """
         if not self.slug or force:
             if not name:
-                name = f'{self.name} Unit'
+                name = f"{self.name} Unit"
             unit_slug = slugify(name)
             if add_suffix:
-                suffix = ''.join(choices(ENTITY_UNIT_RANDOM_SLUG_SUFFIX, k=k))
-                unit_slug = f'{unit_slug}-{suffix}'
+                suffix = "".join(choices(ENTITY_UNIT_RANDOM_SLUG_SUFFIX, k=k))
+                unit_slug = f"{unit_slug}-{suffix}"
             self.slug = unit_slug
         return self.slug
 
-    def validate_for_entity(self, entity_model: 'EntityModel | str | UUID'):
+    def validate_for_entity(self, entity_model: "EntityModel | str | UUID"):
         EntityModel = lazy_loader.get_entity_model()
 
         if isinstance(entity_model, UUID):
@@ -267,13 +267,13 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
             is_valid = self.entity == entity_model
         if not is_valid:
             raise EntityUnitModelValidationError(
-                f'Entity Unit Model {entity_model} is not a valid Entity Model'
+                f"Entity Unit Model {entity_model} is not a valid Entity Model"
             )
 
     def get_absolute_url(self):
         return reverse(
-            viewname='django_ledger:unit-detail',
-            kwargs={'entity_slug': self.entity.slug, 'unit_slug': self.slug},
+            viewname="django_ledger:unit-detail",
+            kwargs={"entity_slug": self.entity.slug, "unit_slug": self.slug},
         )
 
 

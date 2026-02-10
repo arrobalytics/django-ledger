@@ -19,41 +19,38 @@ ________
 import warnings
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Union, Optional, Tuple, Dict
-from uuid import uuid4, UUID
+from typing import Dict, Optional, Tuple, Union
+from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, Count
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import IntegrityError, models, transaction
+from django.db.models import Count, F, Q, Sum
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.io.io_core import get_localtime, get_localdate
-from django_ledger.models import (
-    lazy_loader, ItemTransactionModelQuerySet,
-    ItemModelQuerySet, ItemModel, QuerySet, Manager
-)
+from django_ledger.io import (ASSET_CA_CASH, ASSET_CA_RECEIVABLES,
+                              LIABILITY_CL_DEFERRED_REVENUE)
+from django_ledger.io.io_core import get_localdate, get_localtime
+from django_ledger.models import (ItemModel, ItemModelQuerySet,
+                                  ItemTransactionModelQuerySet, Manager,
+                                  QuerySet, lazy_loader)
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import (
-    CreateUpdateMixIn, AccrualMixIn,
-    MarkdownNotesMixIn, PaymentTermsMixIn,
-    ItemizeMixIn
-)
-from django_ledger.models.signals import (
-    invoice_status_draft,
-    invoice_status_in_review,
-    invoice_status_approved,
-    invoice_status_paid,
-    invoice_status_canceled,
-    invoice_status_void
-)
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX, \
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+from django_ledger.models.mixins import (AccrualMixIn, CreateUpdateMixIn,
+                                         ItemizeMixIn, MarkdownNotesMixIn,
+                                         PaymentTermsMixIn)
+from django_ledger.models.signals import (invoice_status_approved,
+                                          invoice_status_canceled,
+                                          invoice_status_draft,
+                                          invoice_status_in_review,
+                                          invoice_status_paid,
+                                          invoice_status_void)
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_INVOICE_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR)
 
 UserModel = get_user_model()
 
@@ -64,11 +61,11 @@ class InvoiceModelValidationError(ValidationError):
 
 class InvoiceModelQuerySet(QuerySet):
     """
-   A custom defined QuerySet for the InvoiceModel.
-   This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
-   For example, We might want to have list of invoices which are paid, unpaid, due , overDue, approved or in draft stage.
-   All these separate functions will assist in making such queries and building customized reports.
-   """
+    A custom defined QuerySet for the InvoiceModel.
+    This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
+    For example, We might want to have list of invoices which are paid, unpaid, due , overDue, approved or in draft stage.
+    All these separate functions will assist in making such queries and building customized reports.
+    """
 
     def draft(self):
         """
@@ -151,8 +148,8 @@ class InvoiceModelQuerySet(QuerySet):
             Returns a QuerySet of active invoices only.
         """
         return self.filter(
-            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED) |
-            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID)
+            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
+            | Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID)
         )
 
     def overdue(self):
@@ -182,8 +179,8 @@ class InvoiceModelQuerySet(QuerySet):
         if user_model.is_superuser:
             return self
         return self.filter(
-            Q(ledger__entity__admin=user_model) |
-            Q(ledger__entity__managers__in=[user_model])
+            Q(ledger__entity__admin=user_model)
+            | Q(ledger__entity__managers__in=[user_model])
         )
 
 
@@ -195,13 +192,12 @@ class InvoiceModelManager(Manager):
 
     def get_queryset(self) -> InvoiceModelQuerySet:
         qs = InvoiceModelQuerySet(self.model, using=self._db)
-        return qs.select_related(
-            'ledger',
-            'ledger__entity'
-        )
+        return qs.select_related("ledger", "ledger__entity")
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> InvoiceModelQuerySet:
+    def for_entity(
+        self, entity_model: EntityModel | str | UUID = None, **kwargs
+    ) -> InvoiceModelQuerySet:
         """
         Returns a QuerySet of InvoiceModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -218,15 +214,15 @@ class InvoiceModelManager(Manager):
         """
         qs = self.get_queryset()
 
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             qs = qs.filter(ledger__entity=entity_model)
@@ -236,22 +232,18 @@ class InvoiceModelManager(Manager):
             qs = qs.filter(ledger__entity__slug__exact=entity_model)
         else:
             raise InvoiceModelValidationError(
-                message='Must provide either a string, UUID or an EntityModel',
+                message="Must provide either a string, UUID or an EntityModel",
             )
         return qs
 
 
 class InvoiceModelAbstract(
-    AccrualMixIn,
-    ItemizeMixIn,
-    PaymentTermsMixIn,
-    MarkdownNotesMixIn,
-    CreateUpdateMixIn
+    AccrualMixIn, ItemizeMixIn, PaymentTermsMixIn, MarkdownNotesMixIn, CreateUpdateMixIn
 ):
     """
     This is the main abstract class which the InvoiceModel database will inherit from.
     The InvoiceModel inherits functionality from the following MixIns:
-    
+
         1. :func:`LedgerWrapperMixIn <django_ledger.models.mixins.LedgerWrapperMixIn>`
         2. :func:`PaymentTermsMixIn <django_ledger.models.mixins.PaymentTermsMixIn>`
         3. :func:`MarkdownNotesMixIn <django_ledger.models.mixins.MarkdownNotesMixIn>`
@@ -301,127 +293,146 @@ class InvoiceModelAbstract(
     """
 
     IS_DEBIT_BALANCE = True
-    REL_NAME_PREFIX = 'invoice'
+    REL_NAME_PREFIX = "invoice"
 
-    INVOICE_STATUS_DRAFT = 'draft'
-    INVOICE_STATUS_REVIEW = 'in_review'
-    INVOICE_STATUS_APPROVED = 'approved'
-    INVOICE_STATUS_PAID = 'paid'
-    INVOICE_STATUS_VOID = 'void'
-    INVOICE_STATUS_CANCELED = 'canceled'
+    INVOICE_STATUS_DRAFT = "draft"
+    INVOICE_STATUS_REVIEW = "in_review"
+    INVOICE_STATUS_APPROVED = "approved"
+    INVOICE_STATUS_PAID = "paid"
+    INVOICE_STATUS_VOID = "void"
+    INVOICE_STATUS_CANCELED = "canceled"
 
     INVOICE_STATUS = [
-        (INVOICE_STATUS_DRAFT, _('Draft')),
-        (INVOICE_STATUS_REVIEW, _('In Review')),
-        (INVOICE_STATUS_APPROVED, _('Approved')),
-        (INVOICE_STATUS_PAID, _('Paid')),
-        (INVOICE_STATUS_VOID, _('Void')),
-        (INVOICE_STATUS_CANCELED, _('Canceled'))
+        (INVOICE_STATUS_DRAFT, _("Draft")),
+        (INVOICE_STATUS_REVIEW, _("In Review")),
+        (INVOICE_STATUS_APPROVED, _("Approved")),
+        (INVOICE_STATUS_PAID, _("Paid")),
+        (INVOICE_STATUS_VOID, _("Void")),
+        (INVOICE_STATUS_CANCELED, _("Canceled")),
     ]
     """
     The different invoice status options and their representation in the Database.
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    entity_model = models.ForeignKey('django_ledger.EntityModel',
-                                     on_delete=models.CASCADE,
-                                     null=True,
-                                     blank=True,
-                                     editable=False)
-    invoice_number = models.SlugField(max_length=20,
-                                      editable=False,
-                                      verbose_name=_('Invoice Number'))
-    invoice_status = models.CharField(max_length=10, choices=INVOICE_STATUS, default=INVOICE_STATUS[0][0],
-                                      verbose_name=_('Invoice Status'))
-    customer = models.ForeignKey('django_ledger.CustomerModel',
-                                 on_delete=models.RESTRICT,
-                                 verbose_name=_('Customer'))
+    entity_model = models.ForeignKey(
+        "django_ledger.EntityModel",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    invoice_number = models.SlugField(
+        max_length=20, editable=False, verbose_name=_("Invoice Number")
+    )
+    invoice_status = models.CharField(
+        max_length=10,
+        choices=INVOICE_STATUS,
+        default=INVOICE_STATUS[0][0],
+        verbose_name=_("Invoice Status"),
+    )
+    customer = models.ForeignKey(
+        "django_ledger.CustomerModel",
+        on_delete=models.RESTRICT,
+        verbose_name=_("Customer"),
+    )
 
-    cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.RESTRICT,
-                                     null=True,
-                                     blank=True,
-                                     verbose_name=_('Cash Account'),
-                                     related_name=f'{REL_NAME_PREFIX}_cash_account')
-    prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.RESTRICT,
-                                        null=True,
-                                        blank=True,
-                                        verbose_name=_('Prepaid Account'),
-                                        related_name=f'{REL_NAME_PREFIX}_prepaid_account')
-    unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.RESTRICT,
-                                         null=True,
-                                         blank=True,
-                                         verbose_name=_('Unearned Account'),
-                                         related_name=f'{REL_NAME_PREFIX}_unearned_account')
+    cash_account = models.ForeignKey(
+        "django_ledger.AccountModel",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        verbose_name=_("Cash Account"),
+        related_name=f"{REL_NAME_PREFIX}_cash_account",
+    )
+    prepaid_account = models.ForeignKey(
+        "django_ledger.AccountModel",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        verbose_name=_("Prepaid Account"),
+        related_name=f"{REL_NAME_PREFIX}_prepaid_account",
+    )
+    unearned_account = models.ForeignKey(
+        "django_ledger.AccountModel",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        verbose_name=_("Unearned Account"),
+        related_name=f"{REL_NAME_PREFIX}_unearned_account",
+    )
 
-    additional_info = models.JSONField(blank=True,
-                                       null=True,
-                                       default=dict,
-                                       verbose_name=_('Invoice Additional Info'))
-    invoice_items = models.ManyToManyField('django_ledger.ItemModel',
-                                           through='django_ledger.ItemTransactionModel',
-                                           through_fields=('invoice_model', 'item_model'),
-                                           verbose_name=_('Invoice Items'))
+    additional_info = models.JSONField(
+        blank=True, null=True, default=dict, verbose_name=_("Invoice Additional Info")
+    )
+    invoice_items = models.ManyToManyField(
+        "django_ledger.ItemModel",
+        through="django_ledger.ItemTransactionModel",
+        through_fields=("invoice_model", "item_model"),
+        verbose_name=_("Invoice Items"),
+    )
 
-    ce_model = models.ForeignKey('django_ledger.EstimateModel',
-                                 on_delete=models.RESTRICT,
-                                 null=True,
-                                 blank=True,
-                                 verbose_name=_('Associated Customer Job/Estimate'))
+    ce_model = models.ForeignKey(
+        "django_ledger.EstimateModel",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        verbose_name=_("Associated Customer Job/Estimate"),
+    )
 
-    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
-    date_in_review = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
-    date_approved = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
-    date_paid = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
-    date_void = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
-    date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_("Draft Date"))
+    date_in_review = models.DateField(
+        null=True, blank=True, verbose_name=_("In Review Date")
+    )
+    date_approved = models.DateField(
+        null=True, blank=True, verbose_name=_("Approved Date")
+    )
+    date_paid = models.DateField(null=True, blank=True, verbose_name=_("Paid Date"))
+    date_void = models.DateField(null=True, blank=True, verbose_name=_("Void Date"))
+    date_canceled = models.DateField(
+        null=True, blank=True, verbose_name=_("Canceled Date")
+    )
 
     objects = InvoiceModelManager.from_queryset(queryset_class=InvoiceModelQuerySet)()
 
     class Meta:
         abstract = True
-        ordering = ['-updated']
-        verbose_name = _('Invoice')
-        verbose_name_plural = _('Invoices')
+        ordering = ["-updated"]
+        verbose_name = _("Invoice")
+        verbose_name_plural = _("Invoices")
         indexes = [
-            models.Index(fields=['invoice_status']),
-            models.Index(fields=['terms']),
-
-            models.Index(fields=['cash_account']),
-            models.Index(fields=['prepaid_account']),
-            models.Index(fields=['unearned_account']),
-
-            models.Index(fields=['date_due']),
-            models.Index(fields=['date_draft']),
-            models.Index(fields=['date_in_review']),
-            models.Index(fields=['date_approved']),
-            models.Index(fields=['date_paid']),
-            models.Index(fields=['date_canceled']),
-            models.Index(fields=['date_void']),
-
-            models.Index(fields=['customer']),
-            models.Index(fields=['invoice_number']),
+            models.Index(fields=["invoice_status"]),
+            models.Index(fields=["terms"]),
+            models.Index(fields=["cash_account"]),
+            models.Index(fields=["prepaid_account"]),
+            models.Index(fields=["unearned_account"]),
+            models.Index(fields=["date_due"]),
+            models.Index(fields=["date_draft"]),
+            models.Index(fields=["date_in_review"]),
+            models.Index(fields=["date_approved"]),
+            models.Index(fields=["date_paid"]),
+            models.Index(fields=["date_canceled"]),
+            models.Index(fields=["date_void"]),
+            models.Index(fields=["customer"]),
+            models.Index(fields=["invoice_number"]),
         ]
 
     def __str__(self):
-        return f'Invoice: {self.invoice_number} | {self.get_invoice_status_display()}'
+        return f"Invoice: {self.invoice_number} | {self.get_invoice_status_display()}"
 
     def is_configured(self) -> bool:
-        return all([
-            super().is_configured(),
-            self.invoice_status
-        ])
+        return all([super().is_configured(), self.invoice_status])
 
-    def configure(self,
-                  entity_slug: Union[EntityModel, str],
-                  user_model: Optional[UserModel] = None,
-                  date_draft: Optional[date] = None,
-                  ledger_posted: bool = False,
-                  ledger_name: Optional[str] = None,
-                  commit: bool = False,
-                  commit_ledger: bool = False):
+    def configure(
+        self,
+        entity_slug: Union[EntityModel, str],
+        user_model: Optional[UserModel] = None,
+        date_draft: Optional[date] = None,
+        ledger_posted: bool = False,
+        ledger_name: Optional[str] = None,
+        commit: bool = False,
+        commit_ledger: bool = False,
+    ):
         """
         A configuration hook which executes all initial InvoiceModel setup on to the LedgerModel and all initial
         values of the InvoiceModel. Can only call this method once in the lifetime of a InvoiceModel.
@@ -451,13 +462,19 @@ class InvoiceModelAbstract(
         if not self.is_configured():
             if isinstance(entity_slug, str):
                 if not user_model:
-                    raise InvoiceModelValidationError(_('Must pass user_model when using entity_slug.'))
+                    raise InvoiceModelValidationError(
+                        _("Must pass user_model when using entity_slug.")
+                    )
                 entity_qs = EntityModel.objects.for_user(user_model=user_model)
-                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                entity_model: EntityModel = get_object_or_404(
+                    entity_qs, slug__exact=entity_slug
+                )
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
-                raise InvoiceModelValidationError('entity_slug must be an instance of str or EntityModel')
+                raise InvoiceModelValidationError(
+                    "entity_slug must be an instance of str or EntityModel"
+                )
 
             if entity_model.is_accrual_method():
                 self.accrue = True
@@ -469,9 +486,11 @@ class InvoiceModelAbstract(
             self.date_draft = get_localdate() if not date_draft else date_draft
 
             LedgerModel = lazy_loader.get_ledger_model()
-            ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+            ledger_model: LedgerModel = LedgerModel(
+                entity=entity_model, posted=ledger_posted
+            )
             ledger_model.configure_for_wrapper_model(model_instance=self)
-            ledger_name = f'Invoice {self.uuid}' if not ledger_name else ledger_name
+            ledger_name = f"Invoice {self.uuid}" if not ledger_name else ledger_name
             ledger_model.name = ledger_name
             ledger_model.clean()
             ledger_model.clean_fields()
@@ -482,8 +501,8 @@ class InvoiceModelAbstract(
 
             if self.can_generate_invoice_number():
                 self.generate_invoice_number(commit=commit)
-                ledger_model.ledger_xid = f'invoice-{self.invoice_number.lower()}-{str(ledger_model.entity_id)[-5:]}'
-                ledger_model.save(update_fields=['ledger_xid'])
+                ledger_model.ledger_xid = f"invoice-{self.invoice_number.lower()}-{str(ledger_model.entity_id)[-5:]}"
+                ledger_model.save(update_fields=["ledger_xid"])
 
             self.clean()
 
@@ -498,16 +517,22 @@ class InvoiceModelAbstract(
         return self.is_draft()
 
     def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
-        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
+        itemtxs_batch = super().migrate_itemtxs(
+            itemtxs=itemtxs, commit=commit, operation=operation
+        )
         self.update_amount_due(itemtxs_qs=itemtxs_batch)
         self.get_state(commit=True)
 
         if commit:
-            self.save(update_fields=['amount_due',
-                                     'amount_receivable',
-                                     'amount_unearned',
-                                     'amount_earned',
-                                     'updated'])
+            self.save(
+                update_fields=[
+                    "amount_due",
+                    "amount_receivable",
+                    "amount_unearned",
+                    "amount_earned",
+                    "updated",
+                ]
+            )
         return itemtxs_batch
 
     def get_item_model_qs(self) -> ItemModelQuerySet:
@@ -524,17 +549,18 @@ class InvoiceModelAbstract(
         queryset: ItemTransactionModelQuerySet
             ItemTransactionModelQuerySet to validate.
         """
-        valid = all([
-            i.invoice_model_id == self.uuid for i in queryset
-        ])
+        valid = all([i.invoice_model_id == self.uuid for i in queryset])
         if not valid:
-            raise InvoiceModelValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
+            raise InvoiceModelValidationError(
+                f"Invalid queryset. All items must be assigned to Invoice {self.uuid}"
+            )
 
-    def get_itemtxs_data(self,
-                         queryset: ItemTransactionModelQuerySet = None,
-                         aggregate_on_db: bool = False,
-                         lazy_agg: bool = False,
-                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+    def get_itemtxs_data(
+        self,
+        queryset: ItemTransactionModelQuerySet = None,
+        aggregate_on_db: bool = False,
+        lazy_agg: bool = False,
+    ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the InvoiceModel Items and aggregates the QuerySet.
 
@@ -550,24 +576,25 @@ class InvoiceModelAbstract(
 
         if not queryset:
             queryset = self.itemtransactionmodel_set.all().select_related(
-                'item_model',
-                'entity_unit',
-                'po_model',
-                'invoice_model'
+                "item_model", "entity_unit", "po_model", "invoice_model"
             )
         else:
             self.validate_itemtxs_qs(queryset)
 
         if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
             return queryset, queryset.aggregate(
-                total_amount__sum=Sum('total_amount'),
-                total_items=Count('uuid')
+                total_amount__sum=Sum("total_amount"), total_items=Count("uuid")
             )
 
-        return queryset, {
-            'total_amount__sum': sum(i.total_amount for i in queryset),
-            'total_items': len(queryset)
-        } if not lazy_agg else None
+        return (
+            queryset,
+            {
+                "total_amount__sum": sum(i.total_amount for i in queryset),
+                "total_items": len(queryset),
+            }
+            if not lazy_agg
+            else None,
+        )
 
     # ### ItemizeMixIn implementation END...
 
@@ -576,7 +603,9 @@ class InvoiceModelAbstract(
         Fetches the TransactionModelQuerySet associated with the InvoiceModel instance.
         """
         TransactionModel = lazy_loader.get_txs_model()
-        transaction_model_qs = TransactionModel.objects.all().for_ledger(ledger_model=self.ledger_id)
+        transaction_model_qs = TransactionModel.objects.all().for_ledger(
+            ledger_model=self.ledger_id
+        )
         if annotated:
             return transaction_model_qs.with_annotated_details()
         return transaction_model_qs
@@ -590,11 +619,11 @@ class InvoiceModelAbstract(
         str
             Description as a string.
         """
-        return f'Invoice {self.invoice_number} account adjustment.'
+        return f"Invoice {self.invoice_number} account adjustment."
 
-    def get_migration_data(self,
-                           queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
-
+    def get_migration_data(
+        self, queryset: Optional[ItemTransactionModelQuerySet] = None
+    ) -> ItemTransactionModelQuerySet:
         """
         Fetches necessary item transaction data to perform a migration into the LedgerModel.
 
@@ -608,26 +637,33 @@ class InvoiceModelAbstract(
         else:
             self.validate_itemtxs_qs(queryset)
 
-        return queryset.select_related('item_model').order_by(
-            'item_model__earnings_account__uuid',
-            'entity_unit__uuid',
-            'item_model__earnings_account__balance_type').values(
-            'item_model__earnings_account__uuid',
-            'item_model__earnings_account__balance_type',
-            'item_model__cogs_account__uuid',
-            'item_model__cogs_account__balance_type',
-            'item_model__inventory_account__uuid',
-            'item_model__inventory_account__balance_type',
-            'item_model__inventory_received',
-            'item_model__inventory_received_value',
-            'entity_unit__slug',
-            'entity_unit__uuid',
-            'quantity',
-            'total_amount').annotate(
-            account_unit_total=Sum('total_amount'))
+        return (
+            queryset.select_related("item_model")
+            .order_by(
+                "item_model__earnings_account__uuid",
+                "entity_unit__uuid",
+                "item_model__earnings_account__balance_type",
+            )
+            .values(
+                "item_model__earnings_account__uuid",
+                "item_model__earnings_account__balance_type",
+                "item_model__cogs_account__uuid",
+                "item_model__cogs_account__balance_type",
+                "item_model__inventory_account__uuid",
+                "item_model__inventory_account__balance_type",
+                "item_model__inventory_received",
+                "item_model__inventory_received_value",
+                "entity_unit__slug",
+                "entity_unit__uuid",
+                "quantity",
+                "total_amount",
+            )
+            .annotate(account_unit_total=Sum("total_amount"))
+        )
 
-    def update_amount_due(self,
-                          itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def update_amount_due(
+        self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None
+    ) -> ItemTransactionModelQuerySet:
         """
         Updates the InvoiceModel amount due.
 
@@ -643,7 +679,7 @@ class InvoiceModelAbstract(
             Newly fetched of previously fetched ItemTransactionModelQuerySet if provided.
         """
         itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
-        self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
+        self.amount_due = round(itemtxs_agg["total_amount__sum"], 2)
         return itemtxs_qs
 
     # STATE...
@@ -700,11 +736,7 @@ class InvoiceModelAbstract(
         bool
             True if InvoiceModel is Active, else False.
         """
-        return any([
-            self.is_paid(),
-            self.is_approved(),
-            self.is_void()
-        ])
+        return any([self.is_paid(), self.is_approved(), self.is_void()])
 
     def is_canceled(self) -> bool:
         """
@@ -762,10 +794,7 @@ class InvoiceModelAbstract(
         bool
             True if InvoiceModel can be marked as in review, else False.
         """
-        return all([
-            self.is_configured(),
-            self.is_draft()
-        ])
+        return all([self.is_configured(), self.is_draft()])
 
     def can_approve(self):
         """
@@ -798,11 +827,7 @@ class InvoiceModelAbstract(
         bool
             True if InvoiceModel can be deleted, else False.
         """
-        return any([
-            self.is_review(),
-            self.is_draft(),
-            not self.ledger.is_locked()
-        ])
+        return any([self.is_review(), self.is_draft(), not self.ledger.is_locked()])
 
     def can_void(self):
         """
@@ -813,10 +838,7 @@ class InvoiceModelAbstract(
         bool
             True if InvoiceModel can be marked as void, else False.
         """
-        return all([
-            self.is_approved(),
-            float(self.amount_paid) == 0.00
-        ])
+        return all([self.is_approved(), float(self.amount_paid) == 0.00])
 
     def can_cancel(self):
         """
@@ -827,10 +849,7 @@ class InvoiceModelAbstract(
         bool
             True if InvoiceModel can be marked as canceled, else False.
         """
-        return any([
-            self.is_draft(),
-            self.is_review()
-        ])
+        return any([self.is_draft(), self.is_review()])
 
     def can_edit_items(self):
         """
@@ -879,16 +898,18 @@ class InvoiceModelAbstract(
 
         if self.ce_model_id:
             if raise_exception:
-                raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
-                                                  f'Estimate {self.ce_model.estimate_number}')
+                raise InvoiceModelValidationError(
+                    f"Invoice {self.invoice_number} already bound to "
+                    f"Estimate {self.ce_model.estimate_number}"
+                )
             return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise InvoiceModelValidationError(f'Cannot bind estimate that is not approved.')
-        return all([
-            is_approved
-        ])
+            raise InvoiceModelValidationError(
+                f"Cannot bind estimate that is not approved."
+            )
+        return all([is_approved])
 
     def can_generate_invoice_number(self):
         """
@@ -900,11 +921,7 @@ class InvoiceModelAbstract(
         bool
             True if InvoiceModel can generate its invoice_number, else False.
         """
-        return all([
-            self.date_draft,
-            not self.invoice_number,
-            self.is_configured()
-        ])
+        return all([self.date_draft, not self.invoice_number, self.is_configured()])
 
     # ACTIONS...
 
@@ -921,11 +938,13 @@ class InvoiceModelAbstract(
         """
         return self.is_approved()
 
-    def make_payment(self,
-                     payment_amount: Union[Decimal, float, int],
-                     payment_date: Optional[Union[datetime, date]] = None,
-                     commit: bool = False,
-                     raise_exception: bool = True):
+    def make_payment(
+        self,
+        payment_amount: Union[Decimal, float, int],
+        payment_date: Optional[Union[datetime, date]] = None,
+        commit: bool = False,
+        raise_exception: bool = True,
+    ):
         """
         Makes a payment to the InvoiceModel.
 
@@ -960,7 +979,7 @@ class InvoiceModelAbstract(
         if self.amount_paid > self.amount_due:
             if raise_exception:
                 raise InvoiceModelValidationError(
-                    f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
+                    f"Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}."
                 )
             return
 
@@ -975,16 +994,17 @@ class InvoiceModelAbstract(
                 user_model=None,
                 entity_slug=self.ledger.entity.slug,
                 je_timestamp=payment_date,
-                raise_exception=True
+                raise_exception=True,
             )
             self.save(
                 update_fields=[
-                    'amount_paid',
-                    'amount_earned',
-                    'amount_unearned',
-                    'amount_receivable',
-                    'updated'
-                ])
+                    "amount_paid",
+                    "amount_earned",
+                    "amount_unearned",
+                    "amount_receivable",
+                    "updated",
+                ]
+            )
 
     def bind_estimate(self, estimate_model, commit: bool = False):
         """
@@ -1011,14 +1031,12 @@ class InvoiceModelAbstract(
         self.customer_id = estimate_model.customer_id
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'ce_model',
-                'customer_id',
-                'updated'
-            ])
+            self.save(update_fields=["ce_model", "customer_id", "updated"])
 
     # DRAFT...
-    def mark_as_draft(self, draft_date: Union[date, datetime], commit: bool = False, **kwargs):
+    def mark_as_draft(
+        self, draft_date: Union[date, datetime], commit: bool = False, **kwargs
+    ):
         """
         Marks InvoiceModel as Draft.
 
@@ -1032,7 +1050,7 @@ class InvoiceModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_draft():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as draft...')
+            raise InvoiceModelValidationError(f"Cannot mark PO {self.uuid} as draft...")
 
         if draft_date:
             if isinstance(draft_date, datetime):
@@ -1045,13 +1063,10 @@ class InvoiceModelAbstract(
         self.invoice_status = self.INVOICE_STATUS_DRAFT
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'invoice_status',
-                'updated'
-            ])
-        invoice_status_draft.send_robust(sender=self.__class__,
-                                         instance=self,
-                                         commited=commit, **kwargs)
+            self.save(update_fields=["invoice_status", "updated"])
+        invoice_status_draft.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_draft_html_id(self):
         """
@@ -1062,7 +1077,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-invoice-mark-as-draft'
+        return f"djl-{self.uuid}-invoice-mark-as-draft"
 
     def get_mark_as_draft_url(self):
         """
@@ -1079,11 +1094,10 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String
         """
-        return reverse('django_ledger:invoice-action-mark-as-draft',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-action-mark-as-draft",
+            kwargs={"entity_slug": self.ledger.entity.slug, "invoice_pk": self.uuid},
+        )
 
     def get_mark_as_draft_message(self):
         """
@@ -1094,14 +1108,16 @@ class InvoiceModelAbstract(
         str
             Mark-as-Draft InvoiceModel confirmation message as a String.
         """
-        return _('Do you want to mark Invoice %s as Draft?') % self.invoice_number
+        return _("Do you want to mark Invoice %s as Draft?") % self.invoice_number
 
     # REVIEW...
-    def mark_as_review(self,
-                       date_in_review: date = None,
-                       itemtxs_qs=None,
-                       commit: bool = False,
-                       **kwargs):
+    def mark_as_review(
+        self,
+        date_in_review: date = None,
+        itemtxs_qs=None,
+        commit: bool = False,
+        **kwargs,
+    ):
         """
         Marks InvoiceModel as In Review.
 
@@ -1118,31 +1134,30 @@ class InvoiceModelAbstract(
             Raises InvoiceModelValidationError if InvoiceModel cannot be marked as in review. Defaults to True.
         """
         if not self.can_review():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as In Review...')
+            raise InvoiceModelValidationError(
+                f"Cannot mark PO {self.uuid} as In Review..."
+            )
 
         self.date_in_review = get_localdate() if not date_in_review else date_in_review
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
         if not itemtxs_qs.count():
-            raise InvoiceModelValidationError(message='Cannot review an Invoice without items...')
+            raise InvoiceModelValidationError(
+                message="Cannot review an Invoice without items..."
+            )
         if not self.amount_due:
             raise InvoiceModelValidationError(
-                f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
+                f"PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0."
             )
 
         self.invoice_status = self.INVOICE_STATUS_REVIEW
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'invoice_status',
-                'date_in_review',
-                'updated'
-            ])
-        invoice_status_in_review.send_robust(sender=self.__class__,
-                                             instance=self,
-                                             commited=commit,
-                                             **kwargs)
+            self.save(update_fields=["invoice_status", "date_in_review", "updated"])
+        invoice_status_in_review.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_review_html_id(self):
         """
@@ -1153,7 +1168,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-{self.uuid}-invoice-mark-as-review'
+        return f"djl-{self.uuid}-invoice-mark-as-review"
 
     def get_mark_as_review_url(self):
         """
@@ -1170,11 +1185,10 @@ class InvoiceModelAbstract(
         str
             InvoiceModel mark-as-review action URL.
         """
-        return reverse('django_ledger:invoice-action-mark-as-review',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-action-mark-as-review",
+            kwargs={"entity_slug": self.ledger.entity.slug, "invoice_pk": self.uuid},
+        )
 
     def get_mark_as_review_message(self):
         """
@@ -1185,17 +1199,19 @@ class InvoiceModelAbstract(
         str
             Mark-as-Review InvoiceModel confirmation message as a String.
         """
-        return _('Do you want to mark Invoice %s as In Review?') % self.invoice_number
+        return _("Do you want to mark Invoice %s as In Review?") % self.invoice_number
 
     # APPROVED...
-    def mark_as_approved(self,
-                         entity_slug,
-                         user_model,
-                         date_approved: date = None,
-                         commit: bool = False,
-                         force_migrate: bool = False,
-                         raise_exception: bool = True,
-                         **kwargs):
+    def mark_as_approved(
+        self,
+        entity_slug,
+        user_model,
+        date_approved: date = None,
+        commit: bool = False,
+        force_migrate: bool = False,
+        raise_exception: bool = True,
+        **kwargs,
+    ):
         """
         Marks InvoiceModel as Approved.
 
@@ -1219,7 +1235,9 @@ class InvoiceModelAbstract(
         """
         if not self.can_approve():
             if raise_exception:
-                raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+                raise InvoiceModelValidationError(
+                    f"Cannot mark PO {self.uuid} as Approved..."
+                )
             return
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
@@ -1241,13 +1259,12 @@ class InvoiceModelAbstract(
                     entity_slug=entity_slug,
                     user_model=user_model,
                     je_timestamp=date_approved,
-                    force_migrate=self.accrue
+                    force_migrate=self.accrue,
                 )
             self.ledger.post(commit=commit, raise_exception=raise_exception)
-        invoice_status_approved.send_robust(sender=self.__class__,
-                                            instance=self,
-                                            commited=commit,
-                                            **kwargs)
+        invoice_status_approved.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_approved_html_id(self):
         """
@@ -1258,7 +1275,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-{self.uuid}-invoice-mark-as-approved'
+        return f"djl-{self.uuid}-invoice-mark-as-approved"
 
     def get_mark_as_approved_url(self):
         """
@@ -1275,11 +1292,10 @@ class InvoiceModelAbstract(
         str
             InvoiceModel mark-as-approved action URL.
         """
-        return reverse('django_ledger:invoice-action-mark-as-approved',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-action-mark-as-approved",
+            kwargs={"entity_slug": self.ledger.entity.slug, "invoice_pk": self.uuid},
+        )
 
     def get_mark_as_approved_message(self):
         """
@@ -1290,15 +1306,17 @@ class InvoiceModelAbstract(
         str
             Mark-as-Approved InvoiceModel confirmation message as a String.
         """
-        return _('Do you want to mark Invoice %s as Approved?') % self.invoice_number
+        return _("Do you want to mark Invoice %s as Approved?") % self.invoice_number
 
     # PAID...
-    def mark_as_paid(self,
-                     entity_slug: str,
-                     user_model,
-                     date_paid: date = None,
-                     commit: bool = False,
-                     **kwargs):
+    def mark_as_paid(
+        self,
+        entity_slug: str,
+        user_model,
+        date_paid: date = None,
+        commit: bool = False,
+        **kwargs,
+    ):
         """
         Marks InvoiceModel as Paid.
 
@@ -1322,7 +1340,7 @@ class InvoiceModelAbstract(
         """
 
         if not self.can_pay():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Paid...')
+            raise InvoiceModelValidationError(f"Cannot mark PO {self.uuid} as Paid...")
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
@@ -1336,7 +1354,9 @@ class InvoiceModelAbstract(
             self.date_paid = get_localdate()
 
         if self.date_paid > get_localdate():
-            raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+            raise InvoiceModelValidationError(
+                f"Cannot pay {self.__class__.__name__} in the future."
+            )
 
         self.get_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
@@ -1348,13 +1368,12 @@ class InvoiceModelAbstract(
                 user_model=user_model,
                 entity_slug=entity_slug,
                 force_migrate=True,
-                je_timestamp=date_paid
+                je_timestamp=date_paid,
             )
             self.lock_ledger(commit=True)
-        invoice_status_paid.send_robust(sender=self.__class__,
-                                        instance=self,
-                                        commited=commit,
-                                        **kwargs)
+        invoice_status_paid.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_paid_html_id(self):
         """
@@ -1365,7 +1384,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-invoice-mark-as-paid'
+        return f"djl-{self.uuid}-invoice-mark-as-paid"
 
     def get_mark_as_paid_url(self, entity_slug: str = None):
         """
@@ -1384,11 +1403,10 @@ class InvoiceModelAbstract(
         """
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
-        return reverse('django_ledger:invoice-action-mark-as-paid',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-action-mark-as-paid",
+            kwargs={"entity_slug": entity_slug, "invoice_pk": self.uuid},
+        )
 
     def get_mark_as_paid_message(self):
         """
@@ -1399,15 +1417,17 @@ class InvoiceModelAbstract(
         str
             Mark-as-Paid InvoiceModel confirmation message as a String.
         """
-        return _('Do you want to mark Invoice %s as Paid?') % self.invoice_number
+        return _("Do you want to mark Invoice %s as Paid?") % self.invoice_number
 
     # VOID...
-    def mark_as_void(self,
-                     entity_slug: str,
-                     user_model,
-                     date_void: Optional[Union[date, datetime]] = None,
-                     commit: bool = False,
-                     **kwargs):
+    def mark_as_void(
+        self,
+        entity_slug: str,
+        user_model,
+        date_void: Optional[Union[date, datetime]] = None,
+        commit: bool = False,
+        **kwargs,
+    ):
         """
         Marks InvoiceModel as Void.
         When mark as void, all transactions associated with InvoiceModel are reversed as of the void date.
@@ -1428,7 +1448,9 @@ class InvoiceModelAbstract(
             Commits transaction into DB. Defaults to False.
         """
         if not self.can_void():
-            raise InvoiceModelValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
+            raise InvoiceModelValidationError(
+                f"Cannot mark Invoice {self.uuid} as Void..."
+            )
 
         if date_void:
             if isinstance(date_void, datetime):
@@ -1439,11 +1461,14 @@ class InvoiceModelAbstract(
             self.date_void = get_localdate()
 
         if self.date_void > get_localdate():
-            raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} in the future.')
+            raise InvoiceModelValidationError(
+                f"Cannot void {self.__class__.__name__} in the future."
+            )
         if self.date_void < self.date_approved:
             raise InvoiceModelValidationError(
-                f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
-                f'{self.date_approved}')
+                f"Cannot void {self.__class__.__name__} at {self.date_void} before approved "
+                f"{self.date_approved}"
+            )
 
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
@@ -1457,14 +1482,13 @@ class InvoiceModelAbstract(
                 void=True,
                 void_date=self.date_void,
                 force_migrate=True,
-                raise_exception=False
+                raise_exception=False,
             )
             self.save()
             self.lock_ledger(commit=True, raise_exception=False)
-        invoice_status_void.send_robust(sender=self.__class__,
-                                        instance=self,
-                                        commited=commit,
-                                        **kwargs)
+        invoice_status_void.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_void_html_id(self):
         """
@@ -1475,7 +1499,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-{self.uuid}-invoice-mark-as-void'
+        return f"djl-{self.uuid}-invoice-mark-as-void"
 
     def get_mark_as_void_url(self):
         """
@@ -1491,11 +1515,10 @@ class InvoiceModelAbstract(
         _______
             InvoiceModel mark-as-void action URL.
         """
-        return reverse('django_ledger:invoice-action-mark-as-void',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-action-mark-as-void",
+            kwargs={"entity_slug": self.ledger.entity.slug, "invoice_pk": self.uuid},
+        )
 
     def get_mark_as_void_message(self):
         """
@@ -1506,13 +1529,12 @@ class InvoiceModelAbstract(
         str
             Mark-as-Void InvoiceModel confirmation message as a String.
         """
-        return _('Do you want to mark Invoice %s as Void?') % self.invoice_number
+        return _("Do you want to mark Invoice %s as Void?") % self.invoice_number
 
     # CANCEL
-    def mark_as_canceled(self,
-                         date_canceled: date = None,
-                         commit: bool = False,
-                         **kwargs):
+    def mark_as_canceled(
+        self, date_canceled: date = None, commit: bool = False, **kwargs
+    ):
         """
         Mark InvoiceModel as Canceled.
 
@@ -1526,7 +1548,9 @@ class InvoiceModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_cancel():
-            raise InvoiceModelValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
+            raise InvoiceModelValidationError(
+                f"Cannot cancel Invoice {self.invoice_number}."
+            )
 
         self.date_canceled = get_localdate() if not date_canceled else date_canceled
         self.invoice_status = self.INVOICE_STATUS_CANCELED
@@ -1535,10 +1559,9 @@ class InvoiceModelAbstract(
             self.unlock_ledger(commit=True, raise_exception=False)
             self.unpost_ledger(commit=True, raise_exception=False)
             self.save()
-        invoice_status_canceled.send_robust(sender=self.__class__,
-                                            instance=self,
-                                            commited=commit,
-                                            **kwargs)
+        invoice_status_canceled.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_canceled_html_id(self):
         """
@@ -1549,7 +1572,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-{self.uuid}-invoice-mark-as-canceled'
+        return f"djl-{self.uuid}-invoice-mark-as-canceled"
 
     def get_mark_as_canceled_url(self):
         """
@@ -1566,11 +1589,10 @@ class InvoiceModelAbstract(
         str
             InvoiceModel mark-as-canceled action URL.
         """
-        return reverse('django_ledger:invoice-action-mark-as-canceled',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-action-mark-as-canceled",
+            kwargs={"entity_slug": self.ledger.entity.slug, "invoice_pk": self.uuid},
+        )
 
     def get_mark_as_canceled_message(self):
         """
@@ -1581,7 +1603,7 @@ class InvoiceModelAbstract(
         str
             Mark-as-Canceled InvoiceModel confirmation message as a String.
         """
-        return _('Do you want to mark Invoice %s as Canceled?') % self.invoice_number
+        return _("Do you want to mark Invoice %s as Canceled?") % self.invoice_number
 
     # DELETE ACTIONS...
     def delete(self, force_db_delete: bool = False, using=None, keep_parents=False):
@@ -1590,7 +1612,7 @@ class InvoiceModelAbstract(
             return
         if not self.can_delete():
             raise InvoiceModelValidationError(
-                message=_(f'Invoice {self.invoice_number} cannot be deleted...')
+                message=_(f"Invoice {self.invoice_number} cannot be deleted...")
             )
         return super().delete(using=using, keep_parents=keep_parents)
 
@@ -1659,7 +1681,7 @@ class InvoiceModelAbstract(
         date
             A date. i.e. If status is Approved, return date_approved. If Paid, return date_paid.
         """
-        return getattr(self, f'date_{self.invoice_status}')
+        return getattr(self, f"date_{self.invoice_status}")
 
     def get_document_id(self):
         """
@@ -1681,7 +1703,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}'
+        return f"djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}"
 
     def get_html_amount_due_id(self):
         """
@@ -1692,7 +1714,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}-amount-due'
+        return f"djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}-amount-due"
 
     def get_html_amount_paid_id(self):
         """
@@ -1703,7 +1725,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}-amount-paid'
+        return f"djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}-amount-paid"
 
     def get_html_form_id(self):
         """
@@ -1714,7 +1736,7 @@ class InvoiceModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}-form'
+        return f"djl-invoice-model-{self.REL_NAME_PREFIX}-{self.uuid}-form"
 
     def get_terms_start_date(self) -> date:
         """
@@ -1747,16 +1769,19 @@ class InvoiceModelAbstract(
         fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
         try:
             LOOKUP = {
-                'entity_model_id__exact': self.ledger.entity_id,
-                'entity_unit_id__exact': None,
-                'fiscal_year': fy_key,
-                'key__exact': EntityStateModel.KEY_INVOICE
+                "entity_model_id__exact": self.ledger.entity_id,
+                "entity_unit_id__exact": None,
+                "fiscal_year": fy_key,
+                "key__exact": EntityStateModel.KEY_INVOICE,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
-                'entity_model').select_for_update()
+            state_model_qs = (
+                EntityStateModel.objects.filter(**LOOKUP)
+                .select_related("entity_model")
+                .select_for_update()
+            )
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
+            state_model.sequence = F("sequence") + 1
             state_model.save()
             state_model.refresh_from_db()
             return state_model
@@ -1766,11 +1791,11 @@ class InvoiceModelAbstract(
             fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
 
             LOOKUP = {
-                'entity_model_id': entity_model.uuid,
-                'entity_unit_id': None,
-                'fiscal_year': fy_key,
-                'key': EntityStateModel.KEY_INVOICE,
-                'sequence': 1
+                "entity_model_id": entity_model.uuid,
+                "entity_unit_id": None,
+                "fiscal_year": fy_key,
+                "key": EntityStateModel.KEY_INVOICE,
+                "sequence": 1,
             }
 
             state_model = EntityStateModel.objects.create(**LOOKUP)
@@ -1800,23 +1825,24 @@ class InvoiceModelAbstract(
                 state_model = None
                 while not state_model:
                     state_model = self._get_next_state_model(raise_exception=False)
-                seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-                self.invoice_number = f'{DJANGO_LEDGER_INVOICE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+                seq = str(state_model.sequence).zfill(
+                    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
+                )
+                self.invoice_number = f"{DJANGO_LEDGER_INVOICE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}"
 
                 if commit:
-                    self.save(update_fields=['invoice_number'])
+                    self.save(update_fields=["invoice_number"])
         return self.invoice_number
 
     def generate_descriptive_title(self) -> str:
-        return f'Bill {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}'
+        return f"Bill {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}"
 
     # --> URLs <---
     def get_absolute_url(self):
-        return reverse('django_ledger:invoice-detail',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:invoice-detail",
+            kwargs={"entity_slug": self.ledger.entity.slug, "invoice_pk": self.uuid},
+        )
 
     def clean(self, commit: bool = True):
         """
@@ -1833,11 +1859,15 @@ class InvoiceModelAbstract(
         super().clean()
 
         if self.cash_account.role != ASSET_CA_CASH:
-            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+            raise ValidationError(f"Cash account must be of role {ASSET_CA_CASH}.")
         if self.prepaid_account.role != ASSET_CA_RECEIVABLES:
-            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_RECEIVABLES}.')
+            raise ValidationError(
+                f"Prepaid account must be of role {ASSET_CA_RECEIVABLES}."
+            )
         if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
-            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
+            raise ValidationError(
+                f"Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}."
+            )
 
     def save(self, **kwargs):
         """

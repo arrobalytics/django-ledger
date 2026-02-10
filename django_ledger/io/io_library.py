@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
-from typing import Union, Dict, Callable, Optional, List, Set
+from typing import Callable, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 from django.core.exceptions import ValidationError
@@ -21,7 +21,8 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localtime
-from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, CREDIT, DEBIT
+from django_ledger.models.accounts import (CREDIT, DEBIT, AccountModel,
+                                           AccountModelQuerySet)
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel, LedgerModelQuerySet
@@ -45,6 +46,7 @@ class TransactionInstructionItem:
     account_model: AccountModel
         The resolved account model for the transaction. Not to be modified. Defaults to None.
     """
+
     account_code: str
     amount: Union[Decimal, float]
     tx_type: str
@@ -53,10 +55,10 @@ class TransactionInstructionItem:
 
     def to_dict(self) -> Dict:
         return {
-            'account': self.account_model,
-            'amount': self.amount,
-            'tx_type': self.tx_type,
-            'description': self.description
+            "account": self.account_model,
+            "amount": self.amount,
+            "tx_type": self.tx_type,
+            "description": self.description,
         }
 
 
@@ -65,8 +67,8 @@ class IOCursorValidationError(ValidationError):
 
 
 class IOCursorMode(enum.Enum):
-    STRICT = 'strict'
-    PERMISSIVE = 'permissive'
+    STRICT = "strict"
+    PERMISSIVE = "permissive"
 
 
 class IOCursor:
@@ -88,12 +90,14 @@ class IOCursor:
         Instance, UUID or slug can be sued to retrieve the model.
     """
 
-    def __init__(self,
-                 io_library,
-                 entity_model: EntityModel,
-                 user_model,
-                 mode: IOCursorMode = IOCursorMode.PERMISSIVE,
-                 coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
+    def __init__(
+        self,
+        io_library,
+        entity_model: EntityModel,
+        user_model,
+        mode: IOCursorMode = IOCursorMode.PERMISSIVE,
+        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+    ):
         self.IO_LIBRARY = io_library
         self.MODE = mode
         self.ENTITY_MODEL = entity_model
@@ -115,9 +119,7 @@ class IOCursor:
         -------
         LedgerModelQuerySet
         """
-        return LedgerModel.objects.for_entity(
-            entity_model=self.ENTITY_MODEL
-        )
+        return LedgerModel.objects.for_entity(entity_model=self.ENTITY_MODEL)
 
     def get_account_model_qs(self) -> AccountModelQuerySet:
         """
@@ -177,10 +179,12 @@ class IOCursor:
     def is_strict(self) -> bool:
         return self.MODE == IOCursorMode.STRICT
 
-    def dispatch(self,
-                 name,
-                 ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
-                 **kwargs):
+    def dispatch(
+        self,
+        name,
+        ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
+        **kwargs,
+    ):
         """
         Stages the instructions to be processed by the IOCursor class. This method does not commit the transactions
         into the database.
@@ -199,7 +203,7 @@ class IOCursor:
         if ledger_model is not None:
             if not isinstance(ledger_model, (str, UUID, LedgerModel)):
                 raise IOCursorValidationError(
-                    message=_('Ledger Model must be a string or UUID or LedgerModel')
+                    message=_("Ledger Model must be a string or UUID or LedgerModel")
                 )
 
             if isinstance(ledger_model, LedgerModel):
@@ -220,9 +224,12 @@ class IOCursor:
         """
         if self.instructions is None:
             instructions = {
-                ledger_model: list(chain.from_iterable(
-                    io_blueprint.registry for io_blueprint in instructions
-                )) for ledger_model, instructions in self.commit_plan.items()
+                ledger_model: list(
+                    chain.from_iterable(
+                        io_blueprint.registry for io_blueprint in instructions
+                    )
+                )
+                for ledger_model, instructions in self.commit_plan.items()
             }
 
             for ledger_model, txs in instructions.items():
@@ -231,8 +238,12 @@ class IOCursor:
 
                 if total_credits != total_debits:
                     raise IOCursorValidationError(
-                        message=_('Total transactions Credits and Debits must be equal. '
-                                  'Got CREDITs: {} and DEBITs: {}.'.format(total_credits, total_debits))
+                        message=_(
+                            "Total transactions Credits and Debits must be equal. "
+                            "Got CREDITs: {} and DEBITs: {}.".format(
+                                total_credits, total_debits
+                            )
+                        )
                     )
 
             self.instructions = instructions
@@ -250,13 +261,14 @@ class IOCursor:
         """
         return self.__COMMITTED
 
-    def commit(self,
-               je_timestamp: Optional[Union[datetime, date, str]] = None,
-               je_description: Optional[str] = None,
-               post_new_ledgers: bool = False,
-               post_journal_entries: bool = False,
-               **kwargs):
-
+    def commit(
+        self,
+        je_timestamp: Optional[Union[datetime, date, str]] = None,
+        je_description: Optional[str] = None,
+        post_new_ledgers: bool = False,
+        post_journal_entries: bool = False,
+        **kwargs,
+    ):
         """
         Commits the compiled blueprint transactions into the database. This action is irreversible and if journal
         entries are posted, the books will be immediately impacted by the new transactions. It is encouraged NOT to
@@ -276,34 +288,33 @@ class IOCursor:
             Additional keyword arguments passed to the IO commit_txs function.
         """
         if self.is_committed():
-            raise IOCursorValidationError(
-                message=_('Transactions already committed')
-            )
+            raise IOCursorValidationError(message=_("Transactions already committed"))
         qs = self.resolve_ledger_model_qs()
-        self.ledger_map = {l.ledger_xid: l for l in qs if l.ledger_xid} | {l.uuid: l for l in qs}
+        self.ledger_map = {l.ledger_xid: l for l in qs if l.ledger_xid} | {
+            l.uuid: l for l in qs
+        }
 
         # checks for any locked ledgers...
         for k, ledger_model in self.ledger_map.items():
             if ledger_model.is_locked():
                 raise IOCursorValidationError(
-                    message=_(f'Cannot transact on a locked ledger: {ledger_model}')
+                    message=_(f"Cannot transact on a locked ledger: {ledger_model}")
                 )
 
         for k, txs in self.blueprints.items():
             if k is None:
-
                 if self.is_permissive():
                     # no specified xid, ledger or UUID... create one...
                     self.commit_plan[
                         self.ENTITY_MODEL.create_ledger(
-                            name='Blueprint Commitment',
+                            name="Blueprint Commitment",
                             commit=False,
-                            posted=post_new_ledgers
+                            posted=post_new_ledgers,
                         )
                     ] = txs
                 else:
                     raise IOCursorValidationError(
-                        message=_('Cannot commit transactions to a non-existing ledger')
+                        message=_("Cannot commit transactions to a non-existing ledger")
                     )
 
             elif isinstance(k, str):
@@ -315,44 +326,47 @@ class IOCursor:
                         # create ledger with xid provided...
                         self.commit_plan[
                             self.ENTITY_MODEL.create_ledger(
-                                name=f'Blueprint Commitment {k}',
+                                name=f"Blueprint Commitment {k}",
                                 ledger_xid=k,
                                 commit=False,
-                                posted=post_new_ledgers
+                                posted=post_new_ledgers,
                             )
                         ] = txs
                     else:
                         raise IOCursorValidationError(
-                            message=_(f'Cannot commit transactions to a non-existing ledger_xid {k}')
+                            message=_(
+                                f"Cannot commit transactions to a non-existing ledger_xid {k}"
+                            )
                         )
 
             elif isinstance(k, UUID):
                 try:
                     self.commit_plan[self.ledger_map[k]] = txs
                 except KeyError:
-                    raise IOLibraryError(
-                        message=_(f'Ledger UUID {k} not found.')
-                    )
+                    raise IOLibraryError(message=_(f"Ledger UUID {k} not found."))
 
             elif isinstance(k, LedgerModel):
                 self.commit_plan[k] = txs
 
             else:
-                raise IOLibraryError('Unsupported ledger of type {x}'.format(x=type(k)))
+                raise IOLibraryError("Unsupported ledger of type {x}".format(x=type(k)))
 
         instructions = self.compile_instructions()
-        account_codes = set(tx.account_code for tx in chain.from_iterable(tr for _, tr in instructions.items()))
+        account_codes = set(
+            tx.account_code
+            for tx in chain.from_iterable(tr for _, tr in instructions.items())
+        )
         account_model_qs = self.resolve_account_model_qs(codes=account_codes)
-        account_models = {
-            acc.code: acc for acc in account_model_qs
-        }
+        account_models = {acc.code: acc for acc in account_model_qs}
 
         for tx in chain.from_iterable(tr for _, tr in instructions.items()):
             try:
                 tx.account_model = account_models[tx.account_code]
             except KeyError:
                 raise IOCursorValidationError(
-                    message=_(f'Account code {tx.account_code} not found. Is account available and not locked?')
+                    message=_(
+                        f"Account code {tx.account_code} not found. Is account available and not locked?"
+                    )
                 )
 
         results = dict()
@@ -367,17 +381,17 @@ class IOCursor:
                 je_txs=je_txs,
                 je_posted=post_journal_entries,
                 je_desc=je_description,
-                **kwargs
+                **kwargs,
             )
 
             je.txs_models = txs_models
 
             results[ledger_model] = {
-                'ledger_model': ledger_model,
-                'journal_entry': je,
-                'txs_models': txs_models,
-                'instructions': tr_items,
-                'account_model_qs': self.account_model_qs
+                "ledger_model": ledger_model,
+                "journal_entry": je,
+                "txs_models": txs_models,
+                "instructions": tr_items,
+                "account_model_qs": self.account_model_qs,
             }
 
         self.__COMMITTED = True
@@ -433,9 +447,7 @@ class IOBluePrint:
 
     def _amount(self, amount: Union[float, Decimal, int]) -> Decimal:
         if amount < 0:
-            raise IOBluePrintValidationError(
-                message='Amounts cannot be negative.'
-            )
+            raise IOBluePrintValidationError(message="Amounts cannot be negative.")
 
         if isinstance(amount, float):
             return self._round_amount(Decimal.from_float(amount))
@@ -447,10 +459,12 @@ class IOBluePrint:
             return Decimal(str(amount))
 
         raise IOBluePrintValidationError(
-            message='Amounts must be float, Decimal or int.'
+            message="Amounts must be float, Decimal or int."
         )
 
-    def credit(self, account_code: str, amount: Union[float, Decimal], description: str = None):
+    def credit(
+        self, account_code: str, amount: Union[float, Decimal], description: str = None
+    ):
         """
         Registers a CREDIT to the specified account..
 
@@ -468,10 +482,13 @@ class IOBluePrint:
                 account_code=account_code,
                 amount=self._amount(amount),
                 tx_type=CREDIT,
-                description=description
-            ))
+                description=description,
+            )
+        )
 
-    def debit(self, account_code: str, amount: Union[float, Decimal], description: str = None):
+    def debit(
+        self, account_code: str, amount: Union[float, Decimal], description: str = None
+    ):
         """
         Registers a DEBIT to the specified account.
 
@@ -489,17 +506,20 @@ class IOBluePrint:
                 account_code=account_code,
                 amount=self._amount(amount),
                 tx_type=DEBIT,
-                description=description
-            ))
+                description=description,
+            )
+        )
 
-    def commit(self,
-               entity_model: EntityModel,
-               user_model,
-               ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
-               je_timestamp: Optional[Union[datetime, date, str]] = None,
-               post_new_ledgers: bool = False,
-               post_journal_entries: bool = False,
-               **kwargs) -> Dict:
+    def commit(
+        self,
+        entity_model: EntityModel,
+        user_model,
+        ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
+        je_timestamp: Optional[Union[datetime, date, str]] = None,
+        post_new_ledgers: bool = False,
+        post_journal_entries: bool = False,
+        **kwargs,
+    ) -> Dict:
         """
         Commits the blueprint transactions to the database.
 
@@ -525,14 +545,10 @@ class IOBluePrint:
         Dict
             A dictionary containing the resulting models of the transactions.
         """
-        blueprint_lib = IOLibrary(
-            name=self.get_name(
-                entity_model=entity_model
-            ))
+        blueprint_lib = IOLibrary(name=self.get_name(entity_model=entity_model))
 
         cursor = blueprint_lib.get_cursor(
-            entity_model=entity_model,
-            user_model=user_model
+            entity_model=entity_model, user_model=user_model
         )
 
         cursor.blueprints[ledger_model].append(self)
@@ -541,7 +557,7 @@ class IOBluePrint:
             je_timestamp=je_timestamp,
             post_new_ledgers=post_new_ledgers,
             post_journal_entries=post_journal_entries,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -582,18 +598,20 @@ class IOLibrary:
         Callable
         """
         if not self._check_func_name(name):
-            raise IOLibraryError(message=f'Function "{name}" is not registered in IO library {self.name}')
+            raise IOLibraryError(
+                message=f'Function "{name}" is not registered in IO library {self.name}'
+            )
         return self.registry[name]
 
     def get_io_cursor_class(self):
         return self.IO_CURSOR_CLASS
 
     def get_cursor(
-            self,
-            entity_model: EntityModel,
-            user_model,
-            mode: IOCursorMode = IOCursorMode.PERMISSIVE,
-            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
+        self,
+        entity_model: EntityModel,
+        user_model,
+        mode: IOCursorMode = IOCursorMode.PERMISSIVE,
+        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
     ) -> IOCursor:
         """
         Creates a cursor instance for associated with the library, entity and user model.
@@ -619,5 +637,5 @@ class IOLibrary:
             entity_model=entity_model,
             user_model=user_model,
             coa_model=coa_model,
-            mode=mode
+            mode=mode,
         )

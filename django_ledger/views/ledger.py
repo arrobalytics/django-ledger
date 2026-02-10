@@ -11,32 +11,22 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import (
-    ArchiveIndexView,
-    CreateView,
-    DeleteView,
-    DetailView,
-    MonthArchiveView,
-    RedirectView,
-    UpdateView,
-    YearArchiveView,
-)
+from django.views.generic import (ArchiveIndexView, CreateView, DeleteView,
+                                  DetailView, MonthArchiveView, RedirectView,
+                                  UpdateView, YearArchiveView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
+from django_ledger.forms.ledger import (LedgerModelCreateForm,
+                                        LedgerModelUpdateForm)
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.views.mixins import (
-    BaseDateNavigationUrlMixIn,
-    DateReportMixIn,
-    DjangoLedgerSecurityMixIn,
-    EntityUnitMixIn,
-    MonthlyReportMixIn,
-    PDFReportMixIn,
-    QuarterlyReportMixIn,
-    YearlyReportMixIn,
-)
+from django_ledger.views.mixins import (BaseDateNavigationUrlMixIn,
+                                        DateReportMixIn,
+                                        DjangoLedgerSecurityMixIn,
+                                        EntityUnitMixIn, MonthlyReportMixIn,
+                                        PDFReportMixIn, QuarterlyReportMixIn,
+                                        YearlyReportMixIn)
 
 
 class LedgerModelModelBaseView(DjangoLedgerSecurityMixIn):
@@ -51,13 +41,13 @@ class LedgerModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
     allow_empty = True
-    context_object_name = 'ledger_list'
-    template_name = 'django_ledger/ledger/ledger_list.html'
-    PAGE_TITLE = _('Entity Ledgers')
+    context_object_name = "ledger_list"
+    template_name = "django_ledger/ledger/ledger_list.html"
+    PAGE_TITLE = _("Entity Ledgers")
     paginate_by = 30
-    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
-    date_field = 'created'
-    ordering = '-created'
+    extra_context = {"page_title": PAGE_TITLE, "header_title": PAGE_TITLE}
+    date_field = "created"
+    ordering = "-created"
 
     show_all = False
     show_current = False
@@ -65,8 +55,8 @@ class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        qs = qs.select_related('billmodel', 'invoicemodel')
-        qs = qs.order_by('-created')
+        qs = qs.select_related("billmodel", "invoicemodel")
+        qs = qs.order_by("-created")
 
         if self.show_all:
             return qs
@@ -75,7 +65,7 @@ class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
         if self.show_visible:
             qs = qs.visible()
 
-        search = self.request.GET.get('q')
+        search = self.request.GET.get("q")
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(ledger_xid__icontains=search))
 
@@ -83,41 +73,43 @@ class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         ctx = super().get_context_data(object_list=object_list, **kwargs)
-        ctx['page_title'] = self.PAGE_TITLE
-        ctx['header_title'] = self.PAGE_TITLE
+        ctx["page_title"] = self.PAGE_TITLE
+        ctx["header_title"] = self.PAGE_TITLE
         if self.show_all:
-            ctx['header_subtitle'] = 'All Ledger Models'
-            ctx['header_subtitle_icon'] = 'emojione-monotone:ledger'
+            ctx["header_subtitle"] = "All Ledger Models"
+            ctx["header_subtitle_icon"] = "emojione-monotone:ledger"
         if self.show_visible:
-            ctx['header_subtitle'] = 'Visible Ledger Models'
-            ctx['header_subtitle_icon'] = 'mingcute:user-visible-line'
+            ctx["header_subtitle"] = "Visible Ledger Models"
+            ctx["header_subtitle_icon"] = "mingcute:user-visible-line"
         if self.show_current:
-            ctx['header_subtitle'] = 'Current Ledger Models'
-            ctx['header_subtitle_icon'] = 'basil:current-location-outline'
+            ctx["header_subtitle"] = "Current Ledger Models"
+            ctx["header_subtitle_icon"] = "basil:current-location-outline"
         return ctx
 
 
 class LedgerModelYearListView(YearArchiveView, LedgerModelListView):
     make_object_list = True
-    year_format = '%Y'
+    year_format = "%Y"
     paginate_by = 30
 
 
 class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
     make_object_list = True
-    year_format = '%Y'
-    month_format = '%m'
+    year_format = "%Y"
+    month_format = "%m"
     paginate_by = 30
 
 
 class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
-    template_name = 'django_ledger/ledger/ledger_create.html'
-    PAGE_TITLE = _('Create Ledger')
-    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
+    template_name = "django_ledger/ledger/ledger_create.html"
+    PAGE_TITLE = _("Create Ledger")
+    extra_context = {"page_title": PAGE_TITLE, "header_title": PAGE_TITLE}
 
     def get_form(self, form_class=None):
         return LedgerModelCreateForm(
-            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
+            entity_slug=self.kwargs["entity_slug"],
+            user_model=self.request.user,
+            **self.get_form_kwargs(),
         )
 
     def form_valid(self, form):
@@ -126,57 +118,73 @@ class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('django_ledger:ledger-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
+        return reverse(
+            "django_ledger:ledger-list",
+            kwargs={"entity_slug": self.kwargs["entity_slug"]},
+        )
 
 
 class LedgerModelDetailView(LedgerModelModelBaseView, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         return reverse(
-            'django_ledger:je-list',
-            kwargs={'ledger_pk': self.kwargs['ledger_pk'], 'entity_slug': self.kwargs['entity_slug']},
+            "django_ledger:je-list",
+            kwargs={
+                "ledger_pk": self.kwargs["ledger_pk"],
+                "entity_slug": self.kwargs["entity_slug"],
+            },
         )
 
 
 class LedgerModelUpdateView(LedgerModelModelBaseView, UpdateView):
-    context_object_name = 'ledger'
-    pk_url_kwarg = 'ledger_pk'
-    template_name = 'django_ledger/ledger/ledger_update.html'
+    context_object_name = "ledger"
+    pk_url_kwarg = "ledger_pk"
+    template_name = "django_ledger/ledger/ledger_update.html"
 
     def get_form(self, form_class=None):
         return LedgerModelUpdateForm(
-            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
+            entity_slug=self.kwargs["entity_slug"],
+            user_model=self.request.user,
+            **self.get_form_kwargs(),
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Update Ledger: ') + self.object.name
-        context['header_title'] = context['page_title']
+        context["page_title"] = _("Update Ledger: ") + self.object.name
+        context["header_title"] = context["page_title"]
         return context
 
     def get_success_url(self):
-        return reverse('django_ledger:ledger-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
+        return reverse(
+            "django_ledger:ledger-list",
+            kwargs={"entity_slug": self.kwargs["entity_slug"]},
+        )
 
 
 class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
-    template_name = 'django_ledger/ledger/ledger_delete.html'
-    pk_url_kwarg = 'ledger_pk'
-    context_object_name = 'ledger_model'
+    template_name = "django_ledger/ledger/ledger_delete.html"
+    pk_url_kwarg = "ledger_pk"
+    context_object_name = "ledger_model"
 
     def get_success_url(self):
-        return reverse(viewname='django_ledger:ledger-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
+        return reverse(
+            viewname="django_ledger:ledger-list",
+            kwargs={"entity_slug": self.kwargs["entity_slug"]},
+        )
 
 
 # ACTIONS....
 
 
-class LedgerModelModelActionView(LedgerModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
-    pk_url_kwarg = 'ledger_pk'
+class LedgerModelModelActionView(
+    LedgerModelModelBaseView, RedirectView, SingleObjectMixin
+):
+    http_method_names = ["get"]
+    pk_url_kwarg = "ledger_pk"
     action_name = None
     commit = True
 
     def get_redirect_url(self, *args, **kwargs):
-        next_url = self.request.GET.get('next', None)
+        next_url = self.request.GET.get("next", None)
         if next_url:
             return next_url
         ledger_model: LedgerModel = self.object
@@ -184,14 +192,18 @@ class LedgerModelModelActionView(LedgerModelModelBaseView, RedirectView, SingleO
 
     def get(self, request, *args, **kwargs):
         if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
+            raise ImproperlyConfigured("View attribute action_name is required.")
         ledger_model: LedgerModel = self.get_object()
         self.object = ledger_model
 
         try:
-            getattr(ledger_model, self.action_name)(commit=self.commit, user_model=self.request.user, **kwargs)
+            getattr(ledger_model, self.action_name)(
+                commit=self.commit, user_model=self.request.user, **kwargs
+            )
         except ValidationError as e:
-            messages.add_message(request, message=e.message, level=messages.ERROR, extra_tags='is-danger')
+            messages.add_message(
+                request, message=e.message, level=messages.ERROR, extra_tags="is-danger"
+            )
 
         return super().get(request, **kwargs)
 
@@ -201,39 +213,54 @@ class BaseLedgerModelBalanceSheetView(LedgerModelModelBaseView, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse(
-            'django_ledger:ledger-bs-year',
-            kwargs={'entity_slug': self.kwargs['entity_slug'], 'ledger_pk': self.kwargs['ledger_pk'], 'year': year},
+            "django_ledger:ledger-bs-year",
+            kwargs={
+                "entity_slug": self.kwargs["entity_slug"],
+                "ledger_pk": self.kwargs["ledger_pk"],
+                "year": year,
+            },
         )
 
 
 class FiscalYearLedgerModelBalanceSheetView(
-    LedgerModelModelBaseView, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn, PDFReportMixIn, DetailView
+    LedgerModelModelBaseView,
+    BaseDateNavigationUrlMixIn,
+    EntityUnitMixIn,
+    YearlyReportMixIn,
+    PDFReportMixIn,
+    DetailView,
 ):
-    context_object_name = 'ledger'
-    pk_url_kwarg = 'ledger_pk'
-    template_name = 'django_ledger/financial_statements/balance_sheet.html'
-    pdf_report_type = 'BS'
+    context_object_name = "ledger"
+    pk_url_kwarg = "ledger_pk"
+    template_name = "django_ledger/financial_statements/balance_sheet.html"
+    pdf_report_type = "BS"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Ledger Balance Sheet: ') + self.object.name
-        context['header_title'] = context['page_title']
+        context["page_title"] = _("Ledger Balance Sheet: ") + self.object.name
+        context["header_title"] = context["page_title"]
         return context
 
 
-class QuarterlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, QuarterlyReportMixIn):
+class QuarterlyLedgerModelBalanceSheetView(
+    FiscalYearLedgerModelBalanceSheetView, QuarterlyReportMixIn
+):
     """
     Quarter Balance Sheet View.
     """
 
 
-class MonthlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, MonthlyReportMixIn):
+class MonthlyLedgerModelBalanceSheetView(
+    FiscalYearLedgerModelBalanceSheetView, MonthlyReportMixIn
+):
     """
     Monthly Balance Sheet View.
     """
 
 
-class DateLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, DateReportMixIn):
+class DateLedgerModelBalanceSheetView(
+    FiscalYearLedgerModelBalanceSheetView, DateReportMixIn
+):
     """
     Date Balance Sheet View.
     """
@@ -244,85 +271,117 @@ class BaseLedgerIncomeStatementView(LedgerModelModelBaseView, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse(
-            'django_ledger:ledger-ic-year',
-            kwargs={'entity_slug': self.kwargs['entity_slug'], 'ledger_pk': self.kwargs['ledger_pk'], 'year': year},
+            "django_ledger:ledger-ic-year",
+            kwargs={
+                "entity_slug": self.kwargs["entity_slug"],
+                "ledger_pk": self.kwargs["ledger_pk"],
+                "year": year,
+            },
         )
 
 
 class FiscalYearLedgerIncomeStatementView(
-    LedgerModelModelBaseView, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn, PDFReportMixIn, DetailView
+    LedgerModelModelBaseView,
+    BaseDateNavigationUrlMixIn,
+    EntityUnitMixIn,
+    YearlyReportMixIn,
+    PDFReportMixIn,
+    DetailView,
 ):
-    context_object_name = 'ledger'
-    pk_url_kwarg = 'ledger_pk'
-    template_name = 'django_ledger/financial_statements/income_statement.html'
+    context_object_name = "ledger"
+    pk_url_kwarg = "ledger_pk"
+    template_name = "django_ledger/financial_statements/income_statement.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Ledger Income Statement: ') + self.object.name
-        context['header_title'] = context['page_title']
+        context["page_title"] = _("Ledger Income Statement: ") + self.object.name
+        context["header_title"] = context["page_title"]
         return context
 
 
-class QuarterlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, QuarterlyReportMixIn):
+class QuarterlyLedgerIncomeStatementView(
+    FiscalYearLedgerIncomeStatementView, QuarterlyReportMixIn
+):
     """
     Quarterly Income Statement Quarter Report.
     """
 
 
-class MonthlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, MonthlyReportMixIn):
+class MonthlyLedgerIncomeStatementView(
+    FiscalYearLedgerIncomeStatementView, MonthlyReportMixIn
+):
     """
     Monthly Income Statement Monthly Report.
     """
 
 
-class DateLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, DateReportMixIn):
+class DateLedgerIncomeStatementView(
+    FiscalYearLedgerIncomeStatementView, DateReportMixIn
+):
     """
     Date Income Statement Monthly Report.
     """
 
 
 # CASH FLOW STATEMENT ----
-class BaseLedgerModelCashFlowStatementRedirectView(LedgerModelModelBaseView, RedirectView):
+class BaseLedgerModelCashFlowStatementRedirectView(
+    LedgerModelModelBaseView, RedirectView
+):
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse(
-            'django_ledger:ledger-cf-year',
-            kwargs={'entity_slug': self.kwargs['entity_slug'], 'ledger_pk': self.kwargs['ledger_pk'], 'year': year},
+            "django_ledger:ledger-cf-year",
+            kwargs={
+                "entity_slug": self.kwargs["entity_slug"],
+                "ledger_pk": self.kwargs["ledger_pk"],
+                "year": year,
+            },
         )
 
 
 class FiscalYearLedgerModelCashFlowStatementView(
-    LedgerModelModelBaseView, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn, PDFReportMixIn, DetailView
+    LedgerModelModelBaseView,
+    BaseDateNavigationUrlMixIn,
+    EntityUnitMixIn,
+    YearlyReportMixIn,
+    PDFReportMixIn,
+    DetailView,
 ):
     """
     Fiscal Year Cash Flow Statement View.
     """
 
-    context_object_name = 'ledger'
-    pk_url_kwarg = 'ledger_pk'
-    template_name = 'django_ledger/financial_statements/cash_flow.html'
-    pdf_report_type = 'CFS'
+    context_object_name = "ledger"
+    pk_url_kwarg = "ledger_pk"
+    template_name = "django_ledger/financial_statements/cash_flow.html"
+    pdf_report_type = "CFS"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Ledger Cash Flow Statement: ') + self.object.name
-        context['header_title'] = context['page_title']
+        context["page_title"] = _("Ledger Cash Flow Statement: ") + self.object.name
+        context["header_title"] = context["page_title"]
         return context
 
 
-class QuarterlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, QuarterlyReportMixIn):
+class QuarterlyLedgerModelCashFlowStatementView(
+    FiscalYearLedgerModelCashFlowStatementView, QuarterlyReportMixIn
+):
     """
     Quarter Cash Flow Statement View.
     """
 
 
-class MonthlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, MonthlyReportMixIn):
+class MonthlyLedgerModelCashFlowStatementView(
+    FiscalYearLedgerModelCashFlowStatementView, MonthlyReportMixIn
+):
     """
     Monthly Cash Flow Statement View.
     """
 
 
-class DateLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, DateReportMixIn):
+class DateLedgerModelCashFlowStatementView(
+    FiscalYearLedgerModelCashFlowStatementView, DateReportMixIn
+):
     """
     Date Cash Flow Statement View.
     """

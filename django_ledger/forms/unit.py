@@ -12,24 +12,19 @@ class EntityUnitModelCreateForm(ModelForm):
         self.USER_MODEL = user_model
 
     def clean_name(self):
-        name = self.cleaned_data['name']
+        name = self.cleaned_data["name"]
         if len(name) < 10:
-            raise ValidationError(_('Unit name must be at least 10 characters long'))
+            raise ValidationError(_("Unit name must be at least 10 characters long"))
         return name
 
     class Meta:
         model = EntityUnitModel
-        fields = [
-            'name',
-            'document_prefix'
-        ]
+        fields = ["name", "document_prefix"]
         widgets = {
-            'name': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
-            'document_prefix': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
+            "name": TextInput(attrs={"class": DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            "document_prefix": TextInput(
+                attrs={"class": DJANGO_LEDGER_FORM_INPUT_CLASSES}
+            ),
         }
 
 

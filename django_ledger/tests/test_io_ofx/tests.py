@@ -9,7 +9,9 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
     BASE_PATH = "django_ledger/tests/test_io_ofx/samples/"
 
     def get_sample_ofx(self, ofx_sample_name: str):
-        ofx = OFXFileManager(ofx_file_or_path=os.path.join(self.BASE_PATH, ofx_sample_name))
+        ofx = OFXFileManager(
+            ofx_file_or_path=os.path.join(self.BASE_PATH, ofx_sample_name)
+        )
 
         return ofx
 
@@ -25,7 +27,9 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
         self.assertIsNone(accounts[0]["fid"])
         self.assertIsNone(accounts[0]["bank"])
         # balance observed from the ofx file
-        self.assertEqual(ofx.ofx_data.statements[0].balance.balamt, Decimal("123456.49"))
+        self.assertEqual(
+            ofx.ofx_data.statements[0].balance.balamt, Decimal("123456.49")
+        )
 
     def test_ofx_v1_with_open_tags(self):
         """

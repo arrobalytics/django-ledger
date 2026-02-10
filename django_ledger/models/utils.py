@@ -69,33 +69,33 @@ class LazyLoader:
         get_cash_flow_statement_report_class() -> CashFlowStatementReport: Returns the CashFlowStatementReport class.
     """
 
-    app_config = apps.get_app_config(app_label='django_ledger')
+    app_config = apps.get_app_config(app_label="django_ledger")
 
-    ENTITY_MODEL = 'entitymodel'
-    LEDGER_MODEL = 'ledgermodel'
-    JE_MODEL = 'journalentrymodel'
-    TRANSACTION_MODEL = 'transactionmodel'
-    STAGED_TRANSACTION_MODEL = 'stagedtransactionmodel'
-    ACCOUNT_MODEL = 'accountmodel'
-    COA_MODEL = 'chartofaccountmodel'
+    ENTITY_MODEL = "entitymodel"
+    LEDGER_MODEL = "ledgermodel"
+    JE_MODEL = "journalentrymodel"
+    TRANSACTION_MODEL = "transactionmodel"
+    STAGED_TRANSACTION_MODEL = "stagedtransactionmodel"
+    ACCOUNT_MODEL = "accountmodel"
+    COA_MODEL = "chartofaccountmodel"
 
-    ENTITY_STATE_MODEL = 'entitystatemodel'
-    ENTITY_UNIT_MODEL = 'entityunitmodel'
-    CLOSING_ENTRY_MODEL = 'closingentrymodel'
-    CLOSING_ENTRY_TRANSACTION_MODEL = 'closingentrytransactionmodel'
+    ENTITY_STATE_MODEL = "entitystatemodel"
+    ENTITY_UNIT_MODEL = "entityunitmodel"
+    CLOSING_ENTRY_MODEL = "closingentrymodel"
+    CLOSING_ENTRY_TRANSACTION_MODEL = "closingentrytransactionmodel"
 
-    BANK_ACCOUNT_MODEL = 'bankaccountmodel'
-    PURCHASE_ORDER_MODEL = 'purchaseordermodel'
+    BANK_ACCOUNT_MODEL = "bankaccountmodel"
+    PURCHASE_ORDER_MODEL = "purchaseordermodel"
 
-    CUSTOMER_MODEL = 'customermodel'
-    INVOICE_MODEL = 'invoicemodel'
-    RECEIPT_MODEL = 'receiptmodel'
-    BILL_MODEL = 'billmodel'
-    UOM_MODEL = 'unitofmeasuremodel'
-    VENDOR_MODEL = 'vendormodel'
-    ESTIMATE_MODEL = 'estimatemodel'
-    ITEM_MODEL = 'itemmodel'
-    ITEM_TRANSACTION_MODEL = 'itemtransactionmodel'
+    CUSTOMER_MODEL = "customermodel"
+    INVOICE_MODEL = "invoicemodel"
+    RECEIPT_MODEL = "receiptmodel"
+    BILL_MODEL = "billmodel"
+    UOM_MODEL = "unitofmeasuremodel"
+    VENDOR_MODEL = "vendormodel"
+    ESTIMATE_MODEL = "estimatemodel"
+    ITEM_MODEL = "itemmodel"
+    ITEM_TRANSACTION_MODEL = "itemtransactionmodel"
 
     ENTITY_DATA_GENERATOR = None
     BALANCE_SHEET_REPORT_CLASS = None
@@ -185,14 +185,16 @@ class LazyLoader:
 
     def get_income_statement_report_class(self):
         if not self.INCOME_STATEMENT_REPORT_CLASS:
-            from django_ledger.report.income_statement import IncomeStatementReport
+            from django_ledger.report.income_statement import \
+                IncomeStatementReport
 
             self.INCOME_STATEMENT_REPORT_CLASS = IncomeStatementReport
         return self.INCOME_STATEMENT_REPORT_CLASS
 
     def get_cash_flow_statement_report_class(self):
         if not self.CASH_FLOW_STATEMENT_REPORT_CLASS:
-            from django_ledger.report.cash_flow_statement import CashFlowStatementReport
+            from django_ledger.report.cash_flow_statement import \
+                CashFlowStatementReport
 
             self.CASH_FLOW_STATEMENT_REPORT_CLASS = CashFlowStatementReport
         return self.CASH_FLOW_STATEMENT_REPORT_CLASS

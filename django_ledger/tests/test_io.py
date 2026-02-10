@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from random import randint
 from zoneinfo import ZoneInfo
 
@@ -10,9 +10,8 @@ from django_ledger.tests.base import DjangoLedgerBaseTest
 
 
 class IOTest(DjangoLedgerBaseTest):
-
     def test_digest_dttm__dttm(self):
-        self.assertTrue(settings.USE_TZ, msg='Timezone not enabled.')
+        self.assertTrue(settings.USE_TZ, msg="Timezone not enabled.")
 
         entity_model = self.get_random_entity_model()
         from_datetime = self.START_DATE
@@ -25,38 +24,41 @@ class IOTest(DjangoLedgerBaseTest):
         self.assertEqual(io_digest.get_to_datetime(), to_datetime)
 
     def test_digest_dt__dttm(self):
-        self.assertTrue(settings.USE_TZ, msg='Timezone not enabled.')
+        self.assertTrue(settings.USE_TZ, msg="Timezone not enabled.")
 
         entity_model = self.get_random_entity_model()
         from_datetime = self.START_DATE
         to_datetime = self.START_DATE + timedelta(days=randint(10, 60))
 
-        io_digest = entity_model.digest(from_date=from_datetime.date(), to_date=to_datetime)
+        io_digest = entity_model.digest(
+            from_date=from_datetime.date(), to_date=to_datetime
+        )
         self.assertTrue(isinstance(io_digest.get_to_datetime(), datetime))
         self.assertTrue(isinstance(io_digest.get_from_datetime(), datetime))
 
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_from_datetime(),
-
             # equals the localized datetime @ 0:00
             datetime.combine(
                 from_datetime.date(),
                 datetime.min.time(),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
-            )
+                tzinfo=ZoneInfo(settings.TIME_ZONE),
+            ),
         )
 
         self.assertEqual(io_digest.get_to_datetime(), to_datetime)
 
     def test_digest_dttm__dt(self):
-        self.assertTrue(settings.USE_TZ, msg='Timezone not enabled.')
+        self.assertTrue(settings.USE_TZ, msg="Timezone not enabled.")
 
         entity_model = self.get_random_entity_model()
         from_datetime = self.START_DATE
         to_datetime = self.START_DATE + timedelta(days=randint(10, 60))
 
-        io_digest = entity_model.digest(from_date=from_datetime, to_date=to_datetime.date())
+        io_digest = entity_model.digest(
+            from_date=from_datetime, to_date=to_datetime.date()
+        )
 
         self.assertTrue(isinstance(io_digest.get_to_datetime(), datetime))
         self.assertTrue(isinstance(io_digest.get_from_datetime(), datetime))
@@ -66,23 +68,24 @@ class IOTest(DjangoLedgerBaseTest):
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_to_datetime(),
-
             # equals the localized datetime @ 0:00
             datetime.combine(
                 to_datetime.date(),
                 datetime.min.time(),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
-            )
+                tzinfo=ZoneInfo(settings.TIME_ZONE),
+            ),
         )
 
     def test_digest_dt__dt(self):
-        self.assertTrue(settings.USE_TZ, msg='Timezone not enabled.')
+        self.assertTrue(settings.USE_TZ, msg="Timezone not enabled.")
 
         entity_model = self.get_random_entity_model()
         from_datetime = self.START_DATE
         to_datetime = self.START_DATE + timedelta(days=randint(10, 60))
 
-        io_digest = entity_model.digest(from_date=from_datetime.date(), to_date=to_datetime.date())
+        io_digest = entity_model.digest(
+            from_date=from_datetime.date(), to_date=to_datetime.date()
+        )
 
         self.assertTrue(isinstance(io_digest.get_to_datetime(), datetime))
         self.assertTrue(isinstance(io_digest.get_from_datetime(), datetime))
@@ -90,29 +93,27 @@ class IOTest(DjangoLedgerBaseTest):
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_from_datetime(),
-
             # equals the localized datetime @ 0:00
             datetime.combine(
                 from_datetime.date(),
                 datetime.min.time(),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
-            )
+                tzinfo=ZoneInfo(settings.TIME_ZONE),
+            ),
         )
 
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_to_datetime(),
-
             # equals the localized datetime @ 0:00
             datetime.combine(
                 to_datetime.date(),
                 datetime.min.time(),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
-            )
+                tzinfo=ZoneInfo(settings.TIME_ZONE),
+            ),
         )
 
     def test_digest_none__dttm(self):
-        self.assertTrue(settings.USE_TZ, msg='Timezone not enabled.')
+        self.assertTrue(settings.USE_TZ, msg="Timezone not enabled.")
 
         entity_model = self.get_random_entity_model()
         to_datetime = self.START_DATE + timedelta(days=randint(10, 60))
@@ -125,15 +126,14 @@ class IOTest(DjangoLedgerBaseTest):
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_from_datetime(),
-
             # equals the localized datetime @ 0:00
-            None
+            None,
         )
 
         self.assertEqual(io_digest.get_to_datetime(), to_datetime)
 
     def test_digest_none__dt(self):
-        self.assertTrue(settings.USE_TZ, msg='Timezone not enabled.')
+        self.assertTrue(settings.USE_TZ, msg="Timezone not enabled.")
 
         entity_model = self.get_random_entity_model()
         to_datetime = self.START_DATE + timedelta(days=randint(10, 60))
@@ -146,21 +146,19 @@ class IOTest(DjangoLedgerBaseTest):
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_from_datetime(),
-
             # equals the localized datetime @ 0:00
-            None
+            None,
         )
 
         self.assertEqual(
             # the assumed datetime given a date...
             io_digest.get_to_datetime(),
-
             # equals the localized datetime @ 0:00
             datetime.combine(
                 to_datetime.date(),
                 datetime.min.time(),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
-            )
+                tzinfo=ZoneInfo(settings.TIME_ZONE),
+            ),
         )
 
     def test_digest_entity(self):
@@ -170,23 +168,19 @@ class IOTest(DjangoLedgerBaseTest):
 
         with self.assertRaises(IOValidationError):
             entity_model.digest(
-                entity_slug='1234',
-                from_date=from_datetime,
-                to_date=to_datetime
+                entity_slug="1234", from_date=from_datetime, to_date=to_datetime
             )
 
         io_digest = entity_model.digest(
-            entity_slug=entity_model.slug,
-            from_date=from_datetime,
-            to_date=to_datetime
+            entity_slug=entity_model.slug, from_date=from_datetime, to_date=to_datetime
         )
 
         self.assertTrue(isinstance(io_digest.IO_MODEL, EntityModel))
         self.assertTrue(io_digest.get_io_data(), io_digest.IO_DATA)
-        self.assertTrue(io_digest.IO_DATA['entity_slug'], entity_model.slug)
-        self.assertFalse(io_digest.IO_DATA['by_activity'])
-        self.assertFalse(io_digest.IO_DATA['by_unit'])
-        self.assertFalse(io_digest.IO_DATA['by_tx_type'])
+        self.assertTrue(io_digest.IO_DATA["entity_slug"], entity_model.slug)
+        self.assertFalse(io_digest.IO_DATA["by_activity"])
+        self.assertFalse(io_digest.IO_DATA["by_unit"])
+        self.assertFalse(io_digest.IO_DATA["by_tx_type"])
 
         # io_digest = entity_model.digest(
         #     unit_slug='3212',
@@ -205,10 +199,10 @@ class IOTest(DjangoLedgerBaseTest):
             entity_slug=entity_model.slug,
             from_date=from_datetime,
             to_date=to_datetime,
-            for_test=True
+            for_test=True,
         )
 
         tx_qs = io_digest.get_io_txs_queryset()
         # Every transaction returned by the IO for an entity digest must belong to that entity.
         for tx in tx_qs:
-            self.assertEqual(tx['journal_entry__ledger__entity_id'], entity_model.uuid)
+            self.assertEqual(tx["journal_entry__ledger__entity_id"], entity_model.uuid)

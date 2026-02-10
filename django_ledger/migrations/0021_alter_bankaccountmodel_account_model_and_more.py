@@ -6,27 +6,30 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('django_ledger', '0020_remove_bankaccountmodel_django_ledg_cash_ac_59a8af_idx_and_more'),
+        (
+            "django_ledger",
+            "0020_remove_bankaccountmodel_django_ledg_cash_ac_59a8af_idx_and_more",
+        ),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='bankaccountmodel',
-            name='account_model',
+            model_name="bankaccountmodel",
+            name="account_model",
             field=models.ForeignKey(
-                help_text='Account model be used to map transactions from financial institution',
+                help_text="Account model be used to map transactions from financial institution",
                 on_delete=django.db.models.deletion.RESTRICT,
-                to='django_ledger.AccountModel',
-                verbose_name='Associated Account Model'
+                to="django_ledger.AccountModel",
+                verbose_name="Associated Account Model",
             ),
         ),
         migrations.AlterField(
-            model_name='importjobmodel',
-            name='bank_account_model',
+            model_name="importjobmodel",
+            name="bank_account_model",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
-                to='django_ledger.BankAccountModel',
-                verbose_name='Associated Bank Account Model'
+                to="django_ledger.BankAccountModel",
+                verbose_name="Associated Bank Account Model",
             ),
         ),
     ]

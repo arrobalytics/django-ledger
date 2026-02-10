@@ -4,13 +4,15 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0008_closingentrymodel_closingentrytransactionmodel_and_more'),
+        (
+            "django_ledger",
+            "0008_closingentrymodel_closingentrytransactionmodel_and_more",
+        ),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='StagedTransactionModel',
+            name="StagedTransactionModel",
         ),
     ]

@@ -10,22 +10,21 @@ RATIO_NA = 0
 
 
 class FinancialRatioManager:
-
     def __init__(self, io_data):
         self.DIGEST = io_data
-        self.ACCOUNTS = io_data['accounts']
+        self.ACCOUNTS = io_data["accounts"]
         self.RATIO_NA = RATIO_NA
 
-        self.quick_assets = io_data['group_balance']['GROUP_QUICK_ASSETS']
-        self.assets = io_data['group_balance']['GROUP_ASSETS']
-        self.current_liabilities = io_data['group_balance']['GROUP_CURRENT_LIABILITIES']
-        self.current_assets = io_data['group_balance']['GROUP_CURRENT_ASSETS']
-        self.equity = io_data['group_balance']['GROUP_CAPITAL']
-        self.liabilities = io_data['group_balance']['GROUP_LIABILITIES']
-        self.net_income = io_data['group_balance']['GROUP_EARNINGS']
-        self.net_sales = io_data['group_balance']['GROUP_NET_SALES']
-        self.net_profit = io_data['group_balance']['GROUP_NET_PROFIT']
-        self.gross_profit = io_data['group_balance']['GROUP_GROSS_PROFIT']
+        self.quick_assets = io_data["group_balance"]["GROUP_QUICK_ASSETS"]
+        self.assets = io_data["group_balance"]["GROUP_ASSETS"]
+        self.current_liabilities = io_data["group_balance"]["GROUP_CURRENT_LIABILITIES"]
+        self.current_assets = io_data["group_balance"]["GROUP_CURRENT_ASSETS"]
+        self.equity = io_data["group_balance"]["GROUP_CAPITAL"]
+        self.liabilities = io_data["group_balance"]["GROUP_LIABILITIES"]
+        self.net_income = io_data["group_balance"]["GROUP_EARNINGS"]
+        self.net_sales = io_data["group_balance"]["GROUP_NET_SALES"]
+        self.net_profit = io_data["group_balance"]["GROUP_NET_PROFIT"]
+        self.gross_profit = io_data["group_balance"]["GROUP_GROSS_PROFIT"]
         self.RATIOS = dict()
 
     def digest(self):
@@ -36,7 +35,7 @@ class FinancialRatioManager:
         self.return_on_assets()
         self.net_profit_margin()
         self.gross_profit_margin()
-        self.DIGEST['ratios'] = self.RATIOS
+        self.DIGEST["ratios"] = self.RATIOS
         return self.DIGEST
 
     # ------> SOLVENCY RATIOS <------
@@ -47,7 +46,7 @@ class FinancialRatioManager:
             cr = self.quick_assets / self.current_liabilities
             if as_percent:
                 cr = cr * 100
-        self.RATIOS['quick_ratio'] = cr
+        self.RATIOS["quick_ratio"] = cr
 
     def current_ratio(self, as_percent=False):
         if self.current_liabilities == 0:
@@ -56,7 +55,7 @@ class FinancialRatioManager:
             cr = self.current_assets / self.current_liabilities
             if as_percent:
                 cr = cr * 100
-        self.RATIOS['current_ratio'] = cr
+        self.RATIOS["current_ratio"] = cr
 
     # ------> LEVERAGE RATIOS <------
     def debt_to_equity(self, as_percent=False):
@@ -66,7 +65,7 @@ class FinancialRatioManager:
             cr = self.liabilities / self.equity
             if as_percent:
                 cr = cr * 100
-        self.RATIOS['debt_to_equity'] = cr
+        self.RATIOS["debt_to_equity"] = cr
 
     # ------> PROFITABILITY RATIOS <------
     def return_on_equity(self, as_percent=False):
@@ -76,7 +75,7 @@ class FinancialRatioManager:
             cr = self.net_income / self.equity
             if as_percent:
                 cr = cr * 100
-        self.RATIOS['return_on_equity'] = cr
+        self.RATIOS["return_on_equity"] = cr
 
     def return_on_assets(self, as_percent=False):
         if self.assets == 0:
@@ -85,7 +84,7 @@ class FinancialRatioManager:
             cr = self.net_income / self.assets
             if as_percent:
                 cr = cr * 100
-        self.RATIOS['return_on_assets'] = cr
+        self.RATIOS["return_on_assets"] = cr
 
     def net_profit_margin(self, as_percent=False):
         if self.net_sales == 0:
@@ -94,7 +93,7 @@ class FinancialRatioManager:
             npm = self.net_profit / self.net_sales
             if as_percent:
                 npm = npm * 100
-        self.RATIOS['net_profit_margin'] = npm
+        self.RATIOS["net_profit_margin"] = npm
 
     def gross_profit_margin(self, as_percent=False):
         if self.gross_profit == 0:
@@ -103,4 +102,4 @@ class FinancialRatioManager:
             gpm = self.gross_profit / self.net_sales
             if as_percent:
                 gpm = gpm * 100
-        self.RATIOS['gross_profit_margin'] = gpm
+        self.RATIOS["gross_profit_margin"] = gpm

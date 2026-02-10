@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0012_stagedtransactionmodel_activity'),
+        ("django_ledger", "0012_stagedtransactionmodel_activity"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stagedtransactionmodel',
-            name='bundle_split',
-            field=models.BooleanField(default=True, verbose_name='Bundle Split Transactions'),
+            model_name="stagedtransactionmodel",
+            name="bundle_split",
+            field=models.BooleanField(
+                default=True, verbose_name="Bundle Split Transactions"
+            ),
         ),
     ]

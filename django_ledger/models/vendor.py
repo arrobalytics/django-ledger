@@ -23,18 +23,13 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
-from django_ledger.models.mixins import (
-    ContactInfoMixIn,
-    CreateUpdateMixIn,
-    FinancialAccountInfoMixin,
-    TaxInfoMixIn,
-)
+from django_ledger.models.mixins import (ContactInfoMixIn, CreateUpdateMixIn,
+                                         FinancialAccountInfoMixin,
+                                         TaxInfoMixIn)
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (
-    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
-    DJANGO_LEDGER_VENDOR_NUMBER_PREFIX,
-)
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
+                                    DJANGO_LEDGER_VENDOR_NUMBER_PREFIX)
 
 
 def vendor_picture_upload_to(instance, filename):
@@ -43,7 +38,7 @@ def vendor_picture_upload_to(instance, filename):
     vendor_number = instance.customer_number
     name, ext = os.path.splitext(filename)
     safe_name = slugify(name)
-    return f'vendor_pictures/{vendor_number}/{safe_name}{ext.lower()}'
+    return f"vendor_pictures/{vendor_number}/{safe_name}{ext.lower()}"
 
 
 class VendorModelValidationError(ValidationError):
@@ -55,7 +50,7 @@ class VendorModelQuerySet(QuerySet):
     Custom defined VendorModel QuerySet.
     """
 
-    def for_user(self, user_model) -> 'VendorModelQuerySet':
+    def for_user(self, user_model) -> "VendorModelQuerySet":
         if user_model.is_superuser:
             return self
         return self.filter(
@@ -63,7 +58,7 @@ class VendorModelQuerySet(QuerySet):
             | Q(entity_model__managers__in=[user_model])
         )
 
-    def active(self) -> 'VendorModelQuerySet':
+    def active(self) -> "VendorModelQuerySet":
         """
         Active vendors can be assigned to new bills and show on dropdown menus and views.
 
@@ -74,7 +69,7 @@ class VendorModelQuerySet(QuerySet):
         """
         return self.filter(active=True)
 
-    def inactive(self) -> 'VendorModelQuerySet':
+    def inactive(self) -> "VendorModelQuerySet":
         """
         Active vendors can be assigned to new bills and show on dropdown menus and views.
         Marking VendorModels as inactive can help reduce Database load to populate select inputs and also inactivate
@@ -88,7 +83,7 @@ class VendorModelQuerySet(QuerySet):
         """
         return self.filter(active=False)
 
-    def hidden(self) -> 'VendorModelQuerySet':
+    def hidden(self) -> "VendorModelQuerySet":
         """
         Hidden vendors do not show on dropdown menus, but may be used via APIs or any other method that does not
         involve the UI.
@@ -100,7 +95,7 @@ class VendorModelQuerySet(QuerySet):
         """
         return self.filter(hidden=True)
 
-    def visible(self) -> 'VendorModelQuerySet':
+    def visible(self) -> "VendorModelQuerySet":
         """
         Visible vendors show on dropdown menus and views. Visible vendors are active and not hidden.
 
@@ -122,15 +117,13 @@ class VendorModelManager(Manager):
 
     def get_queryset(self) -> VendorModelQuerySet:
         qs = VendorModelQuerySet(self.model, using=self._db)
-        return qs.select_related(
-            'entity_model'
-        ).annotate(
-            _entity_slug=F('entity_model__slug'),
+        return qs.select_related("entity_model").annotate(
+            _entity_slug=F("entity_model__slug"),
         )
 
     @deprecated_entity_slug_behavior
     def for_entity(
-            self, entity_model: 'EntityModel | str | UUID' = None, **kwargs
+        self, entity_model: "EntityModel | str | UUID" = None, **kwargs
     ) -> VendorModelQuerySet:
         """
         Filters the queryset for a given entity model.
@@ -163,16 +156,16 @@ class VendorModelManager(Manager):
         EntityModel = lazy_loader.get_entity_model()
 
         qs = self.get_queryset()
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
                 stacklevel=2,
             )
 
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             qs = qs.filter(entity_model=entity_model)
@@ -182,7 +175,7 @@ class VendorModelManager(Manager):
             qs = qs.filter(entity_model_id=entity_model)
         else:
             raise VendorModelValidationError(
-                'EntityModel slug must be either a string or an EntityModel instance'
+                "EntityModel slug must be either a string or an EntityModel instance"
             )
         return qs
 
@@ -231,22 +224,22 @@ class VendorModelAbstract(
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     vendor_code = models.SlugField(
-        max_length=50, null=True, blank=True, verbose_name='User defined vendor code.'
+        max_length=50, null=True, blank=True, verbose_name="User defined vendor code."
     )
     vendor_number = models.CharField(
         max_length=30,
         null=True,
         blank=True,
         editable=False,
-        verbose_name=_('Vendor Number'),
-        help_text='System generated vendor number.',
+        verbose_name=_("Vendor Number"),
+        help_text="System generated vendor number.",
     )
     vendor_name = models.CharField(max_length=100)
 
     entity_model = models.ForeignKey(
-        'django_ledger.EntityModel',
+        "django_ledger.EntityModel",
         on_delete=models.CASCADE,
-        verbose_name=_('Vendor Entity'),
+        verbose_name=_("Vendor Entity"),
         editable=False,
     )
     description = models.TextField()
@@ -261,31 +254,31 @@ class VendorModelAbstract(
     objects = VendorModelManager.from_queryset(queryset_class=VendorModelQuerySet)()
 
     class Meta:
-        verbose_name = _('Vendor')
+        verbose_name = _("Vendor")
         indexes = [
-            models.Index(fields=['entity_model', 'vendor_number']),
-            models.Index(fields=['vendor_number']),
-            models.Index(fields=['created']),
-            models.Index(fields=['updated']),
-            models.Index(fields=['active']),
-            models.Index(fields=['hidden']),
+            models.Index(fields=["entity_model", "vendor_number"]),
+            models.Index(fields=["vendor_number"]),
+            models.Index(fields=["created"]),
+            models.Index(fields=["updated"]),
+            models.Index(fields=["active"]),
+            models.Index(fields=["hidden"]),
         ]
-        unique_together = [('entity_model', 'vendor_number')]
+        unique_together = [("entity_model", "vendor_number")]
         abstract = True
 
     def __str__(self):
         if not self.vendor_number:
-            f'Unknown Vendor: {self.vendor_name}'
-        return f'{self.vendor_number}: {self.vendor_name}'
+            f"Unknown Vendor: {self.vendor_name}"
+        return f"{self.vendor_number}: {self.vendor_name}"
 
     @property
     def entity_slug(self) -> str:
         try:
-            return getattr(self, '_entity_slug')
+            return getattr(self, "_entity_slug")
         except AttributeError:
             return self.entity_model.slug
 
-    def validate_for_entity(self, entity_model: 'EntityModel | str | UUID'):
+    def validate_for_entity(self, entity_model: "EntityModel | str | UUID"):
         EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_model, str):
             is_valid = entity_model == self.entity_model.slug
@@ -296,7 +289,7 @@ class VendorModelAbstract(
 
         if not is_valid:
             raise VendorModelValidationError(
-                'EntityModel does not belong to this Vendor'
+                "EntityModel does not belong to this Vendor"
             )
 
     def can_generate_vendor_number(self) -> bool:
@@ -330,26 +323,26 @@ class VendorModelAbstract(
 
         try:
             LOOKUP = {
-                'entity_model_id__exact': self.entity_model_id,
-                'key__exact': EntityStateModel.KEY_VENDOR,
+                "entity_model_id__exact": self.entity_model_id,
+                "key__exact": EntityStateModel.KEY_VENDOR,
             }
 
             state_model_qs = EntityStateModel.objects.filter(
                 **LOOKUP
             ).select_for_update()
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
+            state_model.sequence = F("sequence") + 1
             state_model.save()
             state_model.refresh_from_db()
 
             return state_model
         except ObjectDoesNotExist:
             LOOKUP = {
-                'entity_model_id': self.entity_model_id,
-                'entity_unit_id': None,
-                'fiscal_year': None,
-                'key': EntityStateModel.KEY_VENDOR,
-                'sequence': 1,
+                "entity_model_id": self.entity_model_id,
+                "entity_unit_id": None,
+                "fiscal_year": None,
+                "key": EntityStateModel.KEY_VENDOR,
+                "sequence": 1,
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
             return state_model
@@ -379,29 +372,27 @@ class VendorModelAbstract(
                     state_model = self._get_next_state_model(raise_exception=False)
 
             seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-            self.vendor_number = f'{DJANGO_LEDGER_VENDOR_NUMBER_PREFIX}-{seq}'
+            self.vendor_number = f"{DJANGO_LEDGER_VENDOR_NUMBER_PREFIX}-{seq}"
 
             if commit:
-                self.save(update_fields=['vendor_number', 'updated'])
+                self.save(update_fields=["vendor_number", "updated"])
 
         return self.vendor_number
 
     def get_absolute_url(self):
-        return reverse('django_ledger:vendor-detail',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'vendor_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:vendor-detail",
+            kwargs={"entity_slug": self.entity_slug, "vendor_pk": self.uuid},
+        )
 
     def get_detail_url(self):
         return self.get_absolute_url()
 
     def get_update_url(self):
-        return reverse('django_ledger:vendor-update',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'vendor_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:vendor-update",
+            kwargs={"entity_slug": self.entity_slug, "vendor_pk": self.uuid},
+        )
 
     def clean(self):
         """

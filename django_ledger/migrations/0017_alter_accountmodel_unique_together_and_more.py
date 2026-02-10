@@ -5,27 +5,41 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0016_remove_accountmodel_django_ledg_coa_mod_e19964_idx_and_more'),
+        (
+            "django_ledger",
+            "0016_remove_accountmodel_django_ledg_coa_mod_e19964_idx_and_more",
+        ),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='accountmodel',
+            name="accountmodel",
             unique_together=set(),
         ),
         migrations.AlterField(
-            model_name='accountmodel',
-            name='coa_model',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_ledger.chartofaccountmodel', verbose_name='Chart of Accounts'),
+            model_name="accountmodel",
+            name="coa_model",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.chartofaccountmodel",
+                verbose_name="Chart of Accounts",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='accountmodel',
-            constraint=models.UniqueConstraint(fields=('coa_model', 'code'), name='unique_code_for_coa_model', violation_error_message='Account codes must be unique for each Chart of Accounts Model.'),
+            model_name="accountmodel",
+            constraint=models.UniqueConstraint(
+                fields=("coa_model", "code"),
+                name="unique_code_for_coa_model",
+                violation_error_message="Account codes must be unique for each Chart of Accounts Model.",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='accountmodel',
-            constraint=models.UniqueConstraint(fields=('coa_model', 'role', 'role_default'), name='only_one_account_assigned_as_default_for_role', violation_error_message='Only one default account for role permitted.'),
+            model_name="accountmodel",
+            constraint=models.UniqueConstraint(
+                fields=("coa_model", "role", "role_default"),
+                name="only_one_account_assigned_as_default_for_role",
+                violation_error_message="Only one default account for role permitted.",
+            ),
         ),
     ]

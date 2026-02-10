@@ -8,9 +8,10 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE, \
-    LIABILITY_CL_ACC_PAYABLE
-from django_ledger.models import EntityModel, BillModel, VendorModel
+from django_ledger.io.roles import (ASSET_CA_CASH, ASSET_CA_PREPAID,
+                                    LIABILITY_CL_ACC_PAYABLE,
+                                    LIABILITY_CL_DEFERRED_REVENUE)
+from django_ledger.models import BillModel, EntityModel, VendorModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.bill import urlpatterns as bill_urls
 
@@ -18,7 +19,6 @@ UserModel = get_user_model()
 
 
 class BillModelTests(DjangoLedgerBaseTest):
-
     def setUp(self) -> None:
         self.URL_PATTERNS = {
             p.name: set(p.pattern.converters.keys()) for p in bill_urls
@@ -36,29 +36,36 @@ class BillModelTests(DjangoLedgerBaseTest):
 
         for path, kwargs in self.URL_PATTERNS.items():
             url_kwargs = dict()
-            url_kwargs['entity_slug'] = entity_model.slug
-            if 'bill_pk' in kwargs:
-                url_kwargs['bill_pk'] = bill_model.uuid
-            if 'year' in kwargs:
-                url_kwargs['year'] = bill_model.date_draft.year
-            if 'month' in kwargs:
-                url_kwargs['month'] = bill_model.date_draft.month
-            if 'po_pk' in kwargs:
-                url_kwargs['po_pk'] = uuid4()
-            if 'ce_pk' in kwargs:
-                url_kwargs['ce_pk'] = uuid4()
+            url_kwargs["entity_slug"] = entity_model.slug
+            if "bill_pk" in kwargs:
+                url_kwargs["bill_pk"] = bill_model.uuid
+            if "year" in kwargs:
+                url_kwargs["year"] = bill_model.date_draft.year
+            if "month" in kwargs:
+                url_kwargs["month"] = bill_model.date_draft.month
+            if "po_pk" in kwargs:
+                url_kwargs["po_pk"] = uuid4()
+            if "ce_pk" in kwargs:
+                url_kwargs["ce_pk"] = uuid4()
 
-            url = reverse(f'django_ledger:{path}', kwargs=url_kwargs)
+            url = reverse(f"django_ledger:{path}", kwargs=url_kwargs)
             response = self.CLIENT.get(url, follow=False)
             redirect_url = urlparse(response.url)
             redirect_path = redirect_url.path
-            login_path = reverse(viewname='django_ledger:login')
+            login_path = reverse(viewname="django_ledger:login")
 
-            self.assertEqual(response.status_code, 302, msg=f'{path} view is not protected.')
-            self.assertEqual(redirect_path, login_path, msg=f'{path} view not redirecting to correct auth URL.')
+            self.assertEqual(
+                response.status_code, 302, msg=f"{path} view is not protected."
+            )
+            self.assertEqual(
+                redirect_path,
+                login_path,
+                msg=f"{path} view not redirecting to correct auth URL.",
+            )
 
-    def create_bill(self, amount: Decimal, draft_date: date = None, is_accrued: bool = False) -> tuple[
-        EntityModel, BillModel]:
+    def create_bill(
+        self, amount: Decimal, draft_date: date = None, is_accrued: bool = False
+    ) -> tuple[EntityModel, BillModel]:
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
         vendor_model: VendorModel = choice(entity_model.get_vendors())
         account_qs = entity_model.get_default_coa_accounts()
@@ -67,20 +74,21 @@ class BillModelTests(DjangoLedgerBaseTest):
 
         cash_account = account_qs.filter(role__in=[ASSET_CA_CASH]).first()
         prepaid_account = account_qs.filter(role__in=[ASSET_CA_PREPAID]).first()
-        unearned_account = account_qs.filter(role__in=[LIABILITY_CL_DEFERRED_REVENUE]).first()
+        unearned_account = account_qs.filter(
+            role__in=[LIABILITY_CL_DEFERRED_REVENUE]
+        ).first()
         dt = self.get_random_date() if not draft_date else draft_date
 
         bill_model = BillModel()
         ledger_model, bill_model = bill_model.configure(
-            entity_slug=entity_model,
-            user_model=self.user_model
+            entity_slug=entity_model, user_model=self.user_model
         )
 
         bill_model.amount_due = amount
         bill_model.date_draft = dt
         bill_model.vendor = vendor_model
         bill_model.accrue = is_accrued
-        bill_model.xref = 'ABC123xref'
+        bill_model.xref = "ABC123xref"
         bill_model.cash_account = cash_account
         bill_model.prepaid_account = prepaid_account
         bill_model.unearned_account = unearned_account
@@ -89,16 +97,12 @@ class BillModelTests(DjangoLedgerBaseTest):
 
         return entity_model, bill_model
 
-
-
     def test_bill_list(self):
-
         self.login_client()
         entity_model = choice(self.ENTITY_MODEL_QUERYSET)
-        bill_list_url = reverse('django_ledger:bill-list',
-                                kwargs={
-                                    'entity_slug': entity_model.slug
-                                })
+        bill_list_url = reverse(
+            "django_ledger:bill-list", kwargs={"entity_slug": entity_model.slug}
+        )
 
         with self.assertNumQueries(6):
             response = self.CLIENT.get(bill_list_url)
@@ -106,19 +110,17 @@ class BillModelTests(DjangoLedgerBaseTest):
             # bill-list view is rendered...
             self.assertEqual(response.status_code, 200)
 
-        bill_model_qs = response.context['bills']
+        bill_model_qs = response.context["bills"]
 
         for bill_model in bill_model_qs:
-            bill_detail_url = reverse('django_ledger:bill-detail',
-                                      kwargs={
-                                          'entity_slug': entity_model.slug,
-                                          'bill_pk': bill_model.uuid
-                                      })
-            bill_update_url = reverse('django_ledger:bill-update',
-                                      kwargs={
-                                          'entity_slug': entity_model.slug,
-                                          'bill_pk': bill_model.uuid
-                                      })
+            bill_detail_url = reverse(
+                "django_ledger:bill-detail",
+                kwargs={"entity_slug": entity_model.slug, "bill_pk": bill_model.uuid},
+            )
+            bill_update_url = reverse(
+                "django_ledger:bill-update",
+                kwargs={"entity_slug": entity_model.slug, "bill_pk": bill_model.uuid},
+            )
             # bill_delete_url = reverse('django_ledger:bill-delete',
             #                           kwargs={
             #                               'entity_slug': entity_model.slug,
@@ -194,72 +196,89 @@ class BillModelTests(DjangoLedgerBaseTest):
         # self.assertContains(response, needle)
 
     def test_bill_create(self):
-
         self.login_client()
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
 
-        bill_create_url = reverse('django_ledger:bill-create',
-                                  kwargs={
-                                      'entity_slug': entity_model.slug
-                                  })
+        bill_create_url = reverse(
+            "django_ledger:bill-create", kwargs={"entity_slug": entity_model.slug}
+        )
 
         response = self.CLIENT.get(bill_create_url)
 
         # bill create form is rendered
-        self.assertContains(response,
-                            f'id="djl-bill-model-create-form-id"',
-                            msg_prefix='Bill create form is not rendered.')
+        self.assertContains(
+            response,
+            f'id="djl-bill-model-create-form-id"',
+            msg_prefix="Bill create form is not rendered.",
+        )
 
         # user can select a vendor
-        self.assertContains(response,
-                            'id="djl-bill-create-vendor-select-input"',
-                            msg_prefix='Vendor Select input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-create-vendor-select-input"',
+            msg_prefix="Vendor Select input not rendered.",
+        )
 
         # user can select bill terms...
-        self.assertContains(response,
-                            'id="djl-bill-create-terms-select-input"',
-                            msg_prefix='Bill terms input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-create-terms-select-input"',
+            msg_prefix="Bill terms input not rendered.",
+        )
 
         # user can select bill terms...
-        self.assertContains(response,
-                            'id="djl-bill-xref-input"',
-                            msg_prefix='Bill XREF input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-xref-input"',
+            msg_prefix="Bill XREF input not rendered.",
+        )
 
         # user can select date...
-        self.assertContains(response,
-                            'id="djl-bill-draft-date-input"',
-                            msg_prefix='Bill draft date input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-draft-date-input"',
+            msg_prefix="Bill draft date input not rendered.",
+        )
 
         # user can select cash account...
-        self.assertContains(response,
-                            'id="djl-bill-cash-account-input"',
-                            msg_prefix='Bill cash account input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-cash-account-input"',
+            msg_prefix="Bill cash account input not rendered.",
+        )
 
         # user can select prepaid account...
-        self.assertContains(response,
-                            'id="djl-bill-prepaid-account-input"',
-                            msg_prefix='Bill prepaid account input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-prepaid-account-input"',
+            msg_prefix="Bill prepaid account input not rendered.",
+        )
 
         # user can select unearned account...
-        self.assertContains(response,
-                            'id="djl-bill-unearned-account-input"',
-                            msg_prefix='Bill unearned account input not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-unearned-account-input"',
+            msg_prefix="Bill unearned account input not rendered.",
+        )
 
         # user can select unearned account...
-        self.assertContains(response,
-                            'id="djl-bill-create-button"',
-                            msg_prefix='Bill create button not rendered.')
+        self.assertContains(
+            response,
+            'id="djl-bill-create-button"',
+            msg_prefix="Bill create button not rendered.",
+        )
 
         # user cannot input amount due...
-        self.assertNotContains(response,
-                               'id="djl-bill-amount-due-input"',
-                               msg_prefix='Bill amount due input not rendered.')
+        self.assertNotContains(
+            response,
+            'id="djl-bill-amount-due-input"',
+            msg_prefix="Bill amount due input not rendered.",
+        )
 
         # user can navigate to bill list
-        bill_list_url = reverse('django_ledger:bill-list',
-                                kwargs={
-                                    'entity_slug': entity_model.slug
-                                })
+        bill_list_url = reverse(
+            "django_ledger:bill-list", kwargs={"entity_slug": entity_model.slug}
+        )
         self.assertContains(response, bill_list_url)
 
         account_qs = entity_model.get_default_coa_accounts()
@@ -268,12 +287,14 @@ class BillModelTests(DjangoLedgerBaseTest):
         a_vendor_model = choice(entity_model.get_vendors())
 
         bill_data = {
-            'vendor': a_vendor_model.uuid,
-            'date_draft': get_localdate(),
-            'terms': BillModel.TERMS_NET_30,
-            'cash_account_id': account_qs.filter(role__exact=ASSET_CA_CASH),
-            'prepaid_account_id': account_qs.filter(role__exact=ASSET_CA_PREPAID),
-            'unearned_account_id': account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE),
+            "vendor": a_vendor_model.uuid,
+            "date_draft": get_localdate(),
+            "terms": BillModel.TERMS_NET_30,
+            "cash_account_id": account_qs.filter(role__exact=ASSET_CA_CASH),
+            "prepaid_account_id": account_qs.filter(role__exact=ASSET_CA_PREPAID),
+            "unearned_account_id": account_qs.filter(
+                role__exact=LIABILITY_CL_ACC_PAYABLE
+            ),
         }
 
         # create_response = self.CLIENT.post(bill_create_url, data=bill_data, follow=True)
@@ -338,48 +359,69 @@ class BillModelTests(DjangoLedgerBaseTest):
             # self.assertNotContains(bill_detail_response, 'id="djl-bill-detail-void-button"')
 
             # user can navigate to bill-list...
-            self.assertContains(bill_detail_response,
-                                reverse('django_ledger:bill-list',
-                                        kwargs={
-                                            'entity_slug': entity_model.slug
-                                        }))
+            self.assertContains(
+                bill_detail_response,
+                reverse(
+                    "django_ledger:bill-list", kwargs={"entity_slug": entity_model.slug}
+                ),
+            )
 
             # vendor name is shown
             self.assertContains(bill_detail_response, vendor_model.vendor_name)
 
             # can edit vendor link
-            self.assertContains(bill_detail_response,
-                                reverse('django_ledger:vendor-update',
-                                        kwargs={
-                                            'entity_slug': entity_model.slug,
-                                            'vendor_pk': vendor_model.uuid
-                                        }))
+            self.assertContains(
+                bill_detail_response,
+                reverse(
+                    "django_ledger:vendor-update",
+                    kwargs={
+                        "entity_slug": entity_model.slug,
+                        "vendor_pk": vendor_model.uuid,
+                    },
+                ),
+            )
 
             # link to cash account detail
-            self.assertContains(bill_detail_response,
-                                reverse('django_ledger:account-detail',
-                                        kwargs={
-                                            'entity_slug': entity_model.slug,
-                                            'account_pk': bill_model.cash_account.uuid
-                                        }))
+            self.assertContains(
+                bill_detail_response,
+                reverse(
+                    "django_ledger:account-detail",
+                    kwargs={
+                        "entity_slug": entity_model.slug,
+                        "account_pk": bill_model.cash_account.uuid,
+                    },
+                ),
+            )
 
             # amount paid is shown
-            self.assertContains(bill_detail_response, 'id="djl-bill-detail-amount-paid"')
+            self.assertContains(
+                bill_detail_response, 'id="djl-bill-detail-amount-paid"'
+            )
 
             # amount owed is shown
-            self.assertContains(bill_detail_response, 'id="djl-bill-detail-amount-owed"')
+            self.assertContains(
+                bill_detail_response, 'id="djl-bill-detail-amount-owed"'
+            )
 
             if not bill_model.accrue:
                 # amount prepaid is not shown
-                self.assertNotContains(bill_detail_response, ' id="djl-bill-detail-amount-prepaid"')
+                self.assertNotContains(
+                    bill_detail_response, ' id="djl-bill-detail-amount-prepaid"'
+                )
                 # amount unearned is not shown
-                self.assertNotContains(bill_detail_response, ' id="djl-bill-detail-amount-unearned"')
+                self.assertNotContains(
+                    bill_detail_response, ' id="djl-bill-detail-amount-unearned"'
+                )
 
             else:
                 # amount prepaid is shown
-                self.assertContains(bill_detail_response, ' id="djl-bill-detail-amount-prepaid"')
+                self.assertContains(
+                    bill_detail_response, ' id="djl-bill-detail-amount-prepaid"'
+                )
                 # amount unearned is shown
-                self.assertContains(bill_detail_response, ' id="djl-bill-detail-amount-unearned"')
+                self.assertContains(
+                    bill_detail_response, ' id="djl-bill-detail-amount-unearned"'
+                )
 
             # # amounts are zero...
             # self.assertEqual(bill_model.get_amount_cash(), Decimal('0.00'))

@@ -33,20 +33,12 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import IOMixIn
-from django_ledger.models import (
-    AccountModel,
-    CreateUpdateMixIn,
-    CustomerModel,
-    EntityModel,
-    EntityStateModel,
-    EntityUnitModel,
-    MarkdownNotesMixIn,
-    VendorModel,
-)
-from django_ledger.settings import (
-    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_RECEIPT_NUMBER_PREFIX,
-)
+from django_ledger.models import (AccountModel, CreateUpdateMixIn,
+                                  CustomerModel, EntityModel, EntityStateModel,
+                                  EntityUnitModel, MarkdownNotesMixIn,
+                                  VendorModel)
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_RECEIPT_NUMBER_PREFIX)
 
 
 class ReceiptModelValidationError(ValidationError):
@@ -60,7 +52,7 @@ class ReceiptModelValidationError(ValidationError):
 
 
 class ReceiptModelQuerySet(QuerySet):
-    def for_user(self, user_model) -> 'ReceiptModelQuerySet':
+    def for_user(self, user_model) -> "ReceiptModelQuerySet":
         """Filter receipts visible to a given user.
 
         Parameters
@@ -76,10 +68,11 @@ class ReceiptModelQuerySet(QuerySet):
             manage.
         """
         return self.filter(
-            Q(ledger_model__entity__admin=user_model) | Q(ledger_model__entity__managers__in=[user_model])
+            Q(ledger_model__entity__admin=user_model)
+            | Q(ledger_model__entity__managers__in=[user_model])
         )
 
-    def for_dates(self, from_date, to_date) -> 'ReceiptModelQuerySet':
+    def for_dates(self, from_date, to_date) -> "ReceiptModelQuerySet":
         """Filter receipts within an inclusive date range.
 
         Parameters
@@ -96,7 +89,9 @@ class ReceiptModelQuerySet(QuerySet):
         """
         return self.filter(receipt_date__gte=from_date, receipt_date__lte=to_date)
 
-    def for_vendor(self, vendor_model: VendorModel | str | UUID) -> 'ReceiptModelQuerySet':
+    def for_vendor(
+        self, vendor_model: VendorModel | str | UUID
+    ) -> "ReceiptModelQuerySet":
         """Filter receipts tied to a specific vendor.
 
         Parameters
@@ -131,10 +126,14 @@ class ReceiptModelQuerySet(QuerySet):
                 customer_model__isnull=True,
             )
         raise ReceiptModelValidationError(
-            'Invalid Vendor Model: {}, must be instance of VendorModel, UUID, str'.format(vendor_model)
+            "Invalid Vendor Model: {}, must be instance of VendorModel, UUID, str".format(
+                vendor_model
+            )
         )
 
-    def for_customer(self, customer_model: CustomerModel | str | UUID) -> 'ReceiptModelQuerySet':
+    def for_customer(
+        self, customer_model: CustomerModel | str | UUID
+    ) -> "ReceiptModelQuerySet":
         """Filter receipts tied to a specific customer.
 
         Parameters
@@ -169,7 +168,9 @@ class ReceiptModelQuerySet(QuerySet):
                 vendor_model__isnull=True,
             )
         raise ReceiptModelValidationError(
-            'Invalid Customer Model: {}, must be instance of CustomerModel, UUID, str'.format(customer_model)
+            "Invalid Customer Model: {}, must be instance of CustomerModel, UUID, str".format(
+                customer_model
+            )
         )
 
 
@@ -185,15 +186,17 @@ class ReceiptModelManager(Manager):
         """
         return (
             ReceiptModelQuerySet(self.model, using=self._db)
-            .select_related('ledger_model')
+            .select_related("ledger_model")
             .annotate(
-                _entity_uuid=F('ledger_model__entity__uuid'),
-                _entity_slug=F('ledger_model__entity__slug'),
-                _last_closing_date=F('ledger_model__entity__last_closing_date'),
+                _entity_uuid=F("ledger_model__entity__uuid"),
+                _entity_slug=F("ledger_model__entity__slug"),
+                _last_closing_date=F("ledger_model__entity__last_closing_date"),
             )
         )
 
-    def for_entity(self, entity_model: EntityModel | str | UUID) -> ReceiptModelQuerySet:
+    def for_entity(
+        self, entity_model: EntityModel | str | UUID
+    ) -> ReceiptModelQuerySet:
         """Filter receipts for a specific entity.
 
         Parameters
@@ -220,7 +223,7 @@ class ReceiptModelManager(Manager):
             qs = qs.filter(ledger_model__entity=entity_model)
         else:
             raise ReceiptModelValidationError(
-                f'Must pass either EntityModel, string or UUID, not {type(entity_model)}.'
+                f"Must pass either EntityModel, string or UUID, not {type(entity_model)}."
             )
         return qs
 
@@ -234,72 +237,80 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
     configuration, and migrate staged transactions to journal entries.
     """
 
-    SALES_RECEIPT = 'sales'
-    SALES_REFUND = 'customer_refund'
-    EXPENSE_RECEIPT = 'expense'
-    EXPENSE_REFUND = 'expense_refund'
-    TRANSFER_RECEIPT = 'transfer'
-    DEBT_PAYMENT = 'debt_paydown'
+    SALES_RECEIPT = "sales"
+    SALES_REFUND = "customer_refund"
+    EXPENSE_RECEIPT = "expense"
+    EXPENSE_REFUND = "expense_refund"
+    TRANSFER_RECEIPT = "transfer"
+    DEBT_PAYMENT = "debt_paydown"
 
     RECEIPT_TYPES = [
-        (SALES_RECEIPT, 'Sales Receipt'),
-        (SALES_REFUND, 'Sales Refund'),
-        (EXPENSE_RECEIPT, 'Expense Receipt'),
-        (EXPENSE_REFUND, 'Expense Refund'),
-        (TRANSFER_RECEIPT, 'Transfer Receipt'),
-        (DEBT_PAYMENT, 'Debt Paydown Receipt'),
+        (SALES_RECEIPT, "Sales Receipt"),
+        (SALES_REFUND, "Sales Refund"),
+        (EXPENSE_RECEIPT, "Expense Receipt"),
+        (EXPENSE_REFUND, "Expense Refund"),
+        (TRANSFER_RECEIPT, "Transfer Receipt"),
+        (DEBT_PAYMENT, "Debt Paydown Receipt"),
     ]
     RECEIPT_TYPES_MAP = dict(RECEIPT_TYPES)
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    receipt_number = models.CharField(_('Receipt Number'), max_length=255)
-    receipt_date = models.DateField(_('Receipt Date'))
-    receipt_type = models.CharField(choices=RECEIPT_TYPES, max_length=15, verbose_name=_('Receipt Type'))
+    receipt_number = models.CharField(_("Receipt Number"), max_length=255)
+    receipt_date = models.DateField(_("Receipt Date"))
+    receipt_type = models.CharField(
+        choices=RECEIPT_TYPES, max_length=15, verbose_name=_("Receipt Type")
+    )
 
     ledger_model = models.ForeignKey(
-        'django_ledger.LedgerModel',
+        "django_ledger.LedgerModel",
         on_delete=models.PROTECT,
-        verbose_name=_('Ledger Model'),
+        verbose_name=_("Ledger Model"),
         editable=False,
     )
 
     unit_model = models.ForeignKey(
-        'django_ledger.EntityUnitModel',
+        "django_ledger.EntityUnitModel",
         on_delete=models.PROTECT,
-        verbose_name=_('Unit Model'),
-        help_text=_('Helps segregate receipts and transactions into different classes or departments.'),
+        verbose_name=_("Unit Model"),
+        help_text=_(
+            "Helps segregate receipts and transactions into different classes or departments."
+        ),
         null=True,
         blank=True,
     )
 
     customer_model = models.ForeignKey(
-        'django_ledger.CustomerModel',
+        "django_ledger.CustomerModel",
         on_delete=models.PROTECT,
-        verbose_name=_('Customer Model'),
+        verbose_name=_("Customer Model"),
         null=True,
         blank=True,
     )
     vendor_model = models.ForeignKey(
-        'django_ledger.VendorModel',
+        "django_ledger.VendorModel",
         on_delete=models.PROTECT,
-        verbose_name=_('Vendor Model'),
+        verbose_name=_("Vendor Model"),
         null=True,
         blank=True,
     )
 
     charge_account = models.ForeignKey(
-        'django_ledger.AccountModel',
+        "django_ledger.AccountModel",
         on_delete=models.PROTECT,
-        verbose_name=_('Charge Account'),
-        help_text=_('The financial account (cash or credit) where this transaction was made.'),
-        related_name='charge_receiptmodel_set',
+        verbose_name=_("Charge Account"),
+        help_text=_(
+            "The financial account (cash or credit) where this transaction was made."
+        ),
+        related_name="charge_receiptmodel_set",
     )
 
     receipt_account = models.ForeignKey(
-        'django_ledger.AccountModel',
+        "django_ledger.AccountModel",
         on_delete=models.PROTECT,
-        verbose_name=_('PnL Account'),
-        help_text=_('The income or expense account where this transaction will be reflected'),
+        verbose_name=_("PnL Account"),
+        help_text=_(
+            "The income or expense account where this transaction will be reflected"
+        ),
         null=True,
         blank=True,
     )
@@ -307,33 +318,35 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
     amount = models.DecimalField(
         decimal_places=2,
         max_digits=20,
-        verbose_name=_('Receipt Amount'),
-        help_text=_('Amount of the receipt.'),
+        verbose_name=_("Receipt Amount"),
+        help_text=_("Amount of the receipt."),
         validators=[MinValueValidator(limit_value=0)],
     )
 
     staged_transaction_model = models.OneToOneField(
-        'django_ledger.StagedTransactionModel',
+        "django_ledger.StagedTransactionModel",
         on_delete=models.RESTRICT,
         null=True,
         blank=True,
-        verbose_name=_('Staged Transaction Model'),
-        help_text=_('The staged transaction associated with the receipt from bank feeds.'),
+        verbose_name=_("Staged Transaction Model"),
+        help_text=_(
+            "The staged transaction associated with the receipt from bank feeds."
+        ),
     )
 
     objects = ReceiptModelManager.from_queryset(queryset_class=ReceiptModelQuerySet)()
 
     class Meta:
         abstract = True
-        verbose_name = _('Sales/Expense Receipt')
-        verbose_name_plural = _('Sales/Expense Receipts')
+        verbose_name = _("Sales/Expense Receipt")
+        verbose_name_plural = _("Sales/Expense Receipts")
         indexes = [
-            models.Index(fields=['receipt_number']),
-            models.Index(fields=['ledger_model']),
-            models.Index(fields=['receipt_date']),
-            models.Index(fields=['receipt_type']),
-            models.Index(fields=['customer_model']),
-            models.Index(fields=['vendor_model']),
+            models.Index(fields=["receipt_number"]),
+            models.Index(fields=["ledger_model"]),
+            models.Index(fields=["receipt_date"]),
+            models.Index(fields=["receipt_type"]),
+            models.Index(fields=["customer_model"]),
+            models.Index(fields=["vendor_model"]),
         ]
 
     @property
@@ -347,7 +360,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             present to avoid extra queries.
         """
         try:
-            return getattr(self, '_entity_slug')
+            return getattr(self, "_entity_slug")
         except AttributeError:
             pass
         return self.ledger_model.entity_slug
@@ -363,7 +376,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             available to minimize queries.
         """
         try:
-            return getattr(self, '_entity_uuid')
+            return getattr(self, "_entity_uuid")
         except AttributeError:
             pass
         return self.ledger_model.entity_uuid
@@ -401,7 +414,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             available to minimize queries.
         """
         try:
-            return getattr(self, '_last_closing_date')
+            return getattr(self, "_last_closing_date")
         except AttributeError:
             pass
         return self.ledger_model.entity.last_closing_date
@@ -421,7 +434,9 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             ]
         )
 
-    def delete(self, using=None, keep_parents=False, delete_ledger: bool = True, **kwargs):
+    def delete(
+        self, using=None, keep_parents=False, delete_ledger: bool = True, **kwargs
+    ):
         """Delete the receipt and related journal entries if allowed.
 
         Parameters
@@ -448,7 +463,9 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         """
         if not self.can_delete():
             raise ReceiptModelValidationError(
-                message=_('Receipt cannot be deleted because it falls within a closed period.'),
+                message=_(
+                    "Receipt cannot be deleted because it falls within a closed period."
+                ),
             )
         ledger = self.ledger_model
         with transaction.atomic():
@@ -526,7 +543,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         """
         if self.customer_model_id and self.vendor_model_id:
             raise ReceiptModelValidationError(
-                message='Cannot determine receipt type when both customer and vendor are set.'
+                message="Cannot determine receipt type when both customer and vendor are set."
             )
 
         if self.customer_model_id:
@@ -535,7 +552,9 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if self.vendor_model_id:
             return self.EXPENSE_REFUND if float(amount) > 0 else self.EXPENSE_RECEIPT
 
-        raise ReceiptModelValidationError(message='Cannot determine receipt type without a customer or vendor.')
+        raise ReceiptModelValidationError(
+            message="Cannot determine receipt type without a customer or vendor."
+        )
 
     def is_configured(self) -> bool:
         """Whether the receipt has enough data to operate.
@@ -581,29 +600,31 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         fy_key = entity_model.get_fy_for_date(dt=self.receipt_date)
 
         LOOKUP = {
-            'entity_model_id__exact': entity_model.uuid,
-            'entity_unit_id__exact': None,
-            'fiscal_year': fy_key,
-            'key__exact': EntityStateModel.KEY_RECEIPT,
+            "entity_model_id__exact": entity_model.uuid,
+            "entity_unit_id__exact": None,
+            "fiscal_year": fy_key,
+            "key__exact": EntityStateModel.KEY_RECEIPT,
         }
 
         try:
             state_model_qs = (
-                EntityStateModel.objects.filter(**LOOKUP).select_related('entity_model').select_for_update()
+                EntityStateModel.objects.filter(**LOOKUP)
+                .select_related("entity_model")
+                .select_for_update()
             )
 
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
-            state_model.save(update_fields=['sequence'])
+            state_model.sequence = F("sequence") + 1
+            state_model.save(update_fields=["sequence"])
             state_model.refresh_from_db()
             return state_model
         except ObjectDoesNotExist:
             LOOKUP = {
-                'entity_model_id': entity_model.uuid,
-                'entity_unit_id': None,
-                'fiscal_year': fy_key,
-                'key': EntityStateModel.KEY_RECEIPT,
-                'sequence': 1,
+                "entity_model_id": entity_model.uuid,
+                "entity_unit_id": None,
+                "fiscal_year": fy_key,
+                "key": EntityStateModel.KEY_RECEIPT,
+                "sequence": 1,
             }
 
             state_model = EntityStateModel.objects.create(**LOOKUP)
@@ -631,17 +652,25 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 state_model = self._get_next_state_model(raise_exception=False)
 
             seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-            self.receipt_number = f'{DJANGO_LEDGER_RECEIPT_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+            self.receipt_number = (
+                f"{DJANGO_LEDGER_RECEIPT_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}"
+            )
 
             if commit:
-                self.save(update_fields=['receipt_number', 'updated'])
+                self.save(update_fields=["receipt_number", "updated"])
 
         return self.receipt_number
 
     def configure(
         self,
         entity_model: EntityModel | str | UUID,
-        receipt_type: Literal[SALES_RECEIPT, SALES_REFUND, EXPENSE_RECEIPT, EXPENSE_REFUND, TRANSFER_RECEIPT],
+        receipt_type: Literal[
+            SALES_RECEIPT,
+            SALES_REFUND,
+            EXPENSE_RECEIPT,
+            EXPENSE_REFUND,
+            TRANSFER_RECEIPT,
+        ],
         amount: int | float | Decimal,
         unit_model: Optional[EntityUnitModel | str | UUID] = None,
         receipt_date: Optional[datetime | str] = None,
@@ -690,7 +719,9 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if not self.is_configured():
             with transaction.atomic():
                 if amount < 0:
-                    raise ReceiptModelValidationError(message='Receipt amount must be greater than zero')
+                    raise ReceiptModelValidationError(
+                        message="Receipt amount must be greater than zero"
+                    )
                 if isinstance(entity_model, EntityModel):
                     pass
                 elif isinstance(entity_model, UUID):
@@ -709,17 +740,17 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 if self.is_transfer_receipt():
                     if any([vendor_model, customer_model]):
                         raise ReceiptModelValidationError(
-                            message='Transfer receipts do not require a vendor model or customer model',
+                            message="Transfer receipts do not require a vendor model or customer model",
                         )
                 else:
                     if all([vendor_model, customer_model]):
                         raise ReceiptModelValidationError(
-                            message='Must pass VendorModel or CustomerModel, not both.',
+                            message="Must pass VendorModel or CustomerModel, not both.",
                         )
 
                     if not any([vendor_model, customer_model]):
                         raise ReceiptModelValidationError(
-                            message='Must pass VendorModel or CustomerModel.',
+                            message="Must pass VendorModel or CustomerModel.",
                         )
 
                     # checks if a vendor model has been previously assigned....
@@ -729,7 +760,9 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                             self.vendor_model_id is not None,
                         ]
                     ):
-                        raise ReceiptModelValidationError(message='Vendor Model already set.')
+                        raise ReceiptModelValidationError(
+                            message="Vendor Model already set."
+                        )
 
                     # checks if a customer model has been previously assigned....
                     if all(
@@ -738,53 +771,55 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                             self.customer_model_id is not None,
                         ]
                     ):
-                        raise ReceiptModelValidationError(message='Customer Model already set.')
+                        raise ReceiptModelValidationError(
+                            message="Customer Model already set."
+                        )
 
                 # get vendor model...
                 if vendor_model:
                     if isinstance(vendor_model, str):
-                        vendor_model = VendorModel.objects.for_entity(entity_model=entity_model).get(
-                            vendor_number__iexact=vendor_model
-                        )
+                        vendor_model = VendorModel.objects.for_entity(
+                            entity_model=entity_model
+                        ).get(vendor_number__iexact=vendor_model)
                     elif isinstance(customer_model, UUID):
-                        vendor_model = VendorModel.objects.for_entity(entity_model=entity_model).get(
-                            uuid__exact=vendor_model
-                        )
+                        vendor_model = VendorModel.objects.for_entity(
+                            entity_model=entity_model
+                        ).get(uuid__exact=vendor_model)
                     elif isinstance(vendor_model, VendorModel):
                         vendor_model.validate_for_entity(entity_model=entity_model)
                     else:
                         raise ReceiptModelValidationError(
-                            message='VendorModel must be either a VendorModel, UUID or Vendor Number.'
+                            message="VendorModel must be either a VendorModel, UUID or Vendor Number."
                         )
                     self.vendor_model = vendor_model
 
                 # get customer model
                 if customer_model:
                     if isinstance(customer_model, str):
-                        customer_model = CustomerModel.objects.for_entity(entity_model=customer_model).get(
-                            customer_number__iexact=customer_model
-                        )
+                        customer_model = CustomerModel.objects.for_entity(
+                            entity_model=customer_model
+                        ).get(customer_number__iexact=customer_model)
                     elif isinstance(customer_model, UUID):
-                        customer_model = CustomerModel.objects.for_entity(entity_model=customer_model).get(
-                            uuid__exact=customer_model
-                        )
+                        customer_model = CustomerModel.objects.for_entity(
+                            entity_model=customer_model
+                        ).get(uuid__exact=customer_model)
                     elif isinstance(customer_model, CustomerModel):
                         customer_model.validate_for_entity(entity_model=entity_model)
                     else:
                         raise ReceiptModelValidationError(
-                            message='Customer Model must be either a CustomerModel, UUID or Customer Number.'
+                            message="Customer Model must be either a CustomerModel, UUID or Customer Number."
                         )
                     self.customer_model = customer_model
 
                 if unit_model:
                     if isinstance(unit_model, str):
-                        unit_model = EntityUnitModel.objects.for_entity(entity_model=entity_model).get(
-                            slug__exact=unit_model
-                        )
+                        unit_model = EntityUnitModel.objects.for_entity(
+                            entity_model=entity_model
+                        ).get(slug__exact=unit_model)
                     elif isinstance(unit_model, UUID):
-                        unit_model = EntityUnitModel.objects.for_entity(entity_model=entity_model).get(
-                            uuid__exact=unit_model
-                        )
+                        unit_model = EntityUnitModel.objects.for_entity(
+                            entity_model=entity_model
+                        ).get(uuid__exact=unit_model)
                     elif isinstance(unit_model, EntityUnitModel):
                         unit_model.validate_for_entity(entity_model=entity_model)
 
@@ -818,8 +853,12 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 self.charge_account_id is not None,
                 any(
                     [
-                        self.vendor_model_id is not None if not self.is_transfer_receipt() else True,
-                        self.customer_model_id is not None if not self.is_transfer_receipt() else True,
+                        self.vendor_model_id is not None
+                        if not self.is_transfer_receipt()
+                        else True,
+                        self.customer_model_id is not None
+                        if not self.is_transfer_receipt()
+                        else True,
                     ]
                 ),
             ]
@@ -839,11 +878,11 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         """
         if not self.is_configured():
             raise ReceiptModelValidationError(
-                message='Receipt Model must be configured. Call configure() before migrating receipt.',
+                message="Receipt Model must be configured. Call configure() before migrating receipt.",
             )
         if not self.can_migrate():
             raise ReceiptModelValidationError(
-                message='Must have VendorModel or CustomerModel, not both.',
+                message="Must have VendorModel or CustomerModel, not both.",
             )
 
         commit_dict = self.staged_transaction_model.commit_dict(split_txs=split_amount)
@@ -854,14 +893,14 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 je_timestamp=self.receipt_date,
                 je_unit_model=self.unit_model,
                 je_posted=True,
-                je_desc=f'Receipt Number: {self.receipt_number}',
-                je_origin='migrate_receipt',
+                je_desc=f"Receipt Number: {self.receipt_number}",
+                je_origin="migrate_receipt",
                 je_txs=je_data,
             )
-            staged_to_save += [i['staged_tx_model'] for i in je_data]
+            staged_to_save += [i["staged_tx_model"] for i in je_data]
         staged_to_save = set(staged_to_save)
         for i in staged_to_save:
-            i.save(update_fields=['transaction_model', 'updated'])
+            i.save(update_fields=["transaction_model", "updated"])
 
     # URL helpers
     def get_absolute_url(self) -> str:
@@ -873,8 +912,8 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             URL string for this receipt's detail page.
         """
         return reverse(
-            'django_ledger:receipt-detail',
-            kwargs={'entity_slug': self.entity_slug, 'receipt_pk': self.uuid},
+            "django_ledger:receipt-detail",
+            kwargs={"entity_slug": self.entity_slug, "receipt_pk": self.uuid},
         )
 
     def get_list_url(self) -> str:
@@ -885,7 +924,9 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         str
             URL string for listing receipts of the same entity.
         """
-        return reverse('django_ledger:receipt-list', kwargs={'entity_slug': self.entity_slug})
+        return reverse(
+            "django_ledger:receipt-list", kwargs={"entity_slug": self.entity_slug}
+        )
 
     def get_delete_url(self) -> str:
         """URL for the receipt delete view.
@@ -896,8 +937,8 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             URL string for deleting this receipt.
         """
         return reverse(
-            'django_ledger:receipt-delete',
-            kwargs={'entity_slug': self.entity_slug, 'receipt_pk': self.uuid},
+            "django_ledger:receipt-delete",
+            kwargs={"entity_slug": self.entity_slug, "receipt_pk": self.uuid},
         )
 
     def get_customer_list_url(self) -> Optional[str]:
@@ -912,10 +953,10 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if not self.customer_model_id:
             return None
         return reverse(
-            'django_ledger:receipt-list-customer',
+            "django_ledger:receipt-list-customer",
             kwargs={
-                'entity_slug': self.entity_slug,
-                'customer_pk': self.customer_model_id,
+                "entity_slug": self.entity_slug,
+                "customer_pk": self.customer_model_id,
             },
         )
 
@@ -931,8 +972,8 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if not self.vendor_model_id:
             return None
         return reverse(
-            'django_ledger:receipt-list-vendor',
-            kwargs={'entity_slug': self.entity_slug, 'vendor_pk': self.vendor_model_id},
+            "django_ledger:receipt-list-vendor",
+            kwargs={"entity_slug": self.entity_slug, "vendor_pk": self.vendor_model_id},
         )
 
     def get_customer_report_url(self) -> Optional[str]:
@@ -947,10 +988,10 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if not self.customer_model_id:
             return None
         return reverse(
-            'django_ledger:receipt-report-customer',
+            "django_ledger:receipt-report-customer",
             kwargs={
-                'entity_slug': self.entity_slug,
-                'customer_pk': self.customer_model_id,
+                "entity_slug": self.entity_slug,
+                "customer_pk": self.customer_model_id,
             },
         )
 
@@ -966,8 +1007,8 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if not self.vendor_model_id:
             return None
         return reverse(
-            'django_ledger:receipt-report-vendor',
-            kwargs={'entity_slug': self.entity_slug, 'vendor_pk': self.vendor_model_id},
+            "django_ledger:receipt-report-vendor",
+            kwargs={"entity_slug": self.entity_slug, "vendor_pk": self.vendor_model_id},
         )
 
     def get_import_job_url(self) -> Optional[str]:
@@ -983,8 +1024,8 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
             return None
         job = self.staged_transaction_model.import_job
         return reverse(
-            'django_ledger:import-job-detail',
-            kwargs={'entity_slug': self.entity_slug, 'job_pk': job.uuid},
+            "django_ledger:import-job-detail",
+            kwargs={"entity_slug": self.entity_slug, "job_pk": job.uuid},
         )
 
     def get_staged_tx_url(self) -> Optional[str]:
@@ -999,7 +1040,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         if not self.staged_transaction_model_id:
             return None
         base = self.get_import_job_url()
-        return f'{base}#staged-tx-{self.staged_transaction_model_id}' if base else None
+        return f"{base}#staged-tx-{self.staged_transaction_model_id}" if base else None
 
     def clean(self):
         """Model validation for mutually exclusive counterparties.
@@ -1012,12 +1053,16 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         """
         if self.is_sales_receipt():
             if not self.customer_model_id:
-                raise ReceiptModelValidationError(message=_('Sales receipt must have a customer model.'))
+                raise ReceiptModelValidationError(
+                    message=_("Sales receipt must have a customer model.")
+                )
             self.vendor_model = None
 
         if self.is_expense_receipt():
             if not self.vendor_model_id:
-                raise ReceiptModelValidationError(message=_('Expense receipt must have a vendor model.'))
+                raise ReceiptModelValidationError(
+                    message=_("Expense receipt must have a vendor model.")
+                )
             self.customer_model = None
 
 

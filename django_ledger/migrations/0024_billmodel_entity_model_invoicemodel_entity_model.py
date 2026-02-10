@@ -5,20 +5,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0023_customermodel_customer_code_customermodel_picture_and_more'),
+        (
+            "django_ledger",
+            "0023_customermodel_customer_code_customermodel_picture_and_more",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='billmodel',
-            name='entity_model',
-            field=models.ForeignKey(blank=True, editable=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel'),
+            model_name="billmodel",
+            name="entity_model",
+            field=models.ForeignKey(
+                blank=True,
+                editable=False,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.entitymodel",
+            ),
         ),
         migrations.AddField(
-            model_name='invoicemodel',
-            name='entity_model',
-            field=models.ForeignKey(blank=True, editable=False, null=True, on_delete=django.db.models.deletion.CASCADE, to='django_ledger.entitymodel'),
+            model_name="invoicemodel",
+            name="entity_model",
+            field=models.ForeignKey(
+                blank=True,
+                editable=False,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="django_ledger.entitymodel",
+            ),
         ),
     ]

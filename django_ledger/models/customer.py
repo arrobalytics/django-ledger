@@ -18,17 +18,12 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
-from django_ledger.models.mixins import (
-    ContactInfoMixIn,
-    CreateUpdateMixIn,
-    TaxCollectionMixIn,
-)
+from django_ledger.models.mixins import (ContactInfoMixIn, CreateUpdateMixIn,
+                                         TaxCollectionMixIn)
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (
-    DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX,
-    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
-)
+from django_ledger.settings import (DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR)
 
 
 def customer_picture_upload_to(instance, filename):
@@ -40,7 +35,7 @@ def customer_picture_upload_to(instance, filename):
     customer_number = instance.customer_number
     name, ext = os.path.splitext(filename)
     safe_name = slugify(name)
-    return f'customer_pictures/{customer_number}/{safe_name}{ext.lower()}'
+    return f"customer_pictures/{customer_number}/{safe_name}{ext.lower()}"
 
 
 class CustomerModelValidationError(ValidationError):
@@ -55,7 +50,7 @@ class CustomerModelQueryset(QuerySet):
     reports.
     """
 
-    def for_user(self, user_model) -> 'CustomerModelQueryset':
+    def for_user(self, user_model) -> "CustomerModelQueryset":
         """
         Fetches a QuerySet of BillModels that the UserModel as access to.
         May include BillModels from multiple Entities.
@@ -71,9 +66,12 @@ class CustomerModelQueryset(QuerySet):
         """
         if user_model.is_superuser:
             return self
-        return self.filter(Q(entity_model__admin=user_model) | Q(entity_model__managers__in=[user_model]))
+        return self.filter(
+            Q(entity_model__admin=user_model)
+            | Q(entity_model__managers__in=[user_model])
+        )
 
-    def active(self) -> 'CustomerModelQueryset':
+    def active(self) -> "CustomerModelQueryset":
         """
         Active customers can be assigned to new Invoices and show on dropdown menus and views.
 
@@ -84,7 +82,7 @@ class CustomerModelQueryset(QuerySet):
         """
         return self.filter(active=True)
 
-    def inactive(self) -> 'CustomerModelQueryset':
+    def inactive(self) -> "CustomerModelQueryset":
         """
         Active customers can be assigned to new Invoices and show on dropdown menus and views.
         Marking CustomerModels as inactive can help reduce Database load to populate select inputs and also inactivate
@@ -98,7 +96,7 @@ class CustomerModelQueryset(QuerySet):
         """
         return self.filter(active=False)
 
-    def hidden(self) -> 'CustomerModelQueryset':
+    def hidden(self) -> "CustomerModelQueryset":
         """
         Hidden customers do not show on dropdown menus, but may be used via APIs or any other method that does not
         involve the UI.
@@ -110,7 +108,7 @@ class CustomerModelQueryset(QuerySet):
         """
         return self.filter(hidden=True)
 
-    def visible(self) -> 'CustomerModelQueryset':
+    def visible(self) -> "CustomerModelQueryset":
         """
         Visible customers show on dropdown menus and views. Visible customers are active and not hidden.
 
@@ -130,12 +128,14 @@ class CustomerModelManager(Manager):
 
     def get_queryset(self) -> CustomerModelQueryset:
         qs = CustomerModelQueryset(self.model, using=self._db)
-        return qs.select_related('entity_model').annotate(
-            _entity_slug=F('entity_model__slug')
+        return qs.select_related("entity_model").annotate(
+            _entity_slug=F("entity_model__slug")
         )
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> CustomerModelQueryset:  # noqa: F821
+    def for_entity(
+        self, entity_model: "EntityModel | str | UUID", **kwargs
+    ) -> CustomerModelQueryset:  # noqa: F821
         """
         Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -152,15 +152,15 @@ class CustomerModelManager(Manager):
         """
         EntityModel = lazy_loader.get_entity_model()
         qs = self.get_queryset()
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
                 stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             return qs.filter(entity_model=entity_model)
@@ -170,7 +170,7 @@ class CustomerModelManager(Manager):
             return qs.filter(entity_model_id=entity_model)
         else:
             raise CustomerModelValidationError(
-                message='Must pass EntityModel, slug or EntityModel UUID',
+                message="Must pass EntityModel, slug or EntityModel UUID",
             )
 
 
@@ -215,25 +215,27 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         unique=True,
         null=True,
         blank=True,
-        verbose_name='User defined customer code',
+        verbose_name="User defined customer code",
     )
     customer_name = models.CharField(max_length=100)
     customer_number = models.CharField(
         max_length=30,
         editable=False,
-        verbose_name=_('Customer Number'),
-        help_text='System generated customer number.',
+        verbose_name=_("Customer Number"),
+        help_text="System generated customer number.",
     )
     entity_model = models.ForeignKey(
-        'django_ledger.EntityModel',
+        "django_ledger.EntityModel",
         editable=False,
         on_delete=models.CASCADE,
-        verbose_name=_('Customer Entity'),
+        verbose_name=_("Customer Entity"),
     )
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
-    picture = models.ImageField(upload_to=customer_picture_upload_to, null=True, blank=True)
+    picture = models.ImageField(
+        upload_to=customer_picture_upload_to, null=True, blank=True
+    )
 
     additional_info = models.JSONField(null=True, blank=True, default=dict)
 
@@ -241,25 +243,25 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
     class Meta:
         abstract = True
-        verbose_name = _('Customer')
+        verbose_name = _("Customer")
         indexes = [
-            models.Index(fields=['entity_model', 'customer_number']),
-            models.Index(fields=['created']),
-            models.Index(fields=['updated']),
-            models.Index(fields=['active']),
-            models.Index(fields=['hidden']),
+            models.Index(fields=["entity_model", "customer_number"]),
+            models.Index(fields=["created"]),
+            models.Index(fields=["updated"]),
+            models.Index(fields=["active"]),
+            models.Index(fields=["hidden"]),
         ]
-        unique_together = [('entity_model', 'customer_number')]
+        unique_together = [("entity_model", "customer_number")]
 
     def __str__(self):
         if not self.customer_number:
-            f'Unknown Customer: {self.customer_name}'
-        return f'{self.customer_number}: {self.customer_name}'
+            f"Unknown Customer: {self.customer_name}"
+        return f"{self.customer_number}: {self.customer_name}"
 
     @property
     def entity_slug(self) -> str:
         try:
-            return getattr(self, '_entity_slug')
+            return getattr(self, "_entity_slug")
         except AttributeError:
             pass
         return self.entity_model.slug
@@ -295,24 +297,26 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
         try:
             LOOKUP = {
-                'entity_model_id__exact': self.entity_model_id,
-                'key__exact': EntityStateModel.KEY_CUSTOMER,
+                "entity_model_id__exact": self.entity_model_id,
+                "key__exact": EntityStateModel.KEY_CUSTOMER,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(
+                **LOOKUP
+            ).select_for_update()
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
+            state_model.sequence = F("sequence") + 1
             state_model.save()
             state_model.refresh_from_db()
 
             return state_model
         except ObjectDoesNotExist:
             LOOKUP = {
-                'entity_model_id': self.entity_model_id,
-                'entity_unit_id': None,
-                'fiscal_year': None,
-                'key': EntityStateModel.KEY_CUSTOMER,
-                'sequence': 1,
+                "entity_model_id": self.entity_model_id,
+                "entity_unit_id": None,
+                "fiscal_year": None,
+                "key": EntityStateModel.KEY_CUSTOMER,
+                "sequence": 1,
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
             return state_model
@@ -342,27 +346,33 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
                     state_model = self._get_next_state_model(raise_exception=False)
 
             seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-            self.customer_number = f'{DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX}-{seq}'
+            self.customer_number = f"{DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX}-{seq}"
 
             if commit:
-                self.save(update_fields=['customer_number', 'updated'])
+                self.save(update_fields=["customer_number", "updated"])
 
         return self.customer_number
 
-    def validate_for_entity(self, entity_model: 'EntityModel'):  # noqa: F821
+    def validate_for_entity(self, entity_model: "EntityModel"):  # noqa: F821
         if entity_model.uuid != self.entity_model_id:
-            raise CustomerModelValidationError('EntityModel does not belong to this Vendor')
+            raise CustomerModelValidationError(
+                "EntityModel does not belong to this Vendor"
+            )
 
     def get_detail_url(self) -> str:
-        return reverse('django_ledger:customer-detail',
-                       kwargs={'customer_pk': self.uuid, 'entity_slug': self.entity_slug})
+        return reverse(
+            "django_ledger:customer-detail",
+            kwargs={"customer_pk": self.uuid, "entity_slug": self.entity_slug},
+        )
 
     def get_absolute_url(self) -> str:
         return self.get_detail_url()
 
     def get_update_url(self) -> str:
-        return reverse('django_ledger:customer-update',
-                       kwargs={'customer_pk': self.uuid, 'entity_slug': self.entity_slug})
+        return reverse(
+            "django_ledger:customer-update",
+            kwargs={"customer_pk": self.uuid, "entity_slug": self.entity_slug},
+        )
 
     def clean(self):
         """

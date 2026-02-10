@@ -15,14 +15,12 @@ from django_ledger.forms.auth import LogInForm
 
 class DjangoLedgerLoginView(LoginView):
     form_class = LogInForm
-    template_name = 'django_ledger/auth/login.html'
-    extra_context = {
-        'page_title': _('Login')
-    }
+    template_name = "django_ledger/auth/login.html"
+    extra_context = {"page_title": _("Login")}
 
     def get_success_url(self):
-        return reverse('django_ledger:home')
+        return reverse("django_ledger:home")
 
 
 class DjangoLedgerLogoutView(LogoutView):
-    next_page = reverse_lazy('django_ledger:login')
+    next_page = reverse_lazy("django_ledger:login")

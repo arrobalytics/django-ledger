@@ -31,16 +31,18 @@ django.setup()
 
 # copies the readme into the source docs files.
 # file is included in .gitignore
-copy(src=BASE_DIR_PATH.joinpath('README.md'), dst=BASE_DIR_PATH.joinpath('docs/source/'))
+copy(
+    src=BASE_DIR_PATH.joinpath("README.md"), dst=BASE_DIR_PATH.joinpath("docs/source/")
+)
 
 # sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'Django Ledger'
-copyright = '2025, EDMA Group Inc'
-author = 'Miguel Sanda'
+project = "Django Ledger"
+copyright = "2025, EDMA Group Inc"
+author = "Miguel Sanda"
 
 # -- General configuration ---------------------------------------------------
 
@@ -48,14 +50,14 @@ author = 'Miguel Sanda'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
-    'myst_parser'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "myst_parser",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -67,15 +69,15 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'renku'
+html_theme = "renku"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['assets']
+html_static_path = ["assets"]
 
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
 }

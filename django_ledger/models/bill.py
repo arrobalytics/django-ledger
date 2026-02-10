@@ -11,49 +11,38 @@ In addition to tracking the bill amount, it tracks the paid and due amount.
 import warnings
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Union, Optional, Tuple, Dict, List
-from uuid import uuid4, UUID
+from typing import Dict, List, Optional, Tuple, Union
+from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, Count, QuerySet, Manager
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import IntegrityError, models, transaction
+from django.db.models import Count, F, Manager, Q, QuerySet, Sum
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
-from django_ledger.io.io_core import get_localtime, get_localdate
+from django_ledger.io import (ASSET_CA_CASH, ASSET_CA_PREPAID,
+                              LIABILITY_CL_ACC_PAYABLE)
+from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import (
-    ItemTransactionModelQuerySet,
-    ItemTransactionModel,
-    ItemModel,
-    ItemModelQuerySet,
-)
-from django_ledger.models.mixins import (
-    CreateUpdateMixIn,
-    AccrualMixIn,
-    MarkdownNotesMixIn,
-    PaymentTermsMixIn,
-    ItemizeMixIn,
-)
-from django_ledger.models.signals import (
-    bill_status_draft,
-    bill_status_in_review,
-    bill_status_approved,
-    bill_status_paid,
-    bill_status_canceled,
-    bill_status_void,
-)
+from django_ledger.models.items import (ItemModel, ItemModelQuerySet,
+                                        ItemTransactionModel,
+                                        ItemTransactionModelQuerySet)
+from django_ledger.models.mixins import (AccrualMixIn, CreateUpdateMixIn,
+                                         ItemizeMixIn, MarkdownNotesMixIn,
+                                         PaymentTermsMixIn)
+from django_ledger.models.signals import (bill_status_approved,
+                                          bill_status_canceled,
+                                          bill_status_draft,
+                                          bill_status_in_review,
+                                          bill_status_paid, bill_status_void)
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (
-    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_BILL_NUMBER_PREFIX,
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
-)
+from django_ledger.settings import (DJANGO_LEDGER_BILL_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR)
 
 UserModel = get_user_model()
 
@@ -70,7 +59,7 @@ class BillModelQuerySet(QuerySet):
     building customized reports.
     """
 
-    def for_user(self, user_model) -> 'BillModelQuerySet':
+    def for_user(self, user_model) -> "BillModelQuerySet":
         """
         Fetches a QuerySet of BillModels that the UserModel as access to.
         May include BillModels from multiple Entities.
@@ -192,7 +181,7 @@ class BillModelQuerySet(QuerySet):
         """
         return self.filter(date_due__lt=get_localdate())
 
-    def unpaid(self) -> 'BillModelQuerySet':
+    def unpaid(self) -> "BillModelQuerySet":
         """
         Unpaid bills are those that are approved but have not received 100% of the amount due.
         Equivalent to approved().
@@ -214,7 +203,7 @@ class BillModelManager(Manager):
 
     def get_queryset(self) -> BillModelQuerySet:
         qs = BillModelQuerySet(self.model, using=self._db)
-        return qs.select_related('ledger', 'ledger__entity')
+        return qs.select_related("ledger", "ledger__entity")
 
     @deprecated_entity_slug_behavior
     def for_entity(
@@ -235,15 +224,15 @@ class BillModelManager(Manager):
             Returns a BillModelQuerySet with applied filters.
         """
         qs = self.get_queryset()
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
                 stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             qs = qs.filter(ledger__entity=entity_model)
@@ -252,7 +241,7 @@ class BillModelManager(Manager):
         elif isinstance(entity_model, UUID):
             qs = qs.filter(ledger__entity_id=entity_model)
         else:
-            raise BillModelValidationError('Must pass EntityModel, slug or UUID')
+            raise BillModelValidationError("Must pass EntityModel, slug or UUID")
         return qs
 
 
@@ -326,24 +315,24 @@ class BillModelAbstract(
         Will be null unless BillModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
     """
 
-    REL_NAME_PREFIX = 'bill'
+    REL_NAME_PREFIX = "bill"
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True
 
-    BILL_STATUS_DRAFT = 'draft'
-    BILL_STATUS_REVIEW = 'in_review'
-    BILL_STATUS_APPROVED = 'approved'
-    BILL_STATUS_PAID = 'paid'
-    BILL_STATUS_VOID = 'void'
-    BILL_STATUS_CANCELED = 'canceled'
+    BILL_STATUS_DRAFT = "draft"
+    BILL_STATUS_REVIEW = "in_review"
+    BILL_STATUS_APPROVED = "approved"
+    BILL_STATUS_PAID = "paid"
+    BILL_STATUS_VOID = "void"
+    BILL_STATUS_CANCELED = "canceled"
 
     BILL_STATUS = [
-        (BILL_STATUS_DRAFT, _('Draft')),
-        (BILL_STATUS_REVIEW, _('In Review')),
-        (BILL_STATUS_APPROVED, _('Approved')),
-        (BILL_STATUS_PAID, _('Paid')),
-        (BILL_STATUS_CANCELED, _('Canceled')),
-        (BILL_STATUS_VOID, _('Void')),
+        (BILL_STATUS_DRAFT, _("Draft")),
+        (BILL_STATUS_REVIEW, _("In Review")),
+        (BILL_STATUS_APPROVED, _("Approved")),
+        (BILL_STATUS_PAID, _("Paid")),
+        (BILL_STATUS_CANCELED, _("Canceled")),
+        (BILL_STATUS_VOID, _("Void")),
     ]
     """
     The different bill status options and their representation in the Database.
@@ -352,110 +341,110 @@ class BillModelAbstract(
     # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity_model = models.ForeignKey(
-        'django_ledger.EntityModel',
+        "django_ledger.EntityModel",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
         editable=False,
     )
     bill_number = models.SlugField(
-        max_length=20, verbose_name=_('Bill Number'), editable=False
+        max_length=20, verbose_name=_("Bill Number"), editable=False
     )
     bill_status = models.CharField(
         max_length=10,
         choices=BILL_STATUS,
         default=BILL_STATUS[0][0],
-        verbose_name=_('Bill Status'),
+        verbose_name=_("Bill Status"),
     )
     xref = models.SlugField(
-        null=True, blank=True, verbose_name=_('External Reference Number')
+        null=True, blank=True, verbose_name=_("External Reference Number")
     )
     vendor = models.ForeignKey(
-        'django_ledger.VendorModel', on_delete=models.CASCADE, verbose_name=_('Vendor')
+        "django_ledger.VendorModel", on_delete=models.CASCADE, verbose_name=_("Vendor")
     )
 
     cash_account = models.ForeignKey(
-        'django_ledger.AccountModel',
+        "django_ledger.AccountModel",
         on_delete=models.RESTRICT,
         null=True,
         blank=True,
-        verbose_name=_('Cash Account'),
-        related_name=f'{REL_NAME_PREFIX}_cash_account',
+        verbose_name=_("Cash Account"),
+        related_name=f"{REL_NAME_PREFIX}_cash_account",
     )
     prepaid_account = models.ForeignKey(
-        'django_ledger.AccountModel',
+        "django_ledger.AccountModel",
         on_delete=models.RESTRICT,
         null=True,
         blank=True,
-        verbose_name=_('Prepaid Account'),
-        related_name=f'{REL_NAME_PREFIX}_prepaid_account',
+        verbose_name=_("Prepaid Account"),
+        related_name=f"{REL_NAME_PREFIX}_prepaid_account",
     )
     unearned_account = models.ForeignKey(
-        'django_ledger.AccountModel',
+        "django_ledger.AccountModel",
         on_delete=models.RESTRICT,
         null=True,
         blank=True,
-        verbose_name=_('Unearned Account'),
-        related_name=f'{REL_NAME_PREFIX}_unearned_account',
+        verbose_name=_("Unearned Account"),
+        related_name=f"{REL_NAME_PREFIX}_unearned_account",
     )
 
     additional_info = models.JSONField(
-        blank=True, null=True, default=dict, verbose_name=_('Bill Additional Info')
+        blank=True, null=True, default=dict, verbose_name=_("Bill Additional Info")
     )
     bill_items = models.ManyToManyField(
-        'django_ledger.ItemModel',
-        through='django_ledger.ItemTransactionModel',
-        through_fields=('bill_model', 'item_model'),
-        verbose_name=_('Bill Items'),
+        "django_ledger.ItemModel",
+        through="django_ledger.ItemTransactionModel",
+        through_fields=("bill_model", "item_model"),
+        verbose_name=_("Bill Items"),
     )
 
     ce_model = models.ForeignKey(
-        'django_ledger.EstimateModel',
+        "django_ledger.EstimateModel",
         on_delete=models.RESTRICT,
         null=True,
         blank=True,
-        verbose_name=_('Associated Customer Job/Estimate'),
+        verbose_name=_("Associated Customer Job/Estimate"),
     )
 
-    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_("Draft Date"))
     date_in_review = models.DateField(
-        null=True, blank=True, verbose_name=_('In Review Date')
+        null=True, blank=True, verbose_name=_("In Review Date")
     )
     date_approved = models.DateField(
-        null=True, blank=True, verbose_name=_('Approved Date')
+        null=True, blank=True, verbose_name=_("Approved Date")
     )
-    date_paid = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
-    date_void = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
+    date_paid = models.DateField(null=True, blank=True, verbose_name=_("Paid Date"))
+    date_void = models.DateField(null=True, blank=True, verbose_name=_("Void Date"))
     date_canceled = models.DateField(
-        null=True, blank=True, verbose_name=_('Canceled Date')
+        null=True, blank=True, verbose_name=_("Canceled Date")
     )
 
     objects = BillModelManager.from_queryset(queryset_class=BillModelQuerySet)()
 
     class Meta:
         abstract = True
-        ordering = ['-updated']
-        verbose_name = _('Bill')
-        verbose_name_plural = _('Bills')
+        ordering = ["-updated"]
+        verbose_name = _("Bill")
+        verbose_name_plural = _("Bills")
         indexes = [
-            models.Index(fields=['bill_status']),
-            models.Index(fields=['terms']),
-            models.Index(fields=['cash_account']),
-            models.Index(fields=['prepaid_account']),
-            models.Index(fields=['unearned_account']),
-            models.Index(fields=['date_due']),
-            models.Index(fields=['date_draft']),
-            models.Index(fields=['date_in_review']),
-            models.Index(fields=['date_approved']),
-            models.Index(fields=['date_paid']),
-            models.Index(fields=['date_canceled']),
-            models.Index(fields=['date_void']),
-            models.Index(fields=['vendor']),
-            models.Index(fields=['bill_number']),
+            models.Index(fields=["bill_status"]),
+            models.Index(fields=["terms"]),
+            models.Index(fields=["cash_account"]),
+            models.Index(fields=["prepaid_account"]),
+            models.Index(fields=["unearned_account"]),
+            models.Index(fields=["date_due"]),
+            models.Index(fields=["date_draft"]),
+            models.Index(fields=["date_in_review"]),
+            models.Index(fields=["date_approved"]),
+            models.Index(fields=["date_paid"]),
+            models.Index(fields=["date_canceled"]),
+            models.Index(fields=["date_void"]),
+            models.Index(fields=["vendor"]),
+            models.Index(fields=["bill_number"]),
         ]
 
     def __str__(self):
-        return f'Bill: {self.bill_number} | {self.get_bill_status_display()}'
+        return f"Bill: {self.bill_number} | {self.get_bill_status_display()}"
 
     def is_configured(self) -> bool:
         return all([super().is_configured(), self.bill_status])
@@ -504,7 +493,7 @@ class BillModelAbstract(
             if isinstance(entity_slug, str):
                 if not user_model:
                     raise BillModelValidationError(
-                        _('Must pass user_model when using entity_slug.')
+                        _("Must pass user_model when using entity_slug.")
                     )
                 entity_qs = EntityModel.objects.for_user(user_model=user_model)
                 entity_model: EntityModel = get_object_or_404(
@@ -514,7 +503,7 @@ class BillModelAbstract(
                 entity_model = entity_slug
             else:
                 raise BillModelValidationError(
-                    'entity_slug must be an instance of str or EntityModel'
+                    "entity_slug must be an instance of str or EntityModel"
                 )
 
             if entity_model.is_accrual_method():
@@ -533,7 +522,7 @@ class BillModelAbstract(
             ledger_model: LedgerModel = LedgerModel(
                 entity=entity_model, posted=ledger_posted
             )
-            ledger_name = f'Bill {self.uuid}' if not ledger_name else ledger_name
+            ledger_name = f"Bill {self.uuid}" if not ledger_name else ledger_name
             ledger_model.name = ledger_name
             ledger_model.configure_for_wrapper_model(model_instance=self)
             ledger_model.clean()
@@ -545,8 +534,8 @@ class BillModelAbstract(
 
             if self.can_generate_bill_number():
                 self.generate_bill_number(commit=commit)
-                ledger_model.ledger_xid = f'bill-{self.bill_number.lower()}-{str(ledger_model.entity_id)[-5:]}'
-                ledger_model.save(update_fields=['ledger_xid'])
+                ledger_model.ledger_xid = f"bill-{self.bill_number.lower()}-{str(ledger_model.entity_id)[-5:]}"
+                ledger_model.save(update_fields=["ledger_xid"])
 
             self.clean()
 
@@ -569,11 +558,11 @@ class BillModelAbstract(
         if commit:
             self.save(
                 update_fields=[
-                    'amount_due',
-                    'amount_receivable',
-                    'amount_unearned',
-                    'amount_earned',
-                    'updated',
+                    "amount_due",
+                    "amount_receivable",
+                    "amount_unearned",
+                    "amount_earned",
+                    "updated",
                 ]
             )
         return itemtxs_batch
@@ -595,7 +584,7 @@ class BillModelAbstract(
         valid = all([i.bill_model_id == self.uuid for i in queryset])
         if not valid:
             raise BillModelValidationError(
-                f'Invalid queryset. All items must be assigned to Bill {self.uuid}'
+                f"Invalid queryset. All items must be assigned to Bill {self.uuid}"
             )
 
     def get_itemtxs_data(
@@ -619,19 +608,24 @@ class BillModelAbstract(
         """
         if not queryset:
             queryset = self.itemtransactionmodel_set.all().select_related(
-                'item_model', 'entity_unit', 'po_model', 'bill_model'
+                "item_model", "entity_unit", "po_model", "bill_model"
             )
         else:
             self.validate_itemtxs_qs(queryset)
 
         if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
             return queryset, queryset.aggregate(
-                total_amount__sum=Sum('total_amount'), total_items=Count('uuid')
+                total_amount__sum=Sum("total_amount"), total_items=Count("uuid")
             )
-        return queryset, {
-            'total_amount__sum': sum(i.total_amount for i in queryset),
-            'total_items': len(queryset),
-        } if not lazy_agg else None
+        return (
+            queryset,
+            {
+                "total_amount__sum": sum(i.total_amount for i in queryset),
+                "total_items": len(queryset),
+            }
+            if not lazy_agg
+            else None,
+        )
 
     # ### ItemizeMixIn implementation END...
 
@@ -657,7 +651,7 @@ class BillModelAbstract(
         str
             Description as a string.
         """
-        return f'Bill {self.bill_number} account adjustment.'
+        return f"Bill {self.bill_number} account adjustment."
 
     def get_migration_data(
         self, queryset: Optional[ItemTransactionModelQuerySet] = None
@@ -678,20 +672,20 @@ class BillModelAbstract(
 
         return (
             queryset.order_by(
-                'item_model__expense_account__uuid',
-                'entity_unit__uuid',
-                'item_model__expense_account__balance_type',
+                "item_model__expense_account__uuid",
+                "entity_unit__uuid",
+                "item_model__expense_account__balance_type",
             )
             .values(
-                'item_model__expense_account__uuid',
-                'item_model__inventory_account__uuid',
-                'item_model__expense_account__balance_type',
-                'item_model__inventory_account__balance_type',
-                'entity_unit__slug',
-                'entity_unit__uuid',
-                'total_amount',
+                "item_model__expense_account__uuid",
+                "item_model__inventory_account__uuid",
+                "item_model__expense_account__balance_type",
+                "item_model__inventory_account__balance_type",
+                "entity_unit__slug",
+                "entity_unit__uuid",
+                "total_amount",
             )
-            .annotate(account_unit_total=Sum('total_amount'))
+            .annotate(account_unit_total=Sum("total_amount"))
         )
 
     def update_amount_due(
@@ -715,7 +709,7 @@ class BillModelAbstract(
             Newly fetched of previously fetched ItemTransactionModelQuerySet if provided.
         """
         itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
-        self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
+        self.amount_due = round(itemtxs_agg["total_amount__sum"], 2)
         return itemtxs_qs
 
     def is_draft(self) -> bool:
@@ -936,14 +930,14 @@ class BillModelAbstract(
         if self.ce_model_id:
             if raise_exception:
                 raise BillModelValidationError(
-                    f'Bill {self.bill_number} already bound to '
-                    f'Estimate {self.ce_model.estimate_number}'
+                    f"Bill {self.bill_number} already bound to "
+                    f"Estimate {self.ce_model.estimate_number}"
                 )
             return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise BillModelValidationError('Cannot bind estimate that is not approved.')
+            raise BillModelValidationError("Cannot bind estimate that is not approved.")
         return all([is_approved])
 
     def can_bind_po(self, po_model, raise_exception: bool = False) -> bool:
@@ -967,13 +961,13 @@ class BillModelAbstract(
         """
         if not po_model.is_approved():
             if raise_exception:
-                raise BillModelValidationError('Cannot bind an unapproved PO.')
+                raise BillModelValidationError("Cannot bind an unapproved PO.")
             return False
 
         if po_model.date_approved > self.date_draft:
             if raise_exception:
                 raise BillModelValidationError(
-                    'Approved PO date cannot be greater than Bill draft date.'
+                    "Approved PO date cannot be greater than Bill draft date."
                 )
             return False
 
@@ -1048,7 +1042,7 @@ class BillModelAbstract(
         if self.amount_paid > self.amount_due:
             if raise_exception:
                 raise BillModelValidationError(
-                    f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
+                    f"Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}."
                 )
             return
 
@@ -1067,11 +1061,11 @@ class BillModelAbstract(
             )
             self.save(
                 update_fields=[
-                    'amount_paid',
-                    'amount_earned',
-                    'amount_unearned',
-                    'amount_receivable',
-                    'updated',
+                    "amount_paid",
+                    "amount_earned",
+                    "amount_unearned",
+                    "amount_receivable",
+                    "updated",
                 ]
             )
 
@@ -1101,7 +1095,7 @@ class BillModelAbstract(
         self.ce_model = estimate_model
         self.clean()
         if commit:
-            self.save(update_fields=['ce_model', 'updated'])
+            self.save(update_fields=["ce_model", "updated"])
 
     def mark_as_draft(
         self, date_draft: Optional[date] = None, commit: bool = False, **kwargs
@@ -1120,7 +1114,7 @@ class BillModelAbstract(
         """
         if not self.can_draft():
             raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
+                f"Bill {self.bill_number} cannot be marked as draft. Must be In Review."
             )
         self.bill_status = self.BILL_STATUS_DRAFT
 
@@ -1134,7 +1128,7 @@ class BillModelAbstract(
 
         self.clean()
         if commit:
-            self.save(update_fields=['bill_status', 'date_draft', 'updated'])
+            self.save(update_fields=["bill_status", "date_draft", "updated"])
         bill_status_draft.send_robust(
             sender=self.__class__, instance=self, commited=commit, **kwargs
         )
@@ -1148,7 +1142,7 @@ class BillModelAbstract(
         str
             HTML ID as a String
         """
-        return f'djl-bill-model-{self.uuid}-mark-as-draft'
+        return f"djl-bill-model-{self.uuid}-mark-as-draft"
 
     def get_mark_as_draft_url(self, entity_slug: Optional[str] = None) -> str:
         """
@@ -1168,8 +1162,8 @@ class BillModelAbstract(
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
         return reverse(
-            'django_ledger:bill-action-mark-as-draft',
-            kwargs={'entity_slug': entity_slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-action-mark-as-draft",
+            kwargs={"entity_slug": entity_slug, "bill_pk": self.uuid},
         )
 
     def get_mark_as_draft_message(self) -> str:
@@ -1181,7 +1175,7 @@ class BillModelAbstract(
         str
             Mark-as-Draft BillModel confirmation message as a String.
         """
-        return _('Do you want to mark Bill %s as Draft?') % self.bill_number
+        return _("Do you want to mark Bill %s as Draft?") % self.bill_number
 
     # IN REVIEW ACTIONS....
     def mark_as_review(
@@ -1210,7 +1204,7 @@ class BillModelAbstract(
         if not self.can_review():
             if raise_exception:
                 raise BillModelValidationError(
-                    f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
+                    f"Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured."
                 )
 
         if not itemtxs_qs:
@@ -1220,12 +1214,12 @@ class BillModelAbstract(
 
         if not itemtxs_qs.count():
             raise BillModelValidationError(
-                message=f'Cannot review a {self.__class__.__name__} without items...'
+                message=f"Cannot review a {self.__class__.__name__} without items..."
             )
 
         if not self.amount_due:
             raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
+                f"Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0."
             )
 
         self.bill_status = self.BILL_STATUS_REVIEW
@@ -1240,7 +1234,7 @@ class BillModelAbstract(
 
         self.clean()
         if commit:
-            self.save(update_fields=['date_in_review', 'bill_status', 'updated'])
+            self.save(update_fields=["date_in_review", "bill_status", "updated"])
         bill_status_in_review.send_robust(
             sender=self.__class__, instance=self, commited=commit, **kwargs
         )
@@ -1254,7 +1248,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-mark-as-review'
+        return f"djl-bill-model-{self.uuid}-mark-as-review"
 
     def get_mark_as_review_url(self, entity_slug: Optional[str] = None) -> str:
         """
@@ -1274,8 +1268,8 @@ class BillModelAbstract(
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
         return reverse(
-            'django_ledger:bill-action-mark-as-review',
-            kwargs={'entity_slug': entity_slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-action-mark-as-review",
+            kwargs={"entity_slug": entity_slug, "bill_pk": self.uuid},
         )
 
     def get_mark_as_review_message(self) -> str:
@@ -1287,7 +1281,7 @@ class BillModelAbstract(
         str
             Mark-as-Review BillModel confirmation message as a String.
         """
-        return _('Do you want to mark Bill %s as In Review?') % self.bill_number
+        return _("Do you want to mark Bill %s as In Review?") % self.bill_number
 
     # APPROVED ACTIONS....
     def mark_as_approved(
@@ -1324,7 +1318,7 @@ class BillModelAbstract(
         if not self.can_approve():
             if raise_exception:
                 raise BillModelValidationError(
-                    f'Bill {self.bill_number} cannot be marked as in approved.'
+                    f"Bill {self.bill_number} cannot be marked as in approved."
                 )
             return
         self.bill_status = self.BILL_STATUS_APPROVED
@@ -1365,7 +1359,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-mark-as-approved'
+        return f"djl-bill-model-{self.uuid}-mark-as-approved"
 
     def get_mark_as_approved_url(self, entity_slug: Optional[str] = None) -> str:
         """
@@ -1385,8 +1379,8 @@ class BillModelAbstract(
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
         return reverse(
-            'django_ledger:bill-action-mark-as-approved',
-            kwargs={'entity_slug': entity_slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-action-mark-as-approved",
+            kwargs={"entity_slug": entity_slug, "bill_pk": self.uuid},
         )
 
     def get_mark_as_approved_message(self) -> str:
@@ -1398,7 +1392,7 @@ class BillModelAbstract(
         str
             Mark-as-Approved BillModel confirmation message as a String.
         """
-        return _('Do you want to mark Bill %s as Approved?') % self.bill_number
+        return _("Do you want to mark Bill %s as Approved?") % self.bill_number
 
     # PAY ACTIONS....
     def mark_as_paid(
@@ -1433,7 +1427,7 @@ class BillModelAbstract(
         """
         if not self.can_pay():
             raise BillModelValidationError(
-                f'Cannot mark Bill {self.bill_number} as paid...'
+                f"Cannot mark Bill {self.bill_number} as paid..."
             )
 
         if date_paid:
@@ -1449,11 +1443,11 @@ class BillModelAbstract(
 
         if self.date_paid > get_localdate():
             raise BillModelValidationError(
-                f'Cannot pay {self.__class__.__name__} in the future.'
+                f"Cannot pay {self.__class__.__name__} in the future."
             )
         if self.date_paid < self.date_approved:
             raise BillModelValidationError(
-                f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.'
+                f"Cannot pay {self.__class__.__name__} before approved date {self.date_approved}."
             )
 
         self.bill_status = self.BILL_STATUS_PAID
@@ -1496,7 +1490,7 @@ class BillModelAbstract(
         str
             HTML ID as a String
         """
-        return f'djl-bill-model-{self.uuid}-mark-as-paid'
+        return f"djl-bill-model-{self.uuid}-mark-as-paid"
 
     def get_mark_as_paid_url(self, entity_slug: Optional[str] = None) -> str:
         """
@@ -1516,8 +1510,8 @@ class BillModelAbstract(
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
         return reverse(
-            'django_ledger:bill-action-mark-as-paid',
-            kwargs={'entity_slug': entity_slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-action-mark-as-paid",
+            kwargs={"entity_slug": entity_slug, "bill_pk": self.uuid},
         )
 
     def get_mark_as_paid_message(self) -> str:
@@ -1529,7 +1523,7 @@ class BillModelAbstract(
         str
             Mark-as-Paid BillModel confirmation message as a String.
         """
-        return _('Do you want to mark Bill %s as Paid?') % self.bill_number
+        return _("Do you want to mark Bill %s as Paid?") % self.bill_number
 
     # VOID Actions...
     def mark_as_void(
@@ -1561,7 +1555,7 @@ class BillModelAbstract(
         """
         if not self.can_void():
             raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be voided. Must be approved.'
+                f"Bill {self.bill_number} cannot be voided. Must be approved."
             )
 
         if date_void:
@@ -1604,7 +1598,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-mark-as-void'
+        return f"djl-bill-model-{self.uuid}-mark-as-void"
 
     def get_mark_as_void_url(self, entity_slug: Optional[str] = None) -> str:
         """
@@ -1623,8 +1617,8 @@ class BillModelAbstract(
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
         return reverse(
-            'django_ledger:bill-action-mark-as-void',
-            kwargs={'entity_slug': entity_slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-action-mark-as-void",
+            kwargs={"entity_slug": entity_slug, "bill_pk": self.uuid},
         )
 
     def get_mark_as_void_message(self) -> str:
@@ -1636,7 +1630,7 @@ class BillModelAbstract(
         str
             Mark-as-Void BillModel confirmation message as a String.
         """
-        return _('Do you want to void Bill %s?') % self.bill_number
+        return _("Do you want to void Bill %s?") % self.bill_number
 
     # Cancel Actions...
     def mark_as_canceled(
@@ -1656,7 +1650,7 @@ class BillModelAbstract(
         """
         if not self.can_cancel():
             raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.'
+                f"Bill {self.bill_number} cannot be canceled. Must be draft or in review."
             )
 
         self.date_canceled = get_localdate() if not date_canceled else date_canceled
@@ -1677,7 +1671,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-mark-as-canceled'
+        return f"djl-bill-model-{self.uuid}-mark-as-canceled"
 
     def get_mark_as_canceled_url(self, entity_slug: Optional[str] = None) -> str:
         """
@@ -1699,8 +1693,8 @@ class BillModelAbstract(
             entity_slug = self.ledger.entity.slug
 
         return reverse(
-            'django_ledger:bill-action-mark-as-canceled',
-            kwargs={'entity_slug': entity_slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-action-mark-as-canceled",
+            kwargs={"entity_slug": entity_slug, "bill_pk": self.uuid},
         )
 
     def get_mark_as_canceled_message(self) -> str:
@@ -1712,7 +1706,7 @@ class BillModelAbstract(
         str
             Mark-as-Canceled BillModel confirmation message as a String.
         """
-        return _('Do you want to mark Bill %s as Canceled?') % self.bill_number
+        return _("Do you want to mark Bill %s as Canceled?") % self.bill_number
 
     # DELETE ACTIONS...
     def delete(self, force_db_delete: bool = False, using=None, keep_parents=False):
@@ -1721,7 +1715,7 @@ class BillModelAbstract(
             return
         if not self.can_delete():
             raise BillModelValidationError(
-                message=_(f'Bill {self.bill_number} cannot be deleted...')
+                message=_(f"Bill {self.bill_number} cannot be deleted...")
             )
         return super().delete(using=using, keep_parents=keep_parents)
 
@@ -1786,7 +1780,7 @@ class BillModelAbstract(
         date
             A date. i.e. If status is Approved, return date_approved. If Paid, return date_paid.
         """
-        return getattr(self, f'date_{self.bill_status}')
+        return getattr(self, f"date_{self.bill_status}")
 
     # HTML Tags...
     def get_document_id(self) -> Optional[str]:
@@ -1809,7 +1803,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}'
+        return f"djl-bill-model-{self.uuid}"
 
     def get_html_amount_due_id(self) -> str:
         """
@@ -1820,7 +1814,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-amount-due'
+        return f"djl-bill-model-{self.uuid}-amount-due"
 
     def get_html_amount_paid_id(self) -> str:
         """
@@ -1831,7 +1825,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-amount-paid'
+        return f"djl-bill-model-{self.uuid}-amount-paid"
 
     def get_html_form_id(self) -> str:
         """
@@ -1842,7 +1836,7 @@ class BillModelAbstract(
         str
             HTML ID as a String.
         """
-        return f'djl-bill-model-{self.uuid}-form'
+        return f"djl-bill-model-{self.uuid}-form"
 
     def get_terms_start_date(self) -> Optional[date]:
         """
@@ -1876,29 +1870,29 @@ class BillModelAbstract(
 
         try:
             LOOKUP = {
-                'entity_model_id__exact': self.ledger.entity_id,
-                'entity_unit_id__exact': None,
-                'fiscal_year': fy_key,
-                'key__exact': EntityStateModel.KEY_BILL,
+                "entity_model_id__exact": self.ledger.entity_id,
+                "entity_unit_id__exact": None,
+                "fiscal_year": fy_key,
+                "key__exact": EntityStateModel.KEY_BILL,
             }
 
             state_model_qs = (
                 EntityStateModel.objects.filter(**LOOKUP)
-                .select_related('entity_model')
+                .select_related("entity_model")
                 .select_for_update()
             )
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
-            state_model.save(update_fields=['sequence'])
+            state_model.sequence = F("sequence") + 1
+            state_model.save(update_fields=["sequence"])
             state_model.refresh_from_db()
             return state_model
         except ObjectDoesNotExist:
             LOOKUP = {
-                'entity_model_id': entity_model.uuid,
-                'entity_unit_id': None,
-                'fiscal_year': fy_key,
-                'key': EntityStateModel.KEY_BILL,
-                'sequence': 1,
+                "entity_model_id": entity_model.uuid,
+                "entity_unit_id": None,
+                "fiscal_year": fy_key,
+                "key": EntityStateModel.KEY_BILL,
+                "sequence": 1,
             }
 
             state_model = EntityStateModel.objects.create(**LOOKUP)
@@ -1932,21 +1926,21 @@ class BillModelAbstract(
                 seq = str(state_model.sequence).zfill(
                     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
                 )
-                self.bill_number = f'{DJANGO_LEDGER_BILL_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+                self.bill_number = f"{DJANGO_LEDGER_BILL_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}"
 
                 if commit:
-                    self.save(update_fields=['bill_number', 'updated'])
+                    self.save(update_fields=["bill_number", "updated"])
 
         return self.bill_number
 
     def generate_descriptive_title(self) -> str:
-        return f'Bill {self.bill_number} | {self.get_bill_status_display()} {self.get_status_action_date()} | {self.vendor.vendor_name}'
+        return f"Bill {self.bill_number} | {self.get_bill_status_display()} {self.get_status_action_date()} | {self.vendor.vendor_name}"
 
     # --> URLs <---
     def get_absolute_url(self):
         return reverse(
-            'django_ledger:bill-detail',
-            kwargs={'entity_slug': self.ledger.entity.slug, 'bill_pk': self.uuid},
+            "django_ledger:bill-detail",
+            kwargs={"entity_slug": self.ledger.entity.slug, "bill_pk": self.uuid},
         )
 
     def clean(self, commit: bool = True):
@@ -1963,14 +1957,14 @@ class BillModelAbstract(
 
         super().clean()
         if self.cash_account.role != ASSET_CA_CASH:
-            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+            raise ValidationError(f"Cash account must be of role {ASSET_CA_CASH}.")
         if self.prepaid_account.role != ASSET_CA_PREPAID:
             raise ValidationError(
-                f'Prepaid account must be of role {ASSET_CA_PREPAID}.'
+                f"Prepaid account must be of role {ASSET_CA_PREPAID}."
             )
         if self.unearned_account.role != LIABILITY_CL_ACC_PAYABLE:
             raise ValidationError(
-                f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}.'
+                f"Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}."
             )
 
 

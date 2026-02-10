@@ -5,20 +5,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_ledger', '0005_remove_itemmodel_django_ledg_invento_dbf206_idx_and_more'),
+        (
+            "django_ledger",
+            "0005_remove_itemmodel_django_ledg_invento_dbf206_idx_and_more",
+        ),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='journalentrymodel',
-            name='je_number',
-            field=models.SlugField(editable=False, max_length=25, verbose_name='Journal Entry Number'),
+            model_name="journalentrymodel",
+            name="je_number",
+            field=models.SlugField(
+                editable=False, max_length=25, verbose_name="Journal Entry Number"
+            ),
         ),
         migrations.AlterField(
-            model_name='journalentrymodel',
-            name='timestamp',
-            field=models.DateTimeField(default=django.utils.timezone.localtime, verbose_name='Timestamp'),
+            model_name="journalentrymodel",
+            name="timestamp",
+            field=models.DateTimeField(
+                default=django.utils.timezone.localtime, verbose_name="Timestamp"
+            ),
         ),
     ]

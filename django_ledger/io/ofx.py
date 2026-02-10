@@ -6,13 +6,14 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from typing import List, Optional, Dict
-from django_ledger.models.bank_account import BankAccountModel
+from typing import Dict, List, Optional
 
 from django.core.exceptions import ValidationError
 from ofxtools import OFXTree
 from ofxtools.models.bank import STMTRS
 from ofxtools.models.ofx import OFX
+
+from django_ledger.models.bank_account import BankAccountModel
 
 
 class OFXImportValidationError(ValidationError):
@@ -20,7 +21,6 @@ class OFXImportValidationError(ValidationError):
 
 
 class OFXFileManager:
-
     def __init__(self, ofx_file_or_path, parse_on_load: bool = True):
         self.FILE = ofx_file_or_path
         self.ofx_tree: OFXTree = OFXTree()
@@ -32,10 +32,14 @@ class OFXFileManager:
             self.parse_ofx()
 
         if self.NUMBER_OF_STATEMENTS != 1:
-            raise OFXImportValidationError('Only one account per OFX file is supported.')
+            raise OFXImportValidationError(
+                "Only one account per OFX file is supported."
+            )
 
-        self.BANK_NAME = self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None
-        self.FID = self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None
+        self.BANK_NAME = (
+            self.ofx_data.fi.org if hasattr(self.ofx_data.fi, "org") else None
+        )
+        self.FID = self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, "fid") else None
         self.ACCOUNT_DATA: Optional[Dict] = None
 
         self.get_account_data()
@@ -48,25 +52,22 @@ class OFXFileManager:
         self.NUMBER_OF_STATEMENTS = len(self.statements)
 
     def statement_attrs(self):
-        return [a for a in dir(self.statements[0]) if a[0] != '_']
+        return [a for a in dir(self.statements[0]) if a[0] != "_"]
 
     def get_account_data(self):
         if self.ACCOUNT_DATA is None:
             self.ACCOUNT_DATA = [
-                dict(
-                    (attr, getattr(account, attr)) for attr in self.statement_attrs()
-                ) | {
-                    'bank': self.BANK_NAME,
-                    'fid': self.FID
-                } for account in self.statements
+                dict((attr, getattr(account, attr)) for attr in self.statement_attrs())
+                | {"bank": self.BANK_NAME, "fid": self.FID}
+                for account in self.statements
             ][0]
         return self.ACCOUNT_DATA
 
     def get_account_number(self):
-        return self.get_account_data()['account'].acctid
+        return self.get_account_data()["account"].acctid
 
     def get_routing_number(self):
-        return self.get_account_data()['account'].bankid
+        return self.get_account_data()["account"].bankid
 
     def get_ofx_account_type(self):
         """
@@ -80,17 +81,23 @@ class OFXFileManager:
                 - 'CREDITLINE' - Credit line account
                 - 'CD'         - Certificate of Deposit
         """
-        acc_type = self.get_account_data()['account'].accttype
+        acc_type = self.get_account_data()["account"].accttype
 
-        if acc_type not in ['CHECKING', 'SAVINGS', 'MONEYMRKT', 'CREDITLINE', 'CD']:
-            raise OFXImportValidationError(f'Account type "{acc_type}" is not supported.')
+        if acc_type not in ["CHECKING", "SAVINGS", "MONEYMRKT", "CREDITLINE", "CD"]:
+            raise OFXImportValidationError(
+                f'Account type "{acc_type}" is not supported.'
+            )
         return acc_type
 
     def get_account_type(self):
         return BankAccountModel.ACCOUNT_TYPE_OFX_MAPPING[self.get_ofx_account_type()]
 
     def get_account_txs(self):
-        acc_statement = next(iter(
-            st for st in self.ofx_data.statements if st.account.acctid == self.get_account_number()
-        ))
+        acc_statement = next(
+            iter(
+                st
+                for st in self.ofx_data.statements
+                if st.account.acctid == self.get_account_number()
+            )
+        )
         return acc_statement.banktranlist

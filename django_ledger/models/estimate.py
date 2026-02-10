@@ -14,36 +14,39 @@ import warnings
 from datetime import date
 from decimal import Decimal
 from string import ascii_uppercase, digits
-from typing import Union, Optional, List, Dict
-from uuid import uuid4, UUID
+from typing import Dict, List, Optional, Union
+from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.validators import MinValueValidator, MinLengthValidator
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, ExpressionWrapper, FloatField, F
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.validators import MinLengthValidator, MinValueValidator
+from django.db import IntegrityError, models, transaction
+from django.db.models import ExpressionWrapper, F, FloatField, Q, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet, lazy_loader, deprecated_entity_slug_behavior
+from django_ledger.models import (BillModelQuerySet, InvoiceModelQuerySet,
+                                  deprecated_entity_slug_behavior, lazy_loader)
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
-from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModelQuerySet, ItemModel
-from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
+from django_ledger.models.items import (ItemModel, ItemModelQuerySet,
+                                        ItemTransactionModel,
+                                        ItemTransactionModelQuerySet)
+from django_ledger.models.mixins import (CreateUpdateMixIn, ItemizeMixIn,
+                                         MarkdownNotesMixIn)
 from django_ledger.models.purchase_order import PurchaseOrderModelQuerySet
-from django_ledger.models.signals import (
-    estimate_status_void,
-    estimate_status_draft,
-    estimate_status_approved,
-    estimate_status_canceled,
-    estimate_status_completed,
-    estimate_status_in_review
-)
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX, \
-    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+from django_ledger.models.signals import (estimate_status_approved,
+                                          estimate_status_canceled,
+                                          estimate_status_completed,
+                                          estimate_status_draft,
+                                          estimate_status_in_review,
+                                          estimate_status_void)
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR)
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -63,8 +66,7 @@ class EstimateModelQuerySet(models.QuerySet):
         if user_model.is_superuser:
             return self
         return self.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
+            Q(entity__admin=user_model) | Q(entity__managers__in=[user_model])
         )
 
     def approved(self):
@@ -77,8 +79,8 @@ class EstimateModelQuerySet(models.QuerySet):
             A EstimateModelQuerySet with applied filters.
         """
         return self.filter(
-            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_APPROVED) |
-            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_COMPLETED)
+            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_APPROVED)
+            | Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_COMPLETED)
         )
 
     def not_approved(self):
@@ -91,8 +93,8 @@ class EstimateModelQuerySet(models.QuerySet):
             A EstimateModelQuerySet with applied filters.
         """
         return self.exclude(
-            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_APPROVED) |
-            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_COMPLETED)
+            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_APPROVED)
+            | Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_COMPLETED)
         )
 
     def contracts(self):
@@ -127,7 +129,9 @@ class EstimateModelManager(models.Manager):
     """
 
     @deprecated_entity_slug_behavior
-    def for_entity(self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs) -> EstimateModelQuerySet:
+    def for_entity(
+        self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs
+    ) -> EstimateModelQuerySet:
         """
         Filters the queryset based on the given entity model.
 
@@ -158,15 +162,15 @@ class EstimateModelManager(models.Manager):
         EntityModel = lazy_loader.get_entity_model()
 
         qs = self.get_queryset()
-        if 'user_model' in kwargs:
+        if "user_model" in kwargs:
             warnings.warn(
-                'user_model parameter is deprecated and will be removed in a future release. '
-                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                "user_model parameter is deprecated and will be removed in a future release. "
+                "Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
-                qs = qs.for_user(kwargs['user_model'])
+                qs = qs.for_user(kwargs["user_model"])
 
         if isinstance(entity_model, EntityModel):
             qs = qs.filter(entity=entity_model)
@@ -176,14 +180,12 @@ class EstimateModelManager(models.Manager):
             qs = qs.filter(entity_id=entity_model)
         else:
             raise EstimateModelValidationError(
-                message='entity_model must be either a string, UUID or an EntityModel'
+                message="entity_model must be either a string, UUID or an EntityModel"
             )
         return qs
 
 
-class EstimateModelAbstract(CreateUpdateMixIn,
-                            ItemizeMixIn,
-                            MarkdownNotesMixIn):
+class EstimateModelAbstract(CreateUpdateMixIn, ItemizeMixIn, MarkdownNotesMixIn):
     """
     This is the main abstract class which the EstimateModel database will inherit from.
     The EstimateModel inherits functionality from the following MixIns:
@@ -242,136 +244,168 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     other_estimate: Decimal
         the total miscellaneous costs estimate of the EstimateModel instance.
     """
-    CONTRACT_STATUS_DRAFT = 'draft'
-    CONTRACT_STATUS_REVIEW = 'in_review'
-    CONTRACT_STATUS_APPROVED = 'approved'
-    CONTRACT_STATUS_COMPLETED = 'completed'
-    CONTRACT_STATUS_VOID = 'void'
-    CONTRACT_STATUS_CANCELED = 'canceled'
+
+    CONTRACT_STATUS_DRAFT = "draft"
+    CONTRACT_STATUS_REVIEW = "in_review"
+    CONTRACT_STATUS_APPROVED = "approved"
+    CONTRACT_STATUS_COMPLETED = "completed"
+    CONTRACT_STATUS_VOID = "void"
+    CONTRACT_STATUS_CANCELED = "canceled"
     CONTRACT_STATUS_CHOICES = [
-        (CONTRACT_STATUS_DRAFT, _('Draft')),
-        (CONTRACT_STATUS_REVIEW, _('In Review')),
-        (CONTRACT_STATUS_APPROVED, _('Approved')),
-        (CONTRACT_STATUS_COMPLETED, _('Completed')),
-        (CONTRACT_STATUS_VOID, _('Void')),
-        (CONTRACT_STATUS_CANCELED, _('Canceled')),
+        (CONTRACT_STATUS_DRAFT, _("Draft")),
+        (CONTRACT_STATUS_REVIEW, _("In Review")),
+        (CONTRACT_STATUS_APPROVED, _("Approved")),
+        (CONTRACT_STATUS_COMPLETED, _("Completed")),
+        (CONTRACT_STATUS_VOID, _("Void")),
+        (CONTRACT_STATUS_CANCELED, _("Canceled")),
     ]
     CONTRACT_STATUS_CHOICES_VALID = tuple(i[0] for i in CONTRACT_STATUS_CHOICES)
 
-    CONTRACT_TERMS_FIXED = 'fixed'
-    CONTRACT_TERMS_TARGET_PRICE = 'target'
-    CONTRACT_TERMS_TM = 't&m'
-    CONTRACT_TERMS_OTHER = 'other'
+    CONTRACT_TERMS_FIXED = "fixed"
+    CONTRACT_TERMS_TARGET_PRICE = "target"
+    CONTRACT_TERMS_TM = "t&m"
+    CONTRACT_TERMS_OTHER = "other"
     CONTRACT_TERMS_CHOICES = [
-        (CONTRACT_TERMS_FIXED, _('Fixed Price')),
-        (CONTRACT_TERMS_TARGET_PRICE, _('Target Price')),
-        (CONTRACT_TERMS_TM, _('Time & Materials')),
-        (CONTRACT_TERMS_OTHER, _('Other'))
+        (CONTRACT_TERMS_FIXED, _("Fixed Price")),
+        (CONTRACT_TERMS_TARGET_PRICE, _("Target Price")),
+        (CONTRACT_TERMS_TM, _("Time & Materials")),
+        (CONTRACT_TERMS_OTHER, _("Other")),
     ]
     CONTRACT_TERMS_CHOICES_VALID = tuple(i[0] for i in CONTRACT_TERMS_CHOICES)
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    estimate_number = models.SlugField(max_length=20,
-                                       editable=False,
-                                       verbose_name=_('Estimate Number'))
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               editable=False,
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Entity Model'))
-    customer = models.ForeignKey('django_ledger.CustomerModel', on_delete=models.RESTRICT, verbose_name=_('Customer'))
-    terms = models.CharField(max_length=10, choices=CONTRACT_TERMS_CHOICES, verbose_name=_('Contract Terms'))
-    title = models.CharField(max_length=250,
-                             verbose_name=_('Customer Estimate Title'),
-                             validators=[
-                                 MinLengthValidator(limit_value=5,
-                                                    message=_(f'EstimateModel Title length must be greater than 5'))
-                             ])
-    status = models.CharField(max_length=10,
-                              choices=CONTRACT_STATUS_CHOICES,
-                              verbose_name=_('Estimate Model Status'),
-                              default=CONTRACT_STATUS_DRAFT)
+    estimate_number = models.SlugField(
+        max_length=20, editable=False, verbose_name=_("Estimate Number")
+    )
+    entity = models.ForeignKey(
+        "django_ledger.EntityModel",
+        editable=False,
+        on_delete=models.CASCADE,
+        verbose_name=_("Entity Model"),
+    )
+    customer = models.ForeignKey(
+        "django_ledger.CustomerModel",
+        on_delete=models.RESTRICT,
+        verbose_name=_("Customer"),
+    )
+    terms = models.CharField(
+        max_length=10, choices=CONTRACT_TERMS_CHOICES, verbose_name=_("Contract Terms")
+    )
+    title = models.CharField(
+        max_length=250,
+        verbose_name=_("Customer Estimate Title"),
+        validators=[
+            MinLengthValidator(
+                limit_value=5,
+                message=_(f"EstimateModel Title length must be greater than 5"),
+            )
+        ],
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=CONTRACT_STATUS_CHOICES,
+        verbose_name=_("Estimate Model Status"),
+        default=CONTRACT_STATUS_DRAFT,
+    )
 
-    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Date Draft'))
-    date_in_review = models.DateField(null=True, blank=True, verbose_name=_('Date In Review'))
-    date_approved = models.DateField(null=True, blank=True, verbose_name=_('Date Approved'))
-    date_completed = models.DateField(null=True, blank=True, verbose_name=_('Date Completed'))
-    date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Date Canceled'))
-    date_void = models.DateField(null=True, blank=True, verbose_name=_('Date Void'))
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_("Date Draft"))
+    date_in_review = models.DateField(
+        null=True, blank=True, verbose_name=_("Date In Review")
+    )
+    date_approved = models.DateField(
+        null=True, blank=True, verbose_name=_("Date Approved")
+    )
+    date_completed = models.DateField(
+        null=True, blank=True, verbose_name=_("Date Completed")
+    )
+    date_canceled = models.DateField(
+        null=True, blank=True, verbose_name=_("Date Canceled")
+    )
+    date_void = models.DateField(null=True, blank=True, verbose_name=_("Date Void"))
 
-    revenue_estimate = models.DecimalField(decimal_places=2,
-                                           max_digits=20,
-                                           default=Decimal('0.00'),
-                                           verbose_name=_('Total revenue estimate'),
-                                           help_text=_('Estimated cost to complete the quoted work.'),
-                                           validators=[MinValueValidator(limit_value=0)])
+    revenue_estimate = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        default=Decimal("0.00"),
+        verbose_name=_("Total revenue estimate"),
+        help_text=_("Estimated cost to complete the quoted work."),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
-    labor_estimate = models.DecimalField(decimal_places=2,
-                                         max_digits=20,
-                                         default=Decimal('0.00'),
-                                         verbose_name=_('Labor Cost of labor estimate'),
-                                         help_text=_('Estimated labor cost to complete the quoted work.'),
-                                         validators=[MinValueValidator(limit_value=0)])
+    labor_estimate = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        default=Decimal("0.00"),
+        verbose_name=_("Labor Cost of labor estimate"),
+        help_text=_("Estimated labor cost to complete the quoted work."),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
-    material_estimate = models.DecimalField(decimal_places=2,
-                                            max_digits=20,
-                                            default=0.0,
-                                            verbose_name=_('Material Cost Estimate'),
-                                            help_text=_('Estimated material cost to complete the quoted work.'),
-                                            validators=[MinValueValidator(limit_value=0)])
+    material_estimate = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        default=0.0,
+        verbose_name=_("Material Cost Estimate"),
+        help_text=_("Estimated material cost to complete the quoted work."),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
-    equipment_estimate = models.DecimalField(decimal_places=2,
-                                             max_digits=20,
-                                             default=Decimal('0.00'),
-                                             verbose_name=_('Equipment Cost Estimate'),
-                                             help_text=_('Estimated equipment cost to complete the quoted work.'),
-                                             validators=[MinValueValidator(limit_value=0)])
+    equipment_estimate = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        default=Decimal("0.00"),
+        verbose_name=_("Equipment Cost Estimate"),
+        help_text=_("Estimated equipment cost to complete the quoted work."),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
-    other_estimate = models.DecimalField(decimal_places=2,
-                                         max_digits=20,
-                                         default=Decimal('0.00'),
-                                         verbose_name=_('Other Cost Estimate'),
-                                         help_text=_('Estimated equipment cost to complete the quoted work.'),
-                                         validators=[MinValueValidator(limit_value=0)])
+    other_estimate = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        default=Decimal("0.00"),
+        verbose_name=_("Other Cost Estimate"),
+        help_text=_("Estimated equipment cost to complete the quoted work."),
+        validators=[MinValueValidator(limit_value=0)],
+    )
 
     objects = EstimateModelManager.from_queryset(queryset_class=EstimateModelQuerySet)()
 
     class Meta:
         abstract = True
-        ordering = ['-updated']
-        verbose_name = _('Customer Job')
-        verbose_name_plural = _('Customer Jobs')
+        ordering = ["-updated"]
+        verbose_name = _("Customer Job")
+        verbose_name_plural = _("Customer Jobs")
         indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['customer']),
-            models.Index(fields=['terms']),
-            models.Index(fields=['entity']),
-
-            models.Index(fields=['date_draft']),
-            models.Index(fields=['date_in_review']),
-            models.Index(fields=['date_approved']),
-            models.Index(fields=['date_canceled']),
-            models.Index(fields=['date_void']),
-            models.Index(fields=['estimate_number']),
+            models.Index(fields=["status"]),
+            models.Index(fields=["customer"]),
+            models.Index(fields=["terms"]),
+            models.Index(fields=["entity"]),
+            models.Index(fields=["date_draft"]),
+            models.Index(fields=["date_in_review"]),
+            models.Index(fields=["date_approved"]),
+            models.Index(fields=["date_canceled"]),
+            models.Index(fields=["date_void"]),
+            models.Index(fields=["estimate_number"]),
         ]
-        unique_together = [
-            ('entity', 'estimate_number')
-        ]
+        unique_together = [("entity", "estimate_number")]
 
     def __str__(self):
         if self.is_contract():
-            return f'Contract {self.estimate_number} | {self.title}'
-        return f'Estimate {self.estimate_number} | {self.title}'
+            return f"Contract {self.estimate_number} | {self.title}"
+        return f"Estimate {self.estimate_number} | {self.title}"
 
     # Configuration...
 
-    def configure(self,
-                  entity_slug: Union[EntityModel, UUID, str],
-                  customer_model: CustomerModel,
-                  user_model: Optional[UserModel] = None,
-                  date_draft: Optional[date] = None,
-                  estimate_title: Optional[str] = None,
-                  commit: bool = False,
-                  raise_exception: bool = True):
+    def configure(
+        self,
+        entity_slug: Union[EntityModel, UUID, str],
+        customer_model: CustomerModel,
+        user_model: Optional[UserModel] = None,
+        date_draft: Optional[date] = None,
+        estimate_title: Optional[str] = None,
+        commit: bool = False,
+        raise_exception: bool = True,
+    ):
         """
         A configuration hook which executes all initial EstimateModel setup.
         Can only call this method once in the lifetime of a EstimateModel.
@@ -402,18 +436,26 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             if isinstance(entity_slug, (str, UUID)):
                 if not user_model:
                     if raise_exception:
-                        raise EstimateModelValidationError(_('Must pass user_model when using entity_slug.'))
+                        raise EstimateModelValidationError(
+                            _("Must pass user_model when using entity_slug.")
+                        )
                     return
                 entity_qs = EntityModel.objects.for_user(user_model=user_model)
                 if isinstance(entity_slug, str):
-                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                    entity_model: EntityModel = get_object_or_404(
+                        entity_qs, slug__exact=entity_slug
+                    )
                 elif isinstance(entity_slug, UUID):
-                    entity_model: EntityModel = get_object_or_404(entity_qs, uuid__exact=entity_slug)
+                    entity_model: EntityModel = get_object_or_404(
+                        entity_qs, uuid__exact=entity_slug
+                    )
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
                 if raise_exception:
-                    raise EstimateModelValidationError('entity_slug must be an instance of str or EntityModel')
+                    raise EstimateModelValidationError(
+                        "entity_slug must be an instance of str or EntityModel"
+                    )
                 return
 
             if estimate_title:
@@ -509,10 +551,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         bool
             True if EstimateModel is a Contract, else False.
         """
-        return any([
-            self.is_approved(),
-            self.is_completed()
-        ])
+        return any([self.is_approved(), self.is_completed()])
 
     def is_configured(self) -> bool:
         """
@@ -523,11 +562,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         bool
             True if EstimateModel is configured, else False.
         """
-        return all([
-            self.customer_id,
-            self.entity_id,
-            self.date_draft
-        ])
+        return all([self.customer_id, self.entity_id, self.date_draft])
 
     # Permissions...
     def can_draft(self) -> bool:
@@ -583,10 +618,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         bool
             True if EstimateModel can be marked as canceled, else False.
         """
-        return any([
-            self.is_draft(),
-            self.is_review()
-        ])
+        return any([self.is_draft(), self.is_review()])
 
     def can_void(self):
         """
@@ -630,15 +662,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         bool
             True if EstimateModel can generate the estimate number, else False.
         """
-        return all([
-            self.date_draft,
-            self.is_configured(),
-            not self.estimate_number
-        ])
+        return all([self.date_draft, self.is_configured(), not self.estimate_number])
 
     # Actions...
     # DRAFT...
-    def mark_as_draft(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+    def mark_as_draft(
+        self, commit: bool = False, raise_exception: bool = True, **kwargs
+    ):
         """
         Marks the current EstimateModel instance as Draft.
 
@@ -649,19 +679,17 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_draft():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be marked as draft...')
+                raise EstimateModelValidationError(
+                    f"Estimate {self.estimate_number} cannot be marked as draft..."
+                )
             return
         self.status = self.CONTRACT_STATUS_DRAFT
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'status',
-                'updated'
-            ])
-        estimate_status_draft.send_robust(sender=self.__class__,
-                                          instance=self,
-                                          commited=commit,
-                                          **kwargs)
+            self.save(update_fields=["status", "updated"])
+        estimate_status_draft.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_draft_html_id(self):
         """
@@ -672,7 +700,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-estimate-mark-as-draft'
+        return f"djl-{self.uuid}-estimate-mark-as-draft"
 
     def get_mark_as_draft_url(self):
         """
@@ -683,11 +711,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             URL as a String
         """
-        return reverse('django_ledger:customer-estimate-action-mark-as-draft',
-                       kwargs={
-                           'entity_slug': self.entity.slug,
-                           'ce_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:customer-estimate-action-mark-as-draft",
+            kwargs={"entity_slug": self.entity.slug, "ce_pk": self.uuid},
+        )
 
     def get_mark_as_draft_message(self):
         """
@@ -698,16 +725,17 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             Message as a String
         """
-        return _('Do you want to mark Estimate %s as Draft?') % self.estimate_number
+        return _("Do you want to mark Estimate %s as Draft?") % self.estimate_number
 
     # REVIEW...
-    def mark_as_review(self,
-                       itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
-                       date_in_review: Optional[date] = None,
-                       raise_exception: bool = True,
-                       commit: bool = True,
-                       **kwargs):
-
+    def mark_as_review(
+        self,
+        itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
+        date_in_review: Optional[date] = None,
+        raise_exception: bool = True,
+        commit: bool = True,
+        **kwargs,
+    ):
         """
         Marks the current EstimateModel instance as In Review.
 
@@ -723,7 +751,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_review():
             if raise_exception:
-                raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
+                raise ValidationError(
+                    f"Estimate {self.estimate_number} cannot be marked as In Review..."
+                )
             return
 
         if not itemtxs_qs:
@@ -732,11 +762,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             self.validate_item_transaction_qs(itemtxs_qs=itemtxs_qs)
 
         if not itemtxs_qs.count():
-            raise EstimateModelValidationError(message='Cannot review an Estimate without items...')
+            raise EstimateModelValidationError(
+                message="Cannot review an Estimate without items..."
+            )
         if not self.get_cost_estimate():
-            raise EstimateModelValidationError(message='Cost amount is zero!.')
+            raise EstimateModelValidationError(message="Cost amount is zero!.")
         if not self.revenue_estimate:
-            raise EstimateModelValidationError(message='Revenue amount is zero!.')
+            raise EstimateModelValidationError(message="Revenue amount is zero!.")
 
         if not date_in_review:
             date_in_review = get_localdate()
@@ -744,15 +776,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         self.status = self.CONTRACT_STATUS_REVIEW
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'date_in_review',
-                'status',
-                'updated'
-            ])
-        estimate_status_in_review.send_robust(sender=self.__class__,
-                                              instance=self,
-                                              commited=commit,
-                                              **kwargs)
+            self.save(update_fields=["date_in_review", "status", "updated"])
+        estimate_status_in_review.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_review_html_id(self):
         """
@@ -763,7 +790,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-estimate-mark-as-review'
+        return f"djl-{self.uuid}-estimate-mark-as-review"
 
     def get_mark_as_review_url(self):
         """
@@ -774,11 +801,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             URL as a String
         """
-        return reverse('django_ledger:customer-estimate-action-mark-as-review',
-                       kwargs={
-                           'entity_slug': self.entity.slug,
-                           'ce_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:customer-estimate-action-mark-as-review",
+            kwargs={"entity_slug": self.entity.slug, "ce_pk": self.uuid},
+        )
 
     def get_mark_as_review_message(self):
         """
@@ -789,14 +815,16 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             Message as a String
         """
-        return _('Do you want to mark Estimate %s as In Review?') % self.estimate_number
+        return _("Do you want to mark Estimate %s as In Review?") % self.estimate_number
 
     # APPROVED
-    def mark_as_approved(self,
-                         commit=False,
-                         date_approved: Optional[date] = None,
-                         raise_exception: bool = True,
-                         **kwargs):
+    def mark_as_approved(
+        self,
+        commit=False,
+        date_approved: Optional[date] = None,
+        raise_exception: bool = True,
+        **kwargs,
+    ):
         """
         Marks the current EstimateModel instance as Approved.
 
@@ -810,7 +838,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         if not self.can_approve():
             if raise_exception:
                 raise EstimateModelValidationError(
-                    f'Estimate {self.estimate_number} cannot be marked as approved.'
+                    f"Estimate {self.estimate_number} cannot be marked as approved."
                 )
             return
 
@@ -820,15 +848,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         self.status = self.CONTRACT_STATUS_APPROVED
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'status',
-                'date_approved',
-                'updated'
-            ])
-        estimate_status_approved.send_robust(sender=self.__class__,
-                                             instance=self,
-                                             commited=commit,
-                                             **kwargs)
+            self.save(update_fields=["status", "date_approved", "updated"])
+        estimate_status_approved.send_robust(
+            sender=self.__class__, instance=self, commited=commit, **kwargs
+        )
 
     def get_mark_as_approved_html_id(self):
         """
@@ -839,7 +862,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-estimate-mark-as-approved'
+        return f"djl-{self.uuid}-estimate-mark-as-approved"
 
     def get_mark_as_approved_url(self):
         """
@@ -850,11 +873,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             URL as a String
         """
-        return reverse('django_ledger:customer-estimate-action-mark-as-approved',
-                       kwargs={
-                           'entity_slug': self.entity.slug,
-                           'ce_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:customer-estimate-action-mark-as-approved",
+            kwargs={"entity_slug": self.entity.slug, "ce_pk": self.uuid},
+        )
 
     def get_mark_as_approved_message(self):
         """
@@ -865,14 +887,16 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             Message as a String
         """
-        return _('Do you want to mark Estimate %s as Approved?') % self.estimate_number
+        return _("Do you want to mark Estimate %s as Approved?") % self.estimate_number
 
     # COMPLETED
-    def mark_as_completed(self,
-                          commit=False,
-                          date_completed: Optional[date] = None,
-                          raise_exception: bool = True,
-                          **kwargs):
+    def mark_as_completed(
+        self,
+        commit=False,
+        date_completed: Optional[date] = None,
+        raise_exception: bool = True,
+        **kwargs,
+    ):
         """
         Marks the current EstimateModel instance as Completed.
 
@@ -885,7 +909,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_complete():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be marked as completed.')
+                raise EstimateModelValidationError(
+                    f"Estimate {self.estimate_number} cannot be marked as completed."
+                )
             return
         if not date_completed:
             date_completed = get_localdate()
@@ -894,17 +920,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         self.clean()
         if commit:
             self.clean()
-            self.save(
-                update_fields=[
-                    'status',
-                    'date_completed',
-                    'updated'
-                ])
+            self.save(update_fields=["status", "date_completed", "updated"])
         estimate_status_completed.send_robust(
-            sender=self.__class__,
-            instance=self,
-            commited=commit,
-            **kwargs
+            sender=self.__class__, instance=self, commited=commit, **kwargs
         )
 
     def get_mark_as_completed_html_id(self):
@@ -916,7 +934,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-estimate-mark-as-completed'
+        return f"djl-{self.uuid}-estimate-mark-as-completed"
 
     def get_mark_as_completed_url(self):
         """
@@ -927,11 +945,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             URL as a String
         """
-        return reverse('django_ledger:customer-estimate-action-mark-as-completed',
-                       kwargs={
-                           'entity_slug': self.entity.slug,
-                           'ce_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:customer-estimate-action-mark-as-completed",
+            kwargs={"entity_slug": self.entity.slug, "ce_pk": self.uuid},
+        )
 
     def get_mark_as_completed_message(self):
         """
@@ -942,14 +959,16 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             Message as a String
         """
-        return _('Do you want to mark Estimate %s as Completed?') % self.estimate_number
+        return _("Do you want to mark Estimate %s as Completed?") % self.estimate_number
 
     # CANCEL
-    def mark_as_canceled(self,
-                         commit: bool = False,
-                         date_canceled: Optional[date] = None,
-                         raise_exception: bool = True,
-                         **kwargs):
+    def mark_as_canceled(
+        self,
+        commit: bool = False,
+        date_canceled: Optional[date] = None,
+        raise_exception: bool = True,
+        **kwargs,
+    ):
         """
         Marks the current EstimateModel instance as Canceled.
 
@@ -962,7 +981,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_cancel():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be canceled...')
+                raise EstimateModelValidationError(
+                    f"Estimate {self.estimate_number} cannot be canceled..."
+                )
             return
         if not date_canceled:
             date_canceled = get_localdate()
@@ -970,16 +991,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         self.status = self.CONTRACT_STATUS_CANCELED
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'status',
-                'date_canceled',
-                'updated'
-            ])
+            self.save(update_fields=["status", "date_canceled", "updated"])
         estimate_status_canceled.send_robust(
-            sender=self.__class__,
-            instance=self,
-            commited=commit,
-            **kwargs
+            sender=self.__class__, instance=self, commited=commit, **kwargs
         )
 
     def get_mark_as_canceled_html_id(self):
@@ -991,7 +1005,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-estimate-mark-as-canceled'
+        return f"djl-{self.uuid}-estimate-mark-as-canceled"
 
     def get_mark_as_canceled_url(self):
         """
@@ -1002,11 +1016,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             URL as a String
         """
-        return reverse('django_ledger:customer-estimate-action-mark-as-canceled',
-                       kwargs={
-                           'entity_slug': self.entity.slug,
-                           'ce_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:customer-estimate-action-mark-as-canceled",
+            kwargs={"entity_slug": self.entity.slug, "ce_pk": self.uuid},
+        )
 
     def get_mark_as_canceled_message(self):
         """
@@ -1017,15 +1030,16 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             Message as a String
         """
-        return _('Do you want to mark Estimate %s as Canceled?') % self.estimate_number
+        return _("Do you want to mark Estimate %s as Canceled?") % self.estimate_number
 
     # VOID
-    def mark_as_void(self,
-                     commit: bool = False,
-                     date_void: Optional[date] = None,
-                     raise_exception: bool = True,
-                     **kwargs):
-
+    def mark_as_void(
+        self,
+        commit: bool = False,
+        date_void: Optional[date] = None,
+        raise_exception: bool = True,
+        **kwargs,
+    ):
         """
         Marks the current EstimateModel instance as Void.
 
@@ -1038,7 +1052,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_void():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be void...')
+                raise EstimateModelValidationError(
+                    f"Estimate {self.estimate_number} cannot be void..."
+                )
             return
 
         if not date_void:
@@ -1047,16 +1063,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         self.status = self.CONTRACT_STATUS_VOID
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'status',
-                'date_void',
-                'updated'
-            ])
+            self.save(update_fields=["status", "date_void", "updated"])
         estimate_status_void.send_robust(
-            sender=self.__class__,
-            instance=self,
-            commited=commit,
-            **kwargs
+            sender=self.__class__, instance=self, commited=commit, **kwargs
         )
 
     def get_mark_as_void_html_id(self):
@@ -1068,7 +1077,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             HTML ID as a String
         """
-        return f'djl-{self.uuid}-estimate-mark-as-void'
+        return f"djl-{self.uuid}-estimate-mark-as-void"
 
     def get_mark_as_void_url(self):
         """
@@ -1079,11 +1088,10 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             URL as a String
         """
-        return reverse('django_ledger:customer-estimate-action-mark-as-void',
-                       kwargs={
-                           'entity_slug': self.entity.slug,
-                           'ce_pk': self.uuid
-                       })
+        return reverse(
+            "django_ledger:customer-estimate-action-mark-as-void",
+            kwargs={"entity_slug": self.entity.slug, "ce_pk": self.uuid},
+        )
 
     def get_mark_as_void_message(self):
         """
@@ -1095,39 +1103,43 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             Message as a String
         """
 
-        return _('Do you want to mark Estimate %s as Void?') % self.estimate_number
+        return _("Do you want to mark Estimate %s as Void?") % self.estimate_number
 
     # HTML Tags...
     def get_html_id(self):
-        return f'djl-customer-estimate-id-{self.uuid}'
+        return f"djl-customer-estimate-id-{self.uuid}"
 
     # ### ItemizeMixIn implementation START...
     def can_migrate_itemtxs(self) -> bool:
         return self.is_draft()
 
     def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
-        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
+        itemtxs_batch = super().migrate_itemtxs(
+            itemtxs=itemtxs, commit=commit, operation=operation
+        )
         self.update_state(itemtxs_qs=itemtxs_batch)
         self.clean()
 
         if commit:
-            self.save(update_fields=[
-                'revenue_estimate',
-                'labor_estimate',
-                'equipment_estimate',
-                'material_estimate',
-                'other_estimate',
-                'updated'
-            ])
+            self.save(
+                update_fields=[
+                    "revenue_estimate",
+                    "labor_estimate",
+                    "equipment_estimate",
+                    "material_estimate",
+                    "other_estimate",
+                    "updated",
+                ]
+            )
 
         return itemtxs_batch
 
     def get_item_model_qs(self) -> ItemModelQuerySet:
-        return ItemModel.objects.filter(
-            entity_id__exact=self.entity_id
-        ).estimates()
+        return ItemModel.objects.filter(entity_id__exact=self.entity_id).estimates()
 
-    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+    def validate_itemtxs_qs(
+        self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]
+    ):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the EstimateModel.
 
@@ -1136,17 +1148,20 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         queryset: ItemTransactionModelQuerySet or list of ItemTransactionModel.
             ItemTransactionModelQuerySet to validate.
         """
-        valid = all([
-            i.ce_model_id == self.uuid for i in queryset
-        ])
+        valid = all([i.ce_model_id == self.uuid for i in queryset])
         if not valid:
-            raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
+            raise EstimateModelValidationError(
+                f"Invalid queryset. All items must be assigned to Bill {self.uuid}"
+            )
 
-    def get_itemtxs_data(self,
-                         queryset: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None,
-                         aggregate_on_db: bool = False,
-                         lazy_agg: bool = False):
-
+    def get_itemtxs_data(
+        self,
+        queryset: Optional[
+            Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]
+        ] = None,
+        aggregate_on_db: bool = False,
+        lazy_agg: bool = False,
+    ):
         """
         Returns all ItemTransactionModels associated with the EstimateModel and a total aggregate.
 
@@ -1161,14 +1176,16 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         ItemTransactionModelQuerySet
         """
         if not queryset:
-            queryset = self.itemtransactionmodel_set.select_related('item_model').all()
+            queryset = self.itemtransactionmodel_set.select_related("item_model").all()
         else:
             self.validate_item_transaction_qs(queryset)
         # todo: this needs to return an aggregate for consistency...
         return queryset, None
 
     # ### ItemizeMixIn implementation END...
-    def get_itemtxs_annotation(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None):
+    def get_itemtxs_annotation(
+        self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None
+    ):
         """
         Gets an annotated ItemTransactionModelQuerySet with additional average unit cost & revenue.
 
@@ -1186,22 +1203,26 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         itemtxs_qs, _ = self.get_itemtxs_data(itemtxs_qs)
         return itemtxs_qs, itemtxs_qs.values(
-            'item_model_id', 'item_model__name'
+            "item_model_id", "item_model__name"
         ).annotate(
-            Sum('ce_quantity'),
-            Sum('ce_cost_estimate'),
-            Sum('ce_revenue_estimate'),
+            Sum("ce_quantity"),
+            Sum("ce_cost_estimate"),
+            Sum("ce_revenue_estimate"),
             avg_unit_cost=ExpressionWrapper(
-                expression=Sum('ce_cost_estimate') / Sum('ce_quantity'),
-                output_field=FloatField()
+                expression=Sum("ce_cost_estimate") / Sum("ce_quantity"),
+                output_field=FloatField(),
             ),
             avg_unit_revenue=ExpressionWrapper(
-                expression=Sum('ce_revenue_estimate') / Sum('ce_quantity'),
-                output_field=FloatField()
-            )
+                expression=Sum("ce_revenue_estimate") / Sum("ce_quantity"),
+                output_field=FloatField(),
+            ),
         )
 
-    def update_revenue_estimate(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None, commit: bool = False):
+    def update_revenue_estimate(
+        self,
+        itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
+        commit: bool = False,
+    ):
         """
         Updates the revenue estimate of the EstimateModel instance.
 
@@ -1218,12 +1239,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         self.revenue_estimate = sum(i.ce_revenue_estimate for i in itemtxs_qs)
 
         if commit:
-            self.save(update_fields=[
-                'revenue_estimate',
-                'updated'
-            ])
+            self.save(update_fields=["revenue_estimate", "updated"])
 
-    def update_cost_estimate(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None, commit: bool = False):
+    def update_cost_estimate(
+        self,
+        itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
+        commit: bool = False,
+    ):
         """
         Updates the cost estimate of the EstimateModel instance.
 
@@ -1237,31 +1259,46 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         estimates = {
-            'labor': sum(a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_labor()),
-            'material': sum(a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_material()),
-            'equipment': sum(a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_equipment()),
-            'other': sum(
-                a.ce_cost_estimate for a in itemtxs_qs
-                if
-                a.item_model.is_other() or not a.item_model_id or not a.item_model.item_type or a.item_model.is_lump_sum()
+            "labor": sum(
+                a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_labor()
+            ),
+            "material": sum(
+                a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_material()
+            ),
+            "equipment": sum(
+                a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_equipment()
+            ),
+            "other": sum(
+                a.ce_cost_estimate
+                for a in itemtxs_qs
+                if a.item_model.is_other()
+                or not a.item_model_id
+                or not a.item_model.item_type
+                or a.item_model.is_lump_sum()
             ),
         }
-        self.labor_estimate = estimates['labor']
-        self.material_estimate = estimates['material']
-        self.equipment_estimate = estimates['equipment']
-        self.other_estimate = estimates['other']
+        self.labor_estimate = estimates["labor"]
+        self.material_estimate = estimates["material"]
+        self.equipment_estimate = estimates["equipment"]
+        self.other_estimate = estimates["other"]
 
         if commit:
-            self.save(update_fields=[
-                'labor_estimate',
-                'material_estimate',
-                'equipment_estimate',
-                'other_estimate',
-                'updated'
-            ])
+            self.save(
+                update_fields=[
+                    "labor_estimate",
+                    "material_estimate",
+                    "equipment_estimate",
+                    "other_estimate",
+                    "updated",
+                ]
+            )
 
-    def update_state(self,
-                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
+    def update_state(
+        self,
+        itemtxs_qs: Optional[
+            Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]
+        ] = None,
+    ):
         itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)
@@ -1282,12 +1319,14 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         Decimal or float
             The total EstimateModel cost.
         """
-        estimate = sum([
-            self.labor_estimate,
-            self.material_estimate,
-            self.equipment_estimate,
-            self.other_estimate
-        ])
+        estimate = sum(
+            [
+                self.labor_estimate,
+                self.material_estimate,
+                self.equipment_estimate,
+                self.other_estimate,
+            ]
+        )
         if as_float:
             return float(estimate)
         return estimate
@@ -1325,9 +1364,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             The total EstimateModel profit.
         """
 
-        return self.get_revenue_estimate(as_float=as_float) - self.get_cost_estimate(as_float=as_float)
+        return self.get_revenue_estimate(as_float=as_float) - self.get_cost_estimate(
+            as_float=as_float
+        )
 
-    def get_gross_margin_estimate(self, as_percent: bool = False, raise_exception: bool = False) -> float:
+    def get_gross_margin_estimate(
+        self, as_percent: bool = False, raise_exception: bool = False
+    ) -> float:
         """
         Computes the EstimateModel gross margin.
 
@@ -1344,13 +1387,18 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             The EstimateModel gross margin.
         """
         try:
-            gm = float(self.get_revenue_estimate()) / float(self.get_cost_estimate()) - 1.00
+            gm = (
+                float(self.get_revenue_estimate()) / float(self.get_cost_estimate())
+                - 1.00
+            )
             if as_percent:
                 return gm * 100
             return gm
         except ZeroDivisionError as e:
             if raise_exception:
-                raise EstimateModelValidationError(message=_('Cannot compute gross margin, total cost is zero.'))
+                raise EstimateModelValidationError(
+                    message=_("Cannot compute gross margin, total cost is zero.")
+                )
             return 0.00
 
     def get_status_action_date(self) -> date:
@@ -1368,12 +1416,15 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         date
             The latest action date.
         """
-        return getattr(self, f'date_{self.status}')
+        return getattr(self, f"date_{self.status}")
 
     # --- CONTRACT METHODS ---
 
     # Queryset validation....
-    def validate_item_transaction_qs(self, itemtxs_qs: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+    def validate_item_transaction_qs(
+        self,
+        itemtxs_qs: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]],
+    ):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 
@@ -1383,19 +1434,19 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             ItemTransactionModelQuerySet to validate.
         """
         if not isinstance(itemtxs_qs, ItemTransactionModelQuerySet):
-            if not all([
-                isinstance(i, ItemTransactionModel) for i in itemtxs_qs
-            ]):
+            if not all([isinstance(i, ItemTransactionModel) for i in itemtxs_qs]):
                 raise EstimateModelValidationError(
-                    message='Must pass an instance of ItemTransactionModelQuerySet or a list of ItemTransactionModel'
+                    message="Must pass an instance of ItemTransactionModelQuerySet or a list of ItemTransactionModel"
                 )
-        valid = all([
-            i.ce_model_id == self.uuid for i in itemtxs_qs
-        ])
+        valid = all([i.ce_model_id == self.uuid for i in itemtxs_qs])
         if not valid:
-            raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Estimate {self.uuid}')
+            raise EstimateModelValidationError(
+                f"Invalid queryset. All items must be assigned to Estimate {self.uuid}"
+            )
 
-    def validate_po_queryset(self, po_qs: PurchaseOrderModelQuerySet) -> PurchaseOrderModelQuerySet:
+    def validate_po_queryset(
+        self, po_qs: PurchaseOrderModelQuerySet
+    ) -> PurchaseOrderModelQuerySet:
         """
         Validates a prefetched PurchaseOrderModelQuerySet against the EstimateModel instance.
 
@@ -1409,12 +1460,12 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         PurchaseOrderModelQuerySet
             The validated PurchaseOrderModelQuerySet.
         """
-        valid = all([
-            po_model.ce_model_id == self.uuid for po_model in po_qs
-        ])
+        valid = all([po_model.ce_model_id == self.uuid for po_model in po_qs])
         if not valid:
-            raise EstimateModelValidationError(message='Invalid PurchaseOrderModelQuerySet provided. All POs must be '
-                                                       f'assigned to EstimateModel {self.uuid}')
+            raise EstimateModelValidationError(
+                message="Invalid PurchaseOrderModelQuerySet provided. All POs must be "
+                f"assigned to EstimateModel {self.uuid}"
+            )
         return po_qs
 
     def validate_bill_queryset(self, bill_qs: BillModelQuerySet) -> BillModelQuerySet:
@@ -1431,15 +1482,17 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         BillModelQuerySet
             The validated BillModelQuerySet.
         """
-        valid = all([
-            bill_model.ce_model_id == self.uuid for bill_model in bill_qs
-        ])
+        valid = all([bill_model.ce_model_id == self.uuid for bill_model in bill_qs])
         if not valid:
-            raise EstimateModelValidationError(message='Invalid BillModelQuerySet provided. All bills must be '
-                                                       f'assigned to EstimateModel {self.uuid}')
+            raise EstimateModelValidationError(
+                message="Invalid BillModelQuerySet provided. All bills must be "
+                f"assigned to EstimateModel {self.uuid}"
+            )
         return bill_qs
 
-    def validate_invoice_queryset(self, invoice_qs: InvoiceModelQuerySet) -> InvoiceModelQuerySet:
+    def validate_invoice_queryset(
+        self, invoice_qs: InvoiceModelQuerySet
+    ) -> InvoiceModelQuerySet:
         """
         Validates a prefetched InvoiceModelQuerySet against the EstimateModel instance.
 
@@ -1453,12 +1506,14 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         InvoiceModelQuerySet
             The validated InvoiceModelQuerySet.
         """
-        valid = all([
-            invoice_model.ce_model_id == self.uuid for invoice_model in invoice_qs
-        ])
+        valid = all(
+            [invoice_model.ce_model_id == self.uuid for invoice_model in invoice_qs]
+        )
         if not valid:
-            raise EstimateModelValidationError(message='Invalid InvoiceModelQuerySet provided. All invoices must be '
-                                                       f'assigned to EstimateModel {self.uuid}')
+            raise EstimateModelValidationError(
+                message="Invalid InvoiceModelQuerySet provided. All invoices must be "
+                f"assigned to EstimateModel {self.uuid}"
+            )
         return invoice_qs
 
     def get_po_amount(self, po_qs: PurchaseOrderModelQuerySet = None) -> dict:
@@ -1467,7 +1522,11 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         else:
             po_qs = self.validate_po_queryset(po_qs=po_qs)
 
-        return po_qs.aggregate(po_amount__sum=Coalesce(Sum('po_amount'), 0.0, output_field=models.FloatField()))
+        return po_qs.aggregate(
+            po_amount__sum=Coalesce(
+                Sum("po_amount"), 0.0, output_field=models.FloatField()
+            )
+        )
 
     def get_billed_amount(self, bill_qs: Optional[BillModelQuerySet] = None) -> dict:
         if not bill_qs:
@@ -1476,31 +1535,55 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             bill_qs = self.validate_bill_queryset(bill_qs=bill_qs)
 
         return bill_qs.aggregate(
-            bill_amount_due__sum=Coalesce(Sum('amount_due'), 0.0, output_field=models.FloatField()),
-            bill_amount_paid__sum=Coalesce(Sum('amount_paid'), 0.0, output_field=models.FloatField()),
-            bill_amount_receivable__sum=Coalesce(Sum('amount_receivable'), 0.0, output_field=models.FloatField()),
-            bill_amount_earned__sum=Coalesce(Sum('amount_earned'), 0.0, output_field=models.FloatField()),
-            bill_amount_unearned__sum=Coalesce(Sum('amount_unearned'), 0.0, output_field=models.FloatField()),
+            bill_amount_due__sum=Coalesce(
+                Sum("amount_due"), 0.0, output_field=models.FloatField()
+            ),
+            bill_amount_paid__sum=Coalesce(
+                Sum("amount_paid"), 0.0, output_field=models.FloatField()
+            ),
+            bill_amount_receivable__sum=Coalesce(
+                Sum("amount_receivable"), 0.0, output_field=models.FloatField()
+            ),
+            bill_amount_earned__sum=Coalesce(
+                Sum("amount_earned"), 0.0, output_field=models.FloatField()
+            ),
+            bill_amount_unearned__sum=Coalesce(
+                Sum("amount_unearned"), 0.0, output_field=models.FloatField()
+            ),
         )
 
-    def get_invoiced_amount(self, invoice_qs: Optional[InvoiceModelQuerySet] = None) -> dict:
+    def get_invoiced_amount(
+        self, invoice_qs: Optional[InvoiceModelQuerySet] = None
+    ) -> dict:
         if not invoice_qs:
             invoice_qs = self.invoicemodel_set.all().active()
         else:
             invoice_qs = self.validate_invoice_queryset(invoice_qs=invoice_qs)
 
         return invoice_qs.aggregate(
-            invoice_amount_due__sum=Coalesce(Sum('amount_due'), 0.0, output_field=models.FloatField()),
-            invoice_amount_paid__sum=Coalesce(Sum('amount_paid'), 0.0, output_field=models.FloatField()),
-            invoice_amount_receivable__sum=Coalesce(Sum('amount_receivable'), 0.0, output_field=models.FloatField()),
-            invoice_amount_earned__sum=Coalesce(Sum('amount_earned'), 0.0, output_field=models.FloatField()),
-            invoice_amount_unearned__sum=Coalesce(Sum('amount_unearned'), 0.0, output_field=models.FloatField()),
+            invoice_amount_due__sum=Coalesce(
+                Sum("amount_due"), 0.0, output_field=models.FloatField()
+            ),
+            invoice_amount_paid__sum=Coalesce(
+                Sum("amount_paid"), 0.0, output_field=models.FloatField()
+            ),
+            invoice_amount_receivable__sum=Coalesce(
+                Sum("amount_receivable"), 0.0, output_field=models.FloatField()
+            ),
+            invoice_amount_earned__sum=Coalesce(
+                Sum("amount_earned"), 0.0, output_field=models.FloatField()
+            ),
+            invoice_amount_unearned__sum=Coalesce(
+                Sum("amount_unearned"), 0.0, output_field=models.FloatField()
+            ),
         )
 
-    def get_contract_summary(self,
-                             po_qs: Optional[PurchaseOrderModelQuerySet] = None,
-                             bill_qs: Optional[BillModelQuerySet] = None,
-                             invoice_qs: Optional[InvoiceModelQuerySet] = None) -> dict:
+    def get_contract_summary(
+        self,
+        po_qs: Optional[PurchaseOrderModelQuerySet] = None,
+        bill_qs: Optional[BillModelQuerySet] = None,
+        invoice_qs: Optional[InvoiceModelQuerySet] = None,
+    ) -> dict:
         """
         Computes an aggregate of all related ItemTransactionModels summarizing
         original contract amounts, amounts authorized, amounts billed and amount invoiced.
@@ -1520,11 +1603,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             A dictionary of aggregated values.
         """
         if not self.is_contract():
-            raise EstimateModelValidationError(message=f'EstimateModel {self.uuid} is not a Contract.')
+            raise EstimateModelValidationError(
+                message=f"EstimateModel {self.uuid} is not a Contract."
+            )
 
         stats = {
-            'cost_estimate': self.get_cost_estimate(as_float=True),
-            'revenue_estimate': self.get_revenue_estimate(as_float=True)
+            "cost_estimate": self.get_cost_estimate(as_float=True),
+            "revenue_estimate": self.get_revenue_estimate(as_float=True),
         }
 
         po_status = self.get_po_amount(po_qs)
@@ -1551,16 +1636,19 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
         try:
             LOOKUP = {
-                'entity_model_id__exact': self.entity_id,
-                'entity_unit_id': None,
-                'fiscal_year': fy_key,
-                'key__exact': EntityStateModel.KEY_ESTIMATE
+                "entity_model_id__exact": self.entity_id,
+                "entity_unit_id": None,
+                "fiscal_year": fy_key,
+                "key__exact": EntityStateModel.KEY_ESTIMATE,
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
-                'entity_model').select_for_update()
+            state_model_qs = (
+                EntityStateModel.objects.filter(**LOOKUP)
+                .select_related("entity_model")
+                .select_for_update()
+            )
             state_model = state_model_qs.get()
-            state_model.sequence = F('sequence') + 1
+            state_model.sequence = F("sequence") + 1
             state_model.save()
             state_model.refresh_from_db()
             return state_model
@@ -1569,11 +1657,11 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
 
             LOOKUP = {
-                'entity_model_id': entity_model.uuid,
-                'entity_unit_id': None,
-                'fiscal_year': fy_key,
-                'key': EntityStateModel.KEY_ESTIMATE,
-                'sequence': 1
+                "entity_model_id": entity_model.uuid,
+                "entity_unit_id": None,
+                "fiscal_year": fy_key,
+                "key": EntityStateModel.KEY_ESTIMATE,
+                "sequence": 1,
             }
 
             state_model = EntityStateModel.objects.create(**LOOKUP)
@@ -1600,21 +1688,21 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if self.can_generate_estimate_number():
             with transaction.atomic(durable=True):
-
                 state_model = None
                 while not state_model:
                     state_model = self._get_next_state_model(raise_exception=False)
 
-                seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-                self.estimate_number = f'{DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+                seq = str(state_model.sequence).zfill(
+                    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
+                )
+                self.estimate_number = f"{DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}"
 
                 if commit:
-                    self.save(update_fields=['estimate_number'])
+                    self.save(update_fields=["estimate_number"])
 
         return self.estimate_number
 
     def clean(self):
-
         if not self.date_draft:
             self.date_draft = get_localdate()
 
