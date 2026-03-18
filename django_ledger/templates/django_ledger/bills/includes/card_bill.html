@@ -18,26 +18,19 @@
                         <p class="has-text-danger has-text-weight-bold is-size-5">Past
                             Due: {{ bill.date_due | timesince }} ago</p>
                     {% endif %}
-                    {% if bill.accrue %}
-                        <p>Is Accrued: <span
-                                class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                        <p>Accrue:
-                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                    {% endif %}
-                    <p class="is-size-5 has-text-danger">You Still Owe:
+                    <p>{% trans 'Is Accrued' %}:
+                        {% include 'django_ledger/components/accrual_icon.html' with is_accrued=bill.accrue %}
+                    </p>
+                    <p class="is-size-5 has-text-danger">{% trans 'You Still Owe' %}:
                         {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
-                    <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
-                    <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
+                    <p>{% trans 'Amount Paid' %}: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
+                    <p>{% trans 'Progressed' %}: {{ bill.get_progress | percentage }}</p><br>
                     <progress class="progress is-medium is-success"
                               value="{{ bill.get_progress_percent }}"
                               max="100">
                         {{ bill.get_progress | percentage }}
                     </progress>
-
-                    {# MARK AS PAID MODAL #}
                     {% modal_action bill 'get' entity_slug %}
-
                 </div>
                 <footer class="card-footer">
                     <a href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=bill.uuid %}"
@@ -54,6 +47,7 @@
                     {% endif %}
                 </footer>
             </div>
+
         {% elif style == 'bill-detail' %}
             <div class="card">
                 <div class="card-header">
@@ -62,61 +56,50 @@
                     </h2>
                 </div>
                 <div class="card-content has-text-centered">
-                    {% if bill.is_draft %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">{% trans 'This bill is' %} {{ bill.get_bill_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
-                            <span class="has-text-weight-bold">
-                                    {% currency_symbol %}{{ bill.amount_due | currency_format }}
-                                </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                            <span class="has-text-weight-bold">{{ bill.date_due | timeuntil }}</span>
-                        </p>
-                        <p class="is-size-3">{% trans 'Is Accrued' %}:
-                            {% if bill.accrue %}
-                                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                                <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                            {% endif %}
-                        </p>
-                    {% elif bill.is_review %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">{% trans 'This bill is' %} {{ bill.get_bill_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
-                            <span class="has-text-weight-bold">
-                                    {% currency_symbol %}{{ bill.amount_due | currency_format }}
-                                </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                            <span class="has-text-weight-bold">{{ bill.date_due | timeuntil }}</span>
-                        </p>
-                        <p class="is-size-3">{% trans 'Is Accrued' %}:
-                            {% if bill.accrue %}
-                                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                                <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                            {% endif %}
-                        </p>
-                        {% if bill.xref %}
-                            <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
-                        {% endif %}
 
+                    {# Status heading — colour varies by state #}
+                    {% if bill.is_paid %}
+                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-success">
                     {% elif bill.is_approved %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-info">{% trans 'This bill is' %} {{ bill.get_bill_status_display }}</h3>
+                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-info">
+                    {% elif bill.is_draft or bill.is_review %}
+                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">
+                    {% else %}
+                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-danger-dark">
+                    {% endif %}
+                        {% if bill.is_draft or bill.is_review or bill.is_approved or bill.is_paid %}
+                            {% trans 'This bill is' %} {{ bill.get_bill_status_display }}
+                        {% else %}
+                            {{ bill.get_bill_status_display | upper }}
+                        {% endif %}
+                    </h3>
+
+                    {# Amount — show amount due or amount paid depending on state #}
+                    {% if bill.is_paid %}
+                        <p class="is-size-3 has-text-dark">{% trans 'Amount Paid' %}:
+                            <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</span>
+                        </p>
+                        <p class="is-size-3 has-text-dark">{% trans 'Paid Date' %}:
+                            <span class="has-text-weight-bold">{{ bill.date_paid | date }}</span>
+                        </p>
+                    {% elif bill.is_draft or bill.is_review or bill.is_approved %}
                         <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
-                            <span class="has-text-weight-bold">
-                                    {% currency_symbol %}{{ bill.amount_due | currency_format }}
-                                </span>
+                            <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
                         </p>
                         <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
                             <span class="has-text-weight-bold">{{ bill.date_due | timeuntil }}</span>
                         </p>
                         <p class="is-size-3">{% trans 'Is Accrued' %}:
-                            {% if bill.accrue %}
-                                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                                <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                            {% endif %}
+                            {% include 'django_ledger/components/accrual_icon.html' with is_accrued=bill.accrue %}
                         </p>
+                    {% else %}
+                        <p class="is-size-3 has-text-dark">{% trans 'Bill Amount' %}:
+                            <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
+                        </p>
+                    {% endif %}
+
+                    {# Progress bar — only for approved bills with partial payment #}
+                    {% if bill.is_approved %}
                         <p class="is-size-3 has-text-weight-bold">{% trans 'Amount Paid' %}:
                             {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
                         <p class="is-size-5">{% trans 'Progressed' %}: {{ bill.get_progress | percentage }}</p><br>
@@ -125,92 +108,60 @@
                                   max="100">
                             {{ bill.get_progress | percentage }}
                         </progress>
-                        {% if bill.xref %}
-                            <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
-                        {% endif %}
-                    {% elif bill.is_paid %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-success">{% trans 'This bill is' %} {{ bill.get_bill_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Paid' %}:
-                            <span class="has-text-weight-bold">
-                                    {% currency_symbol %}{{ bill.amount_paid | currency_format }}
-                                </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Paid Date' %}:
-                            <span class="has-text-weight-bold">{{ bill.date_paid | date }}</span>
-                            {% if bill.xref %}
-                                <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
-                            {% endif %}
-                    {% else %}
-                        <p class="is-size-3 has-text-dark">Bill Amount:
-                            <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
-                        </p>
-                        <p class="is-size-3 has-text-danger-dark">{{ bill.get_bill_status_display | upper }}</p>
                     {% endif %}
+
+                    {# External reference — shown for review and approved states #}
+                    {% if bill.xref and not bill.is_draft %}
+                        <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
+                    {% endif %}
+
                 </div>
+
+                {# Action footer — each button shown only when the action is available #}
                 <footer class="card-footer">
-                    {# UPDATE BUTTON #}
                     <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
                        id="djl-bill-detail-update-button"
                        class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
 
-                    {# MARK DRAFT #}
                     {% if bill.can_draft %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_draft_html_id }}')"
-                           id="{{ bill.get_mark_as_review_html_id }}-button"
                            class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>
-                        {# MARK AS DRAFT MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_draft_url bill.get_mark_as_draft_message bill.get_mark_as_draft_html_id %}
                     {% endif %}
 
-                    {# MARK REVIEW #}
                     {% if bill.can_review %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_review_html_id }}')"
-                           id="{{ bill.get_mark_as_review_html_id }}-button"
                            class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Review' %}</a>
-                        {# MARK AS REVIEW MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_review_url bill.get_mark_as_review_message bill.get_mark_as_review_html_id %}
                     {% endif %}
 
-                    {# MARK APPROVED #}
                     {% if bill.can_approve %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_approved_html_id }}')"
-                           id="{{ bill.get_mark_as_approved_html_id }}-button"
                            class="card-footer-item has-text-success has-text-centered">{% trans 'Mark as Approved' %}</a>
-                        {# MARK AS APPROVED MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_approved_url bill.get_mark_as_approved_message bill.get_mark_as_approved_html_id %}
                     {% endif %}
 
-                    {# MARK PAID #}
                     {% if bill.can_pay %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_paid_html_id }}')"
-                           id="{{ bill.get_mark_as_paid_html_id }}-button"
                            class="card-footer-item has-text-success has-text-centered">{% trans 'Mark as Paid' %}</a>
-                        {# MARK AS PAID MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_paid_url bill.get_mark_as_paid_message bill.get_mark_as_paid_html_id %}
                     {% endif %}
 
-                    {# VOID BUTTON #}
                     {% if bill.can_void %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_void_html_id }}')"
-                           id="{{ bill.get_mark_as_void_html_id }}-button"
                            class="card-footer-item has-text-danger has-text-centered">{% trans 'Void' %}</a>
-                        {# MARK AS VOID MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_void_url bill.get_mark_as_void_message bill.get_mark_as_void_html_id %}
                     {% endif %}
 
-                    {# CANCEL BUTTON #}
                     {% if bill.can_cancel %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_canceled_html_id }}')"
-                           id="{{ bill.get_mark_as_cenceled_html_id }}-button"
                            class="card-footer-item has-text-danger has-text-centered has-text-weight-bold">{% trans 'Cancel' %}</a>
-                        {# MARK AS VOID MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_canceled_url bill.get_mark_as_canceled_message bill.get_mark_as_canceled_html_id %}
                     {% endif %}
                 </footer>
             </div>
         {% endif %}
     {% else %}
-        {# CREATE BILL CARD #}
         <div class="box has-text-centered">
             <a href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}">
                 <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
