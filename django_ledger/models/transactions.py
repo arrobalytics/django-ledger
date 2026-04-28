@@ -22,6 +22,8 @@ from typing import List, Union, Optional, Set
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import fields
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -483,6 +485,20 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     reconciled = models.BooleanField(default=False, verbose_name=_('Reconciled'))
     objects = TransactionModelManager()
 
+    content_type = models.ForeignKey(
+        ContentType,
+        verbose_name=_('Tipo de origen'),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+    object_id = models.PositiveIntegerField(
+        verbose_name=_('objeto'),
+        null=True,
+        blank=True,
+    )
+    objeto_origen = fields.GenericForeignKey('content_type', 'object_id')
+
     class Meta:
         abstract = True
         ordering = ['-created']
@@ -496,6 +512,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['updated']),
             models.Index(fields=['cleared']),
             models.Index(fields=['reconciled']),
+            models.Index(fields=['content_type', 'object_id']),
         ]
 
     def __str__(self):

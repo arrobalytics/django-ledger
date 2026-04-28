@@ -40,6 +40,8 @@ from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import fields
 
 from django_ledger.io.io_core import get_localtime
 from django_ledger.io.roles import (
@@ -401,6 +403,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     # Custom manager
     objects = JournalEntryModelManager.from_queryset(queryset_class=JournalEntryModelQuerySet)()
 
+    content_type = models.ForeignKey(
+        ContentType,
+        verbose_name=_('Tipo de origen'),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+    object_id = models.PositiveIntegerField(
+        verbose_name=_('objeto'),
+        null=True,
+        blank=True,
+    )
+    objeto_origen = fields.GenericForeignKey('content_type', 'object_id')
+
     class Meta:
         abstract = True
         ordering = ['-created']
@@ -415,6 +431,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['posted']),
             models.Index(fields=['je_number']),
             models.Index(fields=['is_closing_entry']),
+            models.Index(fields=['content_type', 'object_id']),
         ]
 
     def __init__(self, *args, **kwargs):
