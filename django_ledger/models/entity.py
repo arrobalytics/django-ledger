@@ -80,11 +80,6 @@ UserModel = get_user_model()
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
-def _entity_picture_upload_to(instance, filename):
-    import os
-    ext = os.path.splitext(filename)[1].lower()
-    return f"{instance.slug}_{instance.pk}/logo/logo{ext}"
-
 
 class EntityModelValidationError(ValidationError):
     pass
@@ -758,9 +753,6 @@ class EntityModelAbstract(
 
     fy_start_month: int
         An integer that specifies the month that the Fiscal Year starts.
-
-    picture
-        The image or logo used to identify the company on reports or UI/UX.
     """
 
     CASH_METHOD = 'cash'
@@ -809,12 +801,6 @@ class EntityModelAbstract(
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
-    picture = models.ImageField(
-        upload_to=_entity_picture_upload_to,
-        verbose_name=_('Logo'),
-        blank=True,
-        null=True,
-    )
     meta = models.JSONField(default=dict, null=True, blank=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
