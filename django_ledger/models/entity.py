@@ -160,7 +160,7 @@ class EntityModelManager(MP_NodeManager):
         qs = self.get_queryset()
         if user_model.is_superuser and authorized_superuser:
             return qs
-        return qs.filter(Q(admin=user_model) | Q(managers__in=[user_model]))
+        return qs.filter(Q(admin=user_model) | Q(managers__in=[user_model])).distinct()
 
 
 class EntityModelFiscalPeriodMixIn:
