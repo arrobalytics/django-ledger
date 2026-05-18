@@ -978,6 +978,12 @@ class InvoiceModelAbstract(
             payment_date = get_localtime()
 
         if commit:
+            try:
+                from django_ledger.services.enterprise import assert_period_open
+                period_date = payment_date.date() if hasattr(payment_date, 'date') else payment_date
+                assert_period_open(self.ledger.entity, period_date)
+            except ImportError:
+                pass
             self.migrate_state(
                 user_model=None,
                 entity_slug=self.ledger.entity.slug,

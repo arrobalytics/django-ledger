@@ -198,6 +198,8 @@ class ApprovalPolicyModel(EnterpriseBaseModel):
     min_amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     max_amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     account_role = models.CharField(max_length=30, blank=True)
+    vendor = models.ForeignKey('django_ledger.VendorModel', on_delete=models.SET_NULL, null=True, blank=True)
+    customer = models.ForeignKey('django_ledger.CustomerModel', on_delete=models.SET_NULL, null=True, blank=True)
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel', on_delete=models.SET_NULL, null=True, blank=True)
     required_role = models.CharField(max_length=32, choices=EntityRoleModel.ROLE_CHOICES, default=EntityRoleModel.ROLE_APPROVER)
     required_approvals = models.PositiveSmallIntegerField(default=1)
