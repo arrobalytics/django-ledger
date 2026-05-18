@@ -158,8 +158,33 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         Imbalanced Transactions should be invalid.
         """
         entity_model: EntityModel = self.get_random_entity_model()
+        ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
+        je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
+        credit_account: AccountModel = self.get_random_account(entity_model=entity_model, balance_type='credit')
+        debit_account: AccountModel = self.get_random_account(entity_model=entity_model, balance_type='debit')
 
-        txs_formset = self.get_random_txs_formsets(entity_model=entity_model)
+        TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
+        txs_formset = TransactionModelFormSet(
+            data={
+                'form-TOTAL_FORMS': '2',
+                'form-INITIAL_FORMS': '0',
+                'form-MIN_NUM_FORMS': '0',
+                'form-MAX_NUM_FORMS': '1000',
+                'form-0-account': str(credit_account.uuid),
+                'form-0-tx_type': 'credit',
+                'form-0-amount': '100.00',
+                'form-0-description': 'Imbalanced credit',
+                'form-1-account': str(debit_account.uuid),
+                'form-1-tx_type': 'debit',
+                'form-1-amount': '50.00',
+                'form-1-description': 'Imbalanced debit',
+            },
+            entity_slug=entity_model.slug,
+            user_model=self.user_model,
+            je_model=je_model,
+            ledger_pk=je_model.ledger_id,
+            queryset=TransactionModel.objects.none(),
+        )
 
         self.assertFalse(
             txs_formset.is_valid(),
@@ -233,8 +258,14 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
         The Formset will contain 6 extra forms & delete fields if Journal Entry is unlocked.
         """
         entity_model: EntityModel = self.get_random_entity_model()
+        entity_model.last_closing_date = None
+        entity_model.save(update_fields=['last_closing_date', 'updated'])
         ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
+        ledger_model.locked = False
+        ledger_model.save(update_fields=['locked', 'updated'])
         je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
+        je_model._entity_last_closing_date = None
+        je_model._ledger_is_locked = False
         je_model.mark_as_unlocked(commit=True)
 
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
@@ -255,8 +286,8 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
             msg_prefix='Transactions Formset with unlocked Journal Entry should have `can_delete` enabled'
         )
 
-        self.assertEqual(len(txs_formset), 6,
-                         msg='Transactions Formset with unlocked Journal Entry should have 6 extras')
+        self.assertEqual(len(txs_formset), je_model.transactionmodel_set.count() + 6,
+                         msg='Transactions Formset with unlocked Journal Entry should include existing rows plus 6 extras')
 
     def test_locked_journal_entry_formset(self):
         """

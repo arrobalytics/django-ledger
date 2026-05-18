@@ -628,7 +628,12 @@ class BillModelAbstract(
         """
         if not queryset:
             queryset = self.itemtransactionmodel_set.all().select_related(
-                'item_model', 'entity_unit', 'po_model', 'bill_model'
+                'item_model',
+                'entity_unit',
+                'po_model',
+                'bill_model',
+                'bill_model__entity_model',
+                'bill_model__ledger__entity',
             )
         else:
             self.validate_itemtxs_qs(queryset)

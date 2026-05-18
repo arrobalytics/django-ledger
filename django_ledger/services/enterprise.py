@@ -12,7 +12,7 @@ from typing import Iterable, Optional
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from django_ledger.models.enterprise import (
@@ -23,9 +23,11 @@ from django_ledger.models.enterprise import (
     BankReconciliationModel,
     BankStatementLineModel,
     BankStatementModel,
+    DepreciationScheduleModel,
     DocumentAttachmentModel,
     EnterpriseModelValidationError,
     ExchangeRateModel,
+    FixedAssetModel,
     PaymentAllocationModel,
     PaymentModel,
     TaxLineModel,
@@ -80,17 +82,15 @@ def require_entity_role(user_model, entity_model, *roles):
 
 def request_approval(*, entity_model, target, requested_by=None, amount=None, reason: str = '') -> ApprovalRequestModel:
     target_type = target.__class__.__name__.lower()
-    policy = ApprovalPolicyModel.objects.for_entity(entity_model).active().filter(
+    policies = ApprovalPolicyModel.objects.for_entity(entity_model).active().filter(
         document_type__in=[target_type, ApprovalPolicyModel.DOCUMENT_ALL],
-    ).order_by('-min_amount').first()
+    )
     if amount is not None:
-        policy = ApprovalPolicyModel.objects.for_entity(entity_model).active().filter(
-            document_type__in=[target_type, ApprovalPolicyModel.DOCUMENT_ALL],
-        ).filter(
-            min_amount__lte=amount,
-        ).filter(
-            max_amount__isnull=True,
-        ).order_by('-min_amount').first() or policy
+        policies = policies.filter(
+            Q(min_amount__isnull=True) | Q(min_amount__lte=amount),
+            Q(max_amount__isnull=True) | Q(max_amount__gte=amount),
+        )
+    policy = policies.order_by('-min_amount').first()
     kwargs = _target_kwargs(target)
     kwargs.pop('object_repr', None)
     approval_request = ApprovalRequestModel.objects.create(
@@ -109,6 +109,35 @@ def request_approval(*, entity_model, target, requested_by=None, amount=None, re
         after={'approval_request': str(approval_request.uuid), 'status': approval_request.status},
     )
     return approval_request
+
+
+def post_document(*, entity_model, target, user_model=None, posting_date=None, verify: bool = True):
+    posting_date = posting_date or getattr(target, 'date', None) or getattr(target, 'timestamp', None) or timezone.localdate()
+    if hasattr(posting_date, 'date'):
+        posting_date = posting_date.date()
+    assert_period_open(entity_model, posting_date)
+    before = {
+        'posted': bool(getattr(target, 'posted', False)),
+        'status': getattr(target, 'status', ''),
+    }
+    if hasattr(target, 'mark_as_posted'):
+        target.mark_as_posted(commit=True, verify=verify, raise_exception=True)
+    elif hasattr(target, 'post'):
+        target.post(commit=True)
+    else:
+        raise EnterpriseModelValidationError('Target does not expose a supported posting method.')
+    create_audit_event(
+        entity_model=entity_model,
+        action=AuditEventModel.ACTION_POST,
+        actor=user_model,
+        target=target,
+        before=before,
+        after={
+            'posted': bool(getattr(target, 'posted', False)),
+            'status': getattr(target, 'status', ''),
+        },
+    )
+    return target
 
 
 def approve_document(*, approval_request: ApprovalRequestModel, user_model, note: str = '') -> ApprovalRequestModel:
@@ -211,13 +240,41 @@ def reconcile_statement(*, statement_model: BankStatementModel, user_model=None)
     return reconciliation
 
 
+def match_bank_statement_line(*, statement_line: BankStatementLineModel, transaction_model, user_model=None) -> BankStatementLineModel:
+    if statement_line.entity_model_id != transaction_model.journal_entry.ledger.entity_id:
+        raise EnterpriseModelValidationError('Cannot match a statement line to a transaction from another entity.')
+    before = {
+        'matched_transaction': str(statement_line.matched_transaction_id) if statement_line.matched_transaction_id else '',
+        'reconciled': bool(getattr(transaction_model, 'reconciled', False)),
+    }
+    statement_line.matched_transaction = transaction_model
+    statement_line.save(update_fields=['matched_transaction', 'updated'])
+    transaction_model.__class__.objects.filter(pk=transaction_model.pk).update(
+        reconciled=True,
+        updated=timezone.now(),
+    )
+    transaction_model.reconciled = True
+    create_audit_event(
+        entity_model=statement_line.entity_model,
+        action=AuditEventModel.ACTION_STATE,
+        actor=user_model,
+        target=statement_line,
+        before=before,
+        after={
+            'matched_transaction': str(transaction_model.pk),
+            'reconciled': True,
+        },
+    )
+    return statement_line
+
+
 def calculate_tax(*, entity_model, target, tax_code, taxable_amount: Decimal, inclusive: bool = False, on_date=None):
     on_date = on_date or timezone.localdate()
     rate_model = TaxRateModel.objects.for_entity(entity_model).filter(
         tax_code=tax_code,
         effective_date__lte=on_date,
     ).filter(
-        end_date__isnull=True,
+        Q(end_date__isnull=True) | Q(end_date__gte=on_date),
     ).order_by('-effective_date').first()
     if not rate_model:
         raise EnterpriseModelValidationError('No active tax rate found for tax code.')
@@ -258,8 +315,33 @@ def allocate_payment(*, payment: PaymentModel, target, amount: Decimal, write_of
     return allocation
 
 
+def detect_duplicate_bill(*, bill_model):
+    vendor = getattr(bill_model, 'vendor', None)
+    if vendor is None:
+        return bill_model.__class__.objects.none()
+    qs = bill_model.__class__.objects.filter(
+        vendor=vendor,
+        amount_due=getattr(bill_model, 'amount_due', None),
+    ).exclude(pk=bill_model.pk)
+    bill_number = getattr(bill_model, 'bill_number', '')
+    if bill_number:
+        qs = qs.filter(bill_number=bill_number)
+    bill_date = getattr(bill_model, 'date_draft', None) or getattr(bill_model, 'date_due', None)
+    if bill_date:
+        qs = qs.filter(Q(date_draft=bill_date) | Q(date_due=bill_date))
+    return qs
+
+
 def get_exchange_rate(*, entity_model, from_currency, to_currency, on_date=None) -> ExchangeRateModel:
     on_date = on_date or timezone.localdate()
+    if from_currency == to_currency:
+        return ExchangeRateModel(
+            entity_model=entity_model,
+            from_currency=from_currency,
+            to_currency=to_currency,
+            rate=Decimal('1.00'),
+            rate_date=on_date,
+        )
     rate_model = ExchangeRateModel.objects.for_entity(entity_model).filter(
         from_currency=from_currency,
         to_currency=to_currency,
@@ -284,6 +366,32 @@ def revalue_currency_balances(*, entity_model, from_currency, to_currency, on_da
         'rate': rate_model.rate,
         'entries': [],
     }
+
+
+def create_straight_line_depreciation_schedule(*, fixed_asset: FixedAssetModel) -> list[DepreciationScheduleModel]:
+    method = fixed_asset.depreciation_method
+    if method.method != method.METHOD_STRAIGHT_LINE:
+        raise EnterpriseModelValidationError('Only straight-line depreciation is supported by this scheduler.')
+    depreciable_amount = fixed_asset.acquisition_cost - fixed_asset.salvage_value
+    if depreciable_amount < Decimal('0.00'):
+        raise EnterpriseModelValidationError('Salvage value cannot exceed acquisition cost.')
+    monthly_amount = (depreciable_amount / Decimal(method.useful_life_months)).quantize(
+        Decimal('0.01'),
+        rounding=ROUND_HALF_UP,
+    )
+    periods = AccountingPeriodModel.objects.for_entity(fixed_asset.entity_model).filter(
+        end_date__gte=fixed_asset.acquisition_date,
+    ).order_by('start_date')[:method.useful_life_months]
+    schedules = []
+    for period in periods:
+        schedule, _ = DepreciationScheduleModel.objects.get_or_create(
+            entity_model=fixed_asset.entity_model,
+            fixed_asset=fixed_asset,
+            period=period,
+            defaults={'depreciation_amount': monthly_amount},
+        )
+        schedules.append(schedule)
+    return schedules
 
 
 def attach_document(*, entity_model, target, file_obj, uploaded_by=None, original_filename: str = '') -> DocumentAttachmentModel:

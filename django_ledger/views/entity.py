@@ -166,9 +166,6 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
 class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
                                    EntityUnitMixIn,
                                    RedirectView):
-    def has_permission(self):
-        return self.request.user.is_authenticated
-
     def get_redirect_url(self, *args, **kwargs):
         loc_date = get_localdate()
         unit_slug = self.get_unit_slug()

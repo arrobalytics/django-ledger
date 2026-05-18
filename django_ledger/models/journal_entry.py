@@ -834,6 +834,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
+        try:
+            from django_ledger.services.enterprise import assert_period_open
+            assert_period_open(self.ledger.entity, self.timestamp.date())
+        except ImportError:
+            pass
         if verify and not self.is_verified():
             txs_qs, verified = self.verify()
             if not len(txs_qs):

@@ -272,6 +272,7 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.select_related(
+            'entity_model',
             'ledger',
             'ledger__entity',
             'vendor',
@@ -279,8 +280,11 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
             'prepaid_account',
             'unearned_account',
             'cash_account__coa_model',
+            'cash_account__coa_model__entity',
             'prepaid_account__coa_model',
-            'unearned_account__coa_model'
+            'prepaid_account__coa_model__entity',
+            'unearned_account__coa_model',
+            'unearned_account__coa_model__entity',
         )
 
 
