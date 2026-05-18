@@ -82,7 +82,7 @@ class PayableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
             #     bill_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)
 
             net_summary = accruable_net_summary(bill_qs)
-            entity_model = bill_qs.first().ledger.entity
+            entity_model = self.AUTHORIZED_ENTITY_MODEL
             net_payables = {
                 'entity_slug': self.kwargs['entity_slug'],
                 'entity_name': entity_model.name,
@@ -113,7 +113,7 @@ class ReceivableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
             #     invoice_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)
 
             net_summary = accruable_net_summary(invoice_qs)
-            entity_model = invoice_qs.first().ledger.entity
+            entity_model = self.AUTHORIZED_ENTITY_MODEL
             net_receivable = {
                 'entity_slug': self.kwargs['entity_slug'],
                 'entity_name': entity_model.name,

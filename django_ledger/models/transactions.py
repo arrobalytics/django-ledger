@@ -707,7 +707,7 @@ def transactionmodel_presave(instance: TransactionModel, **kwargs):
                 f'Cannot create or modify transactions on account model {instance.account}.'
             )
         )
-    if instance.journal_entry.is_locked():
+    if instance.journal_entry_id and instance.journal_entry.is_locked():
         raise TransactionModelValidationError(
             message=_('Cannot modify transactions on locked journal entries.')
         )

@@ -46,8 +46,22 @@ class TransactionModelForm(ModelForm):
 
 
 class TransactionModelFormSet(BaseModelFormSet):
-    def __init__(self, *args, entity_model: EntityModel, je_model: JournalEntryModel, **kwargs):
+    def __init__(self, *args, entity_model: EntityModel = None, je_model: JournalEntryModel, **kwargs):
+        entity_slug = kwargs.pop('entity_slug', None)
+        user_model = kwargs.pop('user_model', None)
+        kwargs.pop('ledger_pk', None)
         super().__init__(*args, **kwargs)
+
+        if entity_model is None:
+            if getattr(je_model, 'entity_model_id', None):
+                entity_model = je_model.entity_model
+            elif entity_slug and user_model:
+                entity_model = EntityModel.objects.for_user(
+                    user_model=user_model
+                ).get(slug__exact=entity_slug)
+            else:
+                raise ValidationError(message=_('Must provide entity_model or entity_slug and user_model.'))
+
         je_model.validate_for_entity(entity_model)
         self.JE_MODEL: JournalEntryModel = je_model
         self.ENTITY_MODEL = entity_model

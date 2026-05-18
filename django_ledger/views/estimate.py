@@ -256,7 +256,7 @@ class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
                              EstimateModelModelViewQuerySetMixIn,
                              RedirectView,
                              SingleObjectMixin):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'ce_pk'
     action_name = None
     commit = True
@@ -268,11 +268,11 @@ class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
                            'ce_pk': ce_pk
                        })
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseEstimateActionView, self).get(request, *args, **kwargs)
         ce_model: EstimateModel = self.get_object()
+        self.object = ce_model
 
         try:
             getattr(ce_model, self.action_name)(commit=self.commit)
@@ -281,7 +281,7 @@ class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))
 
 
 class EstimateActionMarkAsDraftView(BaseEstimateActionView):

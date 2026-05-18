@@ -62,28 +62,28 @@
                                 {% trans 'Done' %}
                             </a>
                             {% if journal_entry.can_lock %}
-                                <a class="button is-dark is-danger"
-                                   href="{{ journal_entry.get_action_lock_url }}?next={{ request.path }}">
-                                    {% trans 'Lock' %}
-                                </a>
+                                <form method="post" action="{{ journal_entry.get_action_lock_url }}?next={{ request.path }}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="button is-dark is-danger">{% trans 'Lock' %}</button>
+                                </form>
                             {% endif %}
                             {% if journal_entry.can_unlock %}
-                                <a class="button is-dark is-warning"
-                                   href="{{ journal_entry.get_action_unlock_url }}?next={{ request.path }}">
-                                    {% trans 'UnLock' %}
-                                </a>
+                                <form method="post" action="{{ journal_entry.get_action_unlock_url }}?next={{ request.path }}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="button is-dark is-warning">{% trans 'UnLock' %}</button>
+                                </form>
                             {% endif %}
                             {% if journal_entry.can_post %}
-                                <a class="button is-dark is-danger"
-                                   href="{{ journal_entry.get_action_post_url }}?next={{ request.path }}">
-                                    {% trans 'Post' %}
-                                </a>
+                                <form method="post" action="{{ journal_entry.get_action_post_url }}?next={{ request.path }}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="button is-dark is-danger">{% trans 'Post' %}</button>
+                                </form>
                             {% endif %}
                             {% if journal_entry.can_unpost %}
-                                <a class="button is-warning"
-                                   href="{{ journal_entry.get_action_unpost_url }}?next={{ request.path }}">
-                                    {% trans 'UnPost' %}
-                                </a>
+                                <form method="post" action="{{ journal_entry.get_action_unpost_url }}?next={{ request.path }}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="button is-warning">{% trans 'UnPost' %}</button>
+                                </form>
                             {% endif %}
                         </div>
                     </div>

@@ -39,20 +39,28 @@
     </div>
     <div class="card-footer">
         {% if journal_entry.can_lock %}
-            <a href="{{ journal_entry.get_lock_url }}"
-               class="card-footer-item has-text-success has-text-weight-bold">{% trans 'Lock' %}</a>
+            <form method="post" action="{{ journal_entry.get_lock_url }}" class="card-footer-item">
+                {% csrf_token %}
+                <button type="submit" class="button is-ghost has-text-success has-text-weight-bold">{% trans 'Lock' %}</button>
+            </form>
         {% endif %}
         {% if journal_entry.can_unlock %}
-            <a href="{{ journal_entry.get_unlock_url }}"
-               class="card-footer-item has-text-warning has-text-weight-bold">{% trans 'UnLock' %}</a>
+            <form method="post" action="{{ journal_entry.get_unlock_url }}" class="card-footer-item">
+                {% csrf_token %}
+                <button type="submit" class="button is-ghost has-text-warning has-text-weight-bold">{% trans 'UnLock' %}</button>
+            </form>
         {% endif %}
         {% if journal_entry.can_post %}
-            <a href="{{ journal_entry.get_post_url }}"
-               class="card-footer-item has-text-success has-text-weight-bold">{% trans 'Post' %}</a>
+            <form method="post" action="{{ journal_entry.get_post_url }}" class="card-footer-item">
+                {% csrf_token %}
+                <button type="submit" class="button is-ghost has-text-success has-text-weight-bold">{% trans 'Post' %}</button>
+            </form>
         {% endif %}
         {% if journal_entry.can_unpost %}
-            <a href="{{ journal_entry.get_unpost_url }}"
-               class="card-footer-item has-text-danger has-text-weight-bold">{% trans 'UnPost' %}</a>
+            <form method="post" action="{{ journal_entry.get_unpost_url }}" class="card-footer-item">
+                {% csrf_token %}
+                <button type="submit" class="button is-ghost has-text-danger has-text-weight-bold">{% trans 'UnPost' %}</button>
+            </form>
         {% endif %}
 
     </div>

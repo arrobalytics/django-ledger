@@ -20,6 +20,7 @@ from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.urls import reverse
 from django.utils.dateparse import parse_date
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
@@ -305,13 +306,22 @@ class FromToDatesParseMixIn:
 
 
 class SuccessUrlNextMixIn:
+    def get_safe_next_url(self):
+        next_url = self.request.GET.get('next') or self.request.POST.get('next')
+        if next_url and url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={self.request.get_host()},
+            require_https=self.request.is_secure(),
+        ):
+            return next_url
+
     def has_next_url(self):
-        return self.request.GET.get('next') is not None
+        return self.get_safe_next_url() is not None
 
     def get_success_url(self):
-        next = self.request.GET.get('next')
-        if next:
-            return next
+        next_url = self.get_safe_next_url()
+        if next_url:
+            return next_url
         return reverse('django_ledger:home')
 
 
@@ -334,6 +344,15 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
 
     def get_login_url(self):
         return reverse('django_ledger:login')
+
+    def get_safe_next_url(self):
+        next_url = self.request.GET.get('next') or self.request.POST.get('next')
+        if next_url and url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={self.request.get_host()},
+            require_https=self.request.is_secure(),
+        ):
+            return next_url
 
     def get_entity_slug(self):
         return self.kwargs[self.ENTITY_SLUG_URL_KWARG]

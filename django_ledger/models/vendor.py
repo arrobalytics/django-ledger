@@ -38,9 +38,9 @@ from django_ledger.settings import (
 
 
 def vendor_picture_upload_to(instance, filename):
-    if not instance.customer_number:
-        instance.generate_customer_number(commit=False)
-    vendor_number = instance.customer_number
+    if not instance.vendor_number:
+        instance.generate_vendor_number(commit=False)
+    vendor_number = instance.vendor_number
     name, ext = os.path.splitext(filename)
     safe_name = slugify(name)
     return f'vendor_pictures/{vendor_number}/{safe_name}{ext.lower()}'

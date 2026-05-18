@@ -670,18 +670,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if len(txs_qs) > 0:
             balances = self.get_txs_balances(txs_qs=txs_qs, as_dict=True)
-            is_valid = balances[CREDIT] == balances[DEBIT]
+            is_valid = balances.get(CREDIT, Decimal('0.00')) == balances.get(DEBIT, Decimal('0.00'))
             if not is_valid:
                 if raise_exception:
                     raise JournalEntryValidationError(
                         message='Balance of {0} CREDITs are {1} does not match DEBITs {2}.'.format(
                             self,
-                            balances[CREDIT],
-                            balances[DEBIT]
+                            balances.get(CREDIT, Decimal('0.00')),
+                            balances.get(DEBIT, Decimal('0.00'))
                         )
                     )
             return is_valid
-        return True
+        if raise_exception:
+            raise JournalEntryValidationError('Journal entry must have transactions.')
+        return False
 
     def is_txs_qs_coa_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
@@ -1363,7 +1365,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.je_number = f'{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}'
 
                 if commit:
-                    self.save(update_fields=['je_number'])
+                    self.save(update_fields=['je_number'], verify=False)
 
         return self.je_number
 
@@ -1425,13 +1427,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             except JournalEntryValidationError as e:
                 raise e
 
-            # if not len(txs_qs):
-            #     if raise_exception:
-            #         raise JournalEntryValidationError('Journal entry has no transactions.')
-
-            # if len(txs_qs) < 2:
-            #     if raise_exception:
-            #         raise JournalEntryValidationError('At least two transactions required.')
+            if len(txs_qs) < 2:
+                if raise_exception:
+                    raise JournalEntryValidationError('At least two transactions required.')
+                return txs_qs, self.is_verified()
 
             if all([
                 is_balance_valid,

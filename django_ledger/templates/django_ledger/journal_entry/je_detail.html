@@ -15,11 +15,13 @@
         <span>{% trans 'Edit TXS' %}</span>
     </a>
     {% if journal_entry.can_unlock %}
-        <a class="button is-warning  is-outlined"
-           href="{% url 'django_ledger:je-mark-as-unlocked' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+        <form method="post" action="{% url 'django_ledger:je-mark-as-unlocked' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+            {% csrf_token %}
+        <button type="submit" class="button is-warning is-outlined">
             <span class="icon">{% icon 'bi:unlock-fill' 16 %}</span>
             <span>{% trans 'Unlock' %}</span>
-        </a>
+        </button>
+        </form>
     {% endif %}
     <a class="button is-info  is-outlined"
        href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">

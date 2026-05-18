@@ -116,47 +116,59 @@
                                     </a>
                                     <hr class="dropdown-divider">
                                     {% if ledger_model.can_lock %}
-                                        <a href="{% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-info">
-                                            <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
-                                            {% trans 'Lock' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-info">
+                                             <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
+                                             {% trans 'Lock' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                     {% if ledger_model.can_unlock %}
-                                        <a href="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-warning">
-                                            <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
-                                            {% trans 'UnLock' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-warning">
+                                             <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
+                                             {% trans 'UnLock' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                     {% if ledger_model.can_post %}
-                                        <a href="{% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-info">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
-                                            {% trans 'Post' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-info">
+                                             <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
+                                             {% trans 'Post' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                     {% if ledger_model.can_unpost %}
-                                        <a href="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-warning">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
-                                            {% trans 'UnPost' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-warning">
+                                             <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
+                                             {% trans 'UnPost' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
 
                                     {% if ledger_model.can_hide %}
-                                        <a href="{% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-warning">
-                                            <span class="icon is-small mr-2">{% icon 'bi:eye-slash-fill' 16 %}</span>
-                                            {% trans 'Hide' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-warning">
+                                             <span class="icon is-small mr-2">{% icon 'bi:eye-slash-fill' 16 %}</span>
+                                             {% trans 'Hide' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                     {% if ledger_model.can_unhide %}
-                                        <a href="{% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-info">
-                                            <span class="icon is-small mr-2">{% icon 'bi:eye-fill' 16 %}</span>
-                                            {% trans 'UnHide' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-info">
+                                             <span class="icon is-small mr-2">{% icon 'bi:eye-fill' 16 %}</span>
+                                             {% trans 'UnHide' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
 
                                     {% if ledger_model.can_delete %}

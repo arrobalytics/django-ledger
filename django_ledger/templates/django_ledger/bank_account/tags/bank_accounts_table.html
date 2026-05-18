@@ -51,17 +51,21 @@
                                         {% trans 'Update' %}
                                     </a>
                                     {% if bank_acc.can_activate %}
-                                        <a href="{% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                           class="dropdown-item has-text-success">
-                                            <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
-                                            {% trans 'Activate' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-success">
+                                             <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
+                                             {% trans 'Activate' %}
+                                        </button>
+                                        </form>
                                     {% elif bank_acc.can_inactivate %}
-                                        <a href="{% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                           class="dropdown-item has-text-danger">
-                                            <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
-                                            {% trans 'Inactivate' %}
-                                        </a>
+                                        <form method="post" action="{% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-danger">
+                                             <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
+                                             {% trans 'Inactivate' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                 </div>
                             </div>
