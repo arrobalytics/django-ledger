@@ -7,7 +7,16 @@ Contributions to this module:
     - Michael Noel <noel.michael87@gmail.com>
 """
 
-from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
+from django.forms import (
+    ModelChoiceField,
+    ModelForm,
+    modelformset_factory,
+    BaseModelFormSet,
+    TextInput,
+    Select,
+    ValidationError
+)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import check_tx_balance
@@ -17,16 +26,28 @@ from django_ledger.models.transactions import TransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
+class TransactionModelAccountChoiceField(ModelChoiceField):
+    def to_python(self, value):
+        try:
+            return super().to_python(value)
+        except ValidationError as exc:
+            raise ObjectDoesNotExist from exc
+
+
 class TransactionModelForm(ModelForm):
+    account = TransactionModelAccountChoiceField(
+        queryset=TransactionModel._meta.get_field('account').remote_field.model.objects.all(),
+        widget=Select(
+            attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }
+        )
+    )
+
     class Meta:
         model = TransactionModel
         fields = ['account', 'tx_type', 'amount', 'description']
         widgets = {
-            'account': Select(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                }
-            ),
             'tx_type': Select(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
@@ -78,7 +99,23 @@ class TransactionModelFormSet(BaseModelFormSet):
     def get_queryset(self):
         return self.JE_MODEL.transactionmodel_set.all()
 
+    def is_valid(self):
+        if not self.is_bound:
+            txs_balances = [
+                {'tx_type': tx.tx_type, 'amount': tx.amount}
+                for tx in self.get_queryset()
+            ]
+            return check_tx_balance(txs_balances, perform_correction=False)
+        return super().is_valid()
+
+    def save(self, commit=True):
+        if not self.is_bound:
+            return []
+        return super().save(commit=commit)
+
     def clean(self):
+        if not self.is_bound:
+            return
         if any(self.errors):
             return
         for form in self.forms:

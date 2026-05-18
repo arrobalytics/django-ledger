@@ -373,6 +373,15 @@ class BillModelAbstract(
     vendor = models.ForeignKey(
         'django_ledger.VendorModel', on_delete=models.CASCADE, verbose_name=_('Vendor')
     )
+    currency = models.ForeignKey(
+        'django_ledger.CurrencyModel',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('Document Currency'),
+    )
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    base_amount_due = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
 
     cash_account = models.ForeignKey(
         'django_ledger.AccountModel',

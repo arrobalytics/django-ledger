@@ -116,6 +116,12 @@ class EntityModelUpdateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
     form_class = EntityModelUpdateForm
     slug_url_kwarg = 'entity_slug'
 
+    def get_object(self, queryset=None):
+        entity_model = self.get_authorized_entity_instance()
+        if entity_model.slug == self.kwargs.get(self.slug_url_kwarg):
+            return entity_model
+        return super().get_object(queryset=queryset)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.name
@@ -160,6 +166,8 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
 class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
                                    EntityUnitMixIn,
                                    RedirectView):
+    def has_permission(self):
+        return self.request.user.is_authenticated
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = get_localdate()
@@ -172,10 +180,11 @@ class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
                                'year': loc_date.year,
                                'month': loc_date.month,
                            })
-        return reverse('django_ledger:entity-dashboard-year',
+        return reverse('django_ledger:entity-dashboard-month',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
-                           'year': loc_date.year
+                           'year': loc_date.year,
+                           'month': loc_date.month
                        })
 
 
@@ -198,6 +207,12 @@ class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
 
     IO_DIGEST_UNBOUNDED = True
     IO_DIGEST_BOUNDED = True
+
+    def get_object(self, queryset=None):
+        entity_model = self.get_authorized_entity_instance()
+        if entity_model.slug == self.kwargs.get(self.slug_url_kwarg):
+            return entity_model
+        return super().get_object(queryset=queryset)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

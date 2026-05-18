@@ -523,6 +523,22 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         help_text=_('Amount of the transaction.'),
         validators=[MinValueValidator(0)],
     )
+    currency_amount = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        null=True,
+        blank=True,
+        verbose_name=_('Currency Amount'),
+        validators=[MinValueValidator(0)],
+    )
+    base_amount = models.DecimalField(
+        decimal_places=2,
+        max_digits=20,
+        null=True,
+        blank=True,
+        verbose_name=_('Base Currency Amount'),
+        validators=[MinValueValidator(0)],
+    )
     description = models.CharField(
         max_length=100,
         null=True,

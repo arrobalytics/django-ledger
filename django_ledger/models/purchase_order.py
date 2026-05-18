@@ -234,6 +234,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                                              decimal_places=2,
                                              max_digits=20,
                                              verbose_name=_('Received Amount'))
+    currency = models.ForeignKey('django_ledger.CurrencyModel',
+                                 on_delete=models.PROTECT,
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Document Currency'))
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    base_po_amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Entity'))

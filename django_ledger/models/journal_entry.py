@@ -398,6 +398,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         null=True,
         verbose_name=_('Associated Entity Unit')
     )
+    currency = models.ForeignKey(
+        'django_ledger.CurrencyModel',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        verbose_name=_('Transaction Currency')
+    )
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     activity = models.CharField(
         choices=ACTIVITIES,
         max_length=20,
@@ -957,6 +965,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
+        if self.is_posted():
+            self.posted = False
+
         if not self.can_unlock():
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
@@ -966,7 +977,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.activity = None
             if not self.is_locked():
                 if commit:
-                    self.save(verify=False)
+                    self.save(
+                        verify=False,
+                        update_fields=[
+                            'posted',
+                            'locked',
+                            'activity',
+                            'updated'
+                        ]
+                    )
                 journal_entry_unlocked.send_robust(sender=self.__class__,
                                                    instance=self,
                                                    commited=commit,

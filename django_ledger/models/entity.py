@@ -138,7 +138,12 @@ class EntityModelManager(MP_NodeManager):
             )
         )
 
-    def for_user(self, user_model, authorized_superuser: bool = False):
+    def for_user(
+        self,
+        user_model,
+        authorized_superuser: bool = False,
+        required_permission_level: str = 'read',
+    ):
         """
         This QuerySet guarantees that Users do not access or operate on EntityModels that don't have access to.
         This is the recommended initial QuerySet.
@@ -150,17 +155,33 @@ class EntityModelManager(MP_NodeManager):
         authorized_superuser
             Allows any superuser to access the EntityModel. Default is False.
 
+        required_permission_level
+            The minimum manager permission level required to access the entity. Must be either
+            'read' or 'write'.
+
         Returns
         -------
         EntityModelQuerySet
             A filtered QuerySet of EntityModels that the user has access. The user has access to an Entity if:
                 1. Is the Administrator.
-                2. Is a manager.
+                2. Is a manager with a sufficient permission level.
         """
         qs = self.get_queryset()
         if user_model.is_superuser and authorized_superuser:
             return qs
-        return qs.filter(Q(admin=user_model) | Q(managers__in=[user_model]))
+
+        if required_permission_level == 'write':
+            manager_permission_filter = Q(
+                entity_permissions__user=user_model,
+                entity_permissions__permission_level='write',
+            )
+        else:
+            manager_permission_filter = Q(
+                entity_permissions__user=user_model,
+                entity_permissions__permission_level__in=['read', 'write'],
+            )
+
+        return qs.filter(Q(admin=user_model) | manager_permission_filter).distinct()
 
 
 class EntityModelFiscalPeriodMixIn:
@@ -802,6 +823,13 @@ class EntityModelAbstract(
     hidden = models.BooleanField(default=False)
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
+    base_currency = models.ForeignKey(
+        'django_ledger.CurrencyModel',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('Base Currency'),
+    )
     last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
     picture = models.ImageField(blank=True, null=True)
     meta = models.JSONField(default=dict, null=True, blank=True)

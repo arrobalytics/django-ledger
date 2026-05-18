@@ -23,6 +23,7 @@ from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
+from django.views.generic.edit import CreateView, DeleteView, FormView, UpdateView
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel, LedgerModel
 from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
@@ -329,6 +330,7 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
     ENTITY_SLUG_URL_KWARG = 'entity_slug'
     ENTITY_MODEL_CONTEXT_NAME = 'entity_model'
     AUTHORIZE_SUPERUSER: bool = DJANGO_LEDGER_AUTHORIZED_SUPERUSER
+    REQUIRED_ENTITY_PERMISSION_LEVEL: Optional[str] = None
     permission_required = []
 
     def __init__(self, *args, **kwargs):
@@ -365,13 +367,30 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
     def get_superuser_authorization(self):
         return self.AUTHORIZE_SUPERUSER
 
+    def get_required_entity_permission_level(self) -> str:
+        if self.REQUIRED_ENTITY_PERMISSION_LEVEL:
+            return self.REQUIRED_ENTITY_PERMISSION_LEVEL
+
+        if self.request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+            return 'write'
+
+        if isinstance(self, (CreateView, UpdateView, DeleteView, FormView)):
+            return 'write'
+
+        if getattr(self, 'action_name', None):
+            return 'write'
+
+        return 'read'
+
     def has_permission(self):
         has_perm = super().has_permission()
         if not has_perm:
             return False
 
         entity_slug_kwarg = self.get_entity_slug_kwarg()
-        entity_model_qs = self.get_authorized_entity_queryset()
+        entity_model_qs = self.get_authorized_entity_queryset(
+            required_permission_level=self.get_required_entity_permission_level()
+        )
 
         if self.request.user.is_authenticated:
             if entity_slug_kwarg in self.kwargs:
@@ -384,10 +403,12 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             return True
         return False
 
-    def get_authorized_entity_queryset(self):
+    def get_authorized_entity_queryset(self, required_permission_level: Optional[str] = None):
+        required_permission_level = required_permission_level or self.get_required_entity_permission_level()
         return EntityModel.objects.for_user(
             user_model=self.request.user,
             authorized_superuser=self.get_superuser_authorization(),
+            required_permission_level=required_permission_level,
         )
 
     def get_authorized_entity_instance(
