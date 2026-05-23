@@ -64,29 +64,29 @@ class IncomeStatementReport(BaseReportSupport):
             self.cell(
                 w=self.TABLE_HEADERS['role']['width'],
                 h=account_height,
-                txt=''
+                text=''
             )
             self.cell(
                 w=self.TABLE_HEADERS['code']['width'],
                 h=account_height,
-                txt='      {code}'.format(code=acc['code'])
+                text='      {code}'.format(code=acc['code'])
             )
             self.cell(
                 w=self.TABLE_HEADERS['name']['width'],
                 h=account_height,
-                txt=acc['name']
+                text=acc['name']
             )
             self.cell(
                 w=self.TABLE_HEADERS['balance_type']['width'],
                 h=account_height,
-                txt=acc['balance_type'],
+                text=acc['balance_type'],
                 align='C'
             )
             self.cell(
                 w=self.TABLE_HEADERS['balance']['width'],
                 h=account_height,
                 align='R',
-                txt=f"{self.CURRENCY_SYMBOL}{currency_format(acc['balance_abs'])}"
+                text=f"{self.CURRENCY_SYMBOL}{currency_format(acc['balance_abs'])}"
             )
             self.ln(5)
 
@@ -102,7 +102,7 @@ class IncomeStatementReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Net Operating Revenue'
+            text='Net Operating Revenue'
         )
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
@@ -110,7 +110,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(s=currency_symbol(),
+            text='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(operating_section['net_operating_revenue']))
         )
         self.ln(h=3)
@@ -128,7 +128,7 @@ class IncomeStatementReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Net COGS'
+            text='Net COGS'
         )
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
@@ -136,7 +136,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(s=currency_symbol(),
+            text='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(-operating_section['net_cogs']))
         )
         self.ln(h=3)
@@ -151,7 +151,7 @@ class IncomeStatementReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Gross Profit (Op. Revenue - COGS)'
+            text='Gross Profit (Op. Revenue - COGS)'
         )
 
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 2)
@@ -160,7 +160,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(s=currency_symbol(),
+            text='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(operating_section['gross_profit']))
         )
         self.ln(h=3)
@@ -179,7 +179,7 @@ class IncomeStatementReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Net Operating Expense'
+            text='Net Operating Expense'
         )
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
@@ -187,7 +187,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(s=currency_symbol(),
+            text='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(-operating_section['net_operating_expenses']))
         )
         self.ln(h=3)
@@ -203,7 +203,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='Net Operating Income (Loss): {s}{tot}'.format(s=currency_symbol(),
+            text='Net Operating Income (Loss): {s}{tot}'.format(s=currency_symbol(),
                                                                tot=currency_format(
                                                                    operating_section['net_operating_income']))
         )
@@ -220,7 +220,7 @@ class IncomeStatementReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Net Other Revenue'
+            text='Net Other Revenue'
         )
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
@@ -228,7 +228,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(s=currency_symbol(),
+            text='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(other_section['net_other_revenues']))
         )
         self.ln(h=3)
@@ -246,7 +246,7 @@ class IncomeStatementReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Net Other Expenses'
+            text='Net Other Expenses'
         )
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
@@ -254,7 +254,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(s=currency_symbol(),
+            text='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(other_section['net_other_expenses']))
         )
         self.ln(h=3)
@@ -270,7 +270,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='Net Other Income (Loss): {s}{tot}'.format(s=currency_symbol(),
+            text='Net Other Income (Loss): {s}{tot}'.format(s=currency_symbol(),
                                                            tot=currency_format(
                                                                operating_section['net_other_income']))
         )
@@ -284,7 +284,7 @@ class IncomeStatementReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='Net Income (Loss): {s}{tot}'.format(s=currency_symbol(),
+            text='Net Income (Loss): {s}{tot}'.format(s=currency_symbol(),
                                                      tot=currency_format(
                                                          ic_data['net_income']))
         )
