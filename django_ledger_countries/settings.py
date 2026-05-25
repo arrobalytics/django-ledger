@@ -60,6 +60,10 @@ def get_ledger_setting(name: str, default: Any = None) -> Any:
 
 
 def _get_plugin_for_country(country: str):
+    if country == 'de':
+        from django_ledger_countries.de.plugin import GermanyRegionalPlugin
+
+        return GermanyRegionalPlugin()
     from django_ledger_countries.us.plugin import USRegionalPlugin
 
     return USRegionalPlugin()
