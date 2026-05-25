@@ -77,6 +77,10 @@ Supported setting names:
 - ``SPACED_CURRENCY_SYMBOL``
 - ``REQUIRE_SUPPORTING_DOCUMENT_ON_POST``
 - ``DEFAULT_COA``
+- ``DEFAULT_TAX_REGIME``
+- ``DEFAULT_VAT_RATE``
+- ``KLEINUNTERNEHMER_PRIOR_YEAR_LIMIT``
+- ``KLEINUNTERNEHMER_CURRENT_YEAR_LIMIT``
 
 Germany defaults (``django_ledger_countries/de/settings.py``):
 
@@ -93,6 +97,14 @@ Germany defaults (``django_ledger_countries/de/settings.py``):
      - ``True``
    * - ``DEFAULT_COA``
      - ``skr03``
+   * - ``DEFAULT_TAX_REGIME``
+     - ``exempt``
+   * - ``DEFAULT_VAT_RATE``
+     - ``0.19``
+   * - ``KLEINUNTERNEHMER_PRIOR_YEAR_LIMIT``
+     - ``22000``
+   * - ``KLEINUNTERNEHMER_CURRENT_YEAR_LIMIT``
+     - ``50000``
 
 Custom SKR03 data
 ~~~~~~~~~~~~~~~~~
@@ -142,10 +154,98 @@ Entity tax profile
 ``django_ledger_extensions.models.EntityTaxProfile`` stores per-entity tax configuration:
 
 - ``tax_regime``: ``standard``, ``small_business``, or ``exempt``
-- ``default_vat_rate``: decimal fraction (e.g. ``0.19``)
-- ``vat_id``: VAT identification number
+- ``default_vat_rate``: decimal fraction (e.g. ``0.19``) — used only for ``standard``
+- ``vat_id``: VAT identification number (when applicable)
 
-Germany creates a default profile (standard, 19% VAT) when a new entity is saved.
+Germany creates a default profile when a new entity is saved. Defaults come from
+``DJANGO_LEDGER_DE_DEFAULT_TAX_REGIME`` (``exempt``) and ``DJANGO_LEDGER_DE_DEFAULT_VAT_RATE``
+(``0.19`` for standard regime only).
+
+Tax regimes
+^^^^^^^^^^^
+
++---------------+------------------+-----------------------------------------------+
+| Regime        | Admin value      | Behaviour                                     |
++===============+==================+===============================================+
+| School exempt | ``exempt``       | No VAT lines; revenue on accounts such as     |
+| (§ 4 UStG)    |                  | ``8100 00``; no USt-Voranmeldung for exempt   |
+|               |                  | supplies                                      |
++---------------+------------------+-----------------------------------------------+
+| Kleinunterneh | ``small_business`` | No VAT lines; gross on ``8200 00`` etc.;    |
+| (§ 19 UStG)   |                  | monitor turnover vs § 19 limits                 |
++---------------+------------------+-----------------------------------------------+
+| Standard VAT  | ``standard``     | Splits gross to net + Vorsteuer/Umsatzsteuer  |
+|               |                  | on income/expense lines; USt-Voranmeldung     |
++---------------+------------------+-----------------------------------------------+
+
+When Finanzamt status is confirmed, change ``tax_regime`` in Django admin and run:
+
+.. code-block:: shell
+
+   python manage.py sync_tax_regime --entity=your-entity-slug
+
+This re-activates the starter account subset for that regime (VAT clearing accounts
+only for ``standard``, exempt revenue account only for ``exempt``, etc.).
+
+SKR03 chart and starter accounts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Germany loads the full DATEV SKR03 **Schulen freie Träger** CSV (~2,700 postable
+accounts). Only a **starter set** (~30 accounts for Bildungsurlaub-style schools) is
+``active=True`` by default so journal-entry pickers stay manageable.
+
+Load or refresh:
+
+.. code-block:: shell
+
+   python manage.py sync_skr03 --entity=your-entity-slug
+   python manage.py sync_skr03 --entity=your-entity-slug --force
+
+Optional overrides:
+
+.. code-block:: python
+
+   # Custom CSV path
+   DJANGO_LEDGER_DE_SKR03_CSV = '/path/to/chart.csv'
+
+   # Replace default active starter codes entirely
+   DJANGO_LEDGER_DE_SKR03_STARTER_CODES = [
+       '1200 00',  # Bank
+       '8100 00',  # Steuerfreie Umsätze
+       # ...
+   ]
+
+Quarterly VAT and turnover report
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Management command for ELSTER planning and Kleinunternehmer turnover checks.
+Uses **posted** journal entries only.
+
+.. code-block:: shell
+
+   python manage.py vat_quarterly_report --entity=your-entity-slug
+   python manage.py vat_quarterly_report --entity=slug --year=2026 --quarter=1
+   python manage.py vat_quarterly_report --entity=slug --year=2026 --quarter=1 --json
+
+**Standard VAT** — Vorsteuer, Umsatzsteuer, and expected **Zahllast** (payment).
+
+**Kleinunternehmer** — quarter and YTD turnover vs configurable limits
+(``KLEINUNTERNEHMER_PRIOR_YEAR_LIMIT`` / ``KLEINUNTERNEHMER_CURRENT_YEAR_LIMIT``);
+no VAT return required under § 19.
+
+**Exempt** — turnover summary for records; no USt-Voranmeldung for exempt course fees.
+
+Programmatic access:
+
+.. code-block:: python
+
+   from django_ledger_countries.de.vat.reporting import build_vat_quarterly_report
+
+   report = build_vat_quarterly_report(entity, year=2026, quarter=1)
+   print(report.net_vat_payable)   # standard regime only
+   print(report.ytd_turnover)      # all regimes
+
+**Full walkthrough:** see the :doc:`German school / Bildungsurlaub how-to <de_school_howto>` (setup, starter accounts, daily booking examples, quarterly reports, FAQ).
 
 Plugin contract
 ---------------
@@ -204,16 +304,30 @@ Located under ``django_ledger_countries/de/``:
 ``plugin.py``
    ``GermanyRegionalPlugin`` — wires SKR03, VAT, validation.
 
-``coa/skr03.py``
-   Starter SKR03 accounts and translation loader.
+``coa/skr03.py`` / ``coa/datev_loader.py``
+   Full SKR03 DATEV CSV loader; DATEV ``NNNN NN`` account codes preserved.
 
-``vat.py``
-   Splits gross amounts into net + VAT lines for standard tax regime.
+``coa/starter.py``
+   Default active accounts for schools (Bildungsurlaub); filtered by tax regime.
+
+``vat/``
+   Pluggable VAT regime handlers (``standard``, ``small_business``, ``exempt``).
+
+``vat/reporting.py``
+   Quarterly Vorsteuer/Umsatzsteuer/Zahllast and turnover summaries.
 
 ``roles.py``
    Registers ``asset_ca_vat_recv`` and ``lia_cl_vat_payable`` roles.
 
-VAT posting is skipped for ``small_business`` and ``exempt`` tax regimes.
+Standard VAT splits gross income/expense lines into net + VAT clearing accounts.
+``small_business`` and ``exempt`` pass transactions through unchanged and block use
+of VAT clearing accounts on manual journal entries.
+
+Management commands (``django_ledger_countries/management/commands/``):
+
+- ``sync_skr03`` — load DATEV chart; apply regime-aware starter activation
+- ``sync_tax_regime`` — re-apply active accounts after changing tax profile
+- ``vat_quarterly_report`` — quarterly VAT or turnover summary
 
 Adding a new country
 --------------------

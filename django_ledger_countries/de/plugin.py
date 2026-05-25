@@ -13,7 +13,6 @@ from django_ledger_countries.de.coa import skr03
 from django_ledger_countries.de.roles import register_german_roles
 from django_ledger_countries.de.settings import DE_SETTING_DEFAULTS
 from django_ledger_countries.de import vat as vat_module
-from django_ledger_countries.de.coa.starter import apply_starter_activation
 from django_ledger_countries.de.validators import validate_datev_account_code
 from django_ledger_countries.settings import get_ledger_setting
 
@@ -38,14 +37,11 @@ class GermanyRegionalPlugin(RegionalPlugin):
 
         EntityTaxProfile.objects.get_or_create(
             entity=entity,
-            defaults={
-                'tax_regime': EntityTaxProfile.TaxRegime.STANDARD,
-                'default_vat_rate': '0.19',
-            },
+            defaults=vat_module.get_default_tax_profile_values(),
         )
 
     def on_coa_populated(self, entity, coa_model) -> None:
-        apply_starter_activation(coa_model)
+        vat_module.apply_regime_starter_activation(coa_model)
         self._seed_account_translations(entity)
 
     def validate_account_code(self, code: str) -> None:
@@ -76,6 +72,8 @@ class GermanyRegionalPlugin(RegionalPlugin):
         return vat_module.adjust_posting(document, transactions)
 
     def validate_journal_entry(self, journal_entry) -> None:
+        vat_module.validate_vat_journal_entry(journal_entry)
+
         if not get_ledger_setting('REQUIRE_SUPPORTING_DOCUMENT_ON_POST'):
             return
 

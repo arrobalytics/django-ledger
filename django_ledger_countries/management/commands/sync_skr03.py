@@ -1,9 +1,10 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from django_ledger.models.entity import EntityModel
+from django_ledger_countries.de import vat as vat_module
 from django_ledger_countries.de.coa import skr03
 from django_ledger_countries.de.coa.datev_loader import clear_datev_coa_cache
-from django_ledger_countries.de.coa.starter import apply_starter_activation, get_starter_account_codes
+from django_ledger_countries.de.coa.starter import get_starter_account_codes
 
 
 class Command(BaseCommand):
@@ -57,13 +58,17 @@ class Command(BaseCommand):
         elif options['activate_all']:
             active_count = coa.accountmodel_set.not_coa_root().update(active=True)
         else:
-            active_count = apply_starter_activation(coa)
+            active_count = vat_module.apply_regime_starter_activation(coa)
 
         total = coa.accountmodel_set.not_coa_root().count()
+        try:
+            regime = entity.tax_profile.tax_regime
+        except Exception:
+            regime = vat_module.get_default_tax_profile_values()['tax_regime']
         starter = len(get_starter_account_codes())
         self.stdout.write(
             self.style.SUCCESS(
                 f'SKR03 sync complete on {entity.slug}: {total} accounts loaded, '
-                f'{active_count} active (starter default: {starter}).'
+                f'{active_count} active (tax regime: {regime}, full starter: {starter}).'
             )
         )

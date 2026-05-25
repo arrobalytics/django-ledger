@@ -25,9 +25,9 @@ class EntityTaxProfile(CreateUpdateMixIn):
     """
 
     class TaxRegime(models.TextChoices):
-        STANDARD = 'standard', _('Standard')
-        SMALL_BUSINESS = 'small_business', _('Small business exemption')
-        EXEMPT = 'exempt', _('Tax exempt')
+        STANDARD = 'standard', _('Standard VAT (Regelbesteuerung)')
+        SMALL_BUSINESS = 'small_business', _('Kleinunternehmer (§ 19 UStG)')
+        EXEMPT = 'exempt', _('Tax-exempt school / training (§ 4 UStG)')
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity = models.OneToOneField(
@@ -38,13 +38,20 @@ class EntityTaxProfile(CreateUpdateMixIn):
     tax_regime = models.CharField(
         max_length=32,
         choices=TaxRegime.choices,
-        default=TaxRegime.STANDARD,
+        default=TaxRegime.EXEMPT,
+        help_text=_(
+            'Controls VAT posting behaviour. Change here when your Finanzamt '
+            'confirms Kleinunternehmer or school exemption status.'
+        ),
     )
     default_vat_rate = models.DecimalField(
         max_digits=5,
         decimal_places=4,
         default=0,
-        help_text=_('Default VAT rate as a decimal fraction, e.g. 0.19 for 19%.'),
+        help_text=_(
+            'VAT rate as a decimal fraction (e.g. 0.19). Used only for the '
+            'standard VAT regime.'
+        ),
     )
     vat_id = models.CharField(max_length=64, blank=True, default='')
 
@@ -53,6 +60,22 @@ class EntityTaxProfile(CreateUpdateMixIn):
 
     def __str__(self) -> str:
         return f'TaxProfile<{self.entity_id}:{self.tax_regime}>'
+
+    def clean(self):
+        super().clean()
+        if self.tax_regime == self.TaxRegime.STANDARD:
+            if not self.default_vat_rate or self.default_vat_rate <= 0:
+                raise ValidationError(
+                    {'default_vat_rate': _('Standard VAT requires a positive default VAT rate.')}
+                )
+        elif self.default_vat_rate and self.default_vat_rate > 0:
+            raise ValidationError(
+                {
+                    'default_vat_rate': _(
+                        'Default VAT rate must be zero for exempt and Kleinunternehmer regimes.'
+                    )
+                }
+            )
 
 
 class SupportingDocumentModel(CreateUpdateMixIn):
