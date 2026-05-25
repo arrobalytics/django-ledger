@@ -39,6 +39,13 @@ All contributors must sign our Contributor License Agreement. This agreement ens
 ## 8. Documentation and Other Contributions
 - Contributions to documentation, tutorials, or other non-code assets are also subject to these guidelines.
 
+### Regional / country plugins
+- Country-specific accounting logic belongs in `django_ledger_countries/<code>/`, not in core `django_ledger`.
+- Shared, country-agnostic models (attachments, tax profiles, translations) belong in `django_ledger_extensions`.
+- Core hook changes should stay minimal and country-agnostic; extend behavior via `RegionalPlugin` methods.
+- New countries require tests under `django_ledger_countries/tests/` and documentation in `docs/source/regional.rst`.
+- See the [Regional Plugins](README.md#regional-plugins) section in the README for setup and configuration.
+
 ## 9. No Warranty
 - Contributions are provided "as is" without warranty of any kind.
 

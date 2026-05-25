@@ -19,6 +19,7 @@ Created and developed by `Miguel Sanda <https://www.miguelsanda.com>`_.
    ./quickstart
    ./io
    ./models
+   ./regional
 
 
 

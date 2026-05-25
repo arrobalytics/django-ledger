@@ -9,6 +9,8 @@ for handling complex accounting tasks in financially driven applications.
 
 Created and developed by [Miguel Sanda](https://www.miguelsanda.com).
 
+This fork extends upstream django-ledger with a **regional plugin system** for country-specific accounting rules, charts of accounts, tax handling, and supporting documents. See [Regional Plugins](#regional-plugins) below.
+
 [FREE Get Started Guide](https://www.djangoledger.com/get-started) | [Join our Discord](https://discord.gg/c7PZcbYgrc) | [Documentation](https://django-ledger.readthedocs.io/en/latest/) | [QuickStart Notebook](https://github.com/arrobalytics/django-ledger/blob/develop/notebooks/QuickStart%20Notebook.ipynb)
 
 ## Key Features
@@ -28,6 +30,9 @@ Created and developed by [Miguel Sanda](https://www.miguelsanda.com).
 - Bank account information
 - Django Admin integration
 - Built-in Entity Management UI
+- Regional plugin system for country-specific accounting (US default, Germany supported)
+- Supporting documents on journal entries and ledger objects
+- Entity tax profiles and bilingual account/item translations
 
 ## Getting Involved
 
@@ -73,9 +78,14 @@ Otherwise, you may create your project from scratch.
 INSTALLED_APPS = [
     ...,
     'django_ledger',
+    'django_ledger_extensions',   # supporting documents, tax profiles, translations
+    'django_ledger_countries',    # country plugins (US default, DE optional)
     ...,
 ]
 ```
+
+If you do not need regional behavior, you may omit `django_ledger_extensions` and
+`django_ledger_countries`. Core django-ledger will behave as upstream (US defaults).
 
 ### Add Django Ledger Context Preprocessor
 
@@ -128,6 +138,98 @@ access to deprecated features and legacy behaviors.
 
 - Default: False (deprecated features are disabled by default)
 - To temporarily keep using deprecated features while you transition, set this to True in your Django settings.
+
+## Regional Plugins
+
+Django Ledger uses a layered architecture so country-specific rules stay out of the core
+accounting engine. **When no country is configured, behavior matches upstream django-ledger
+(United States defaults).**
+
+### Package layout
+
+```text
+django_ledger/              # Core double-entry engine + hook points
+django_ledger/regional/     # Plugin contract, registry, dispatch
+django_ledger_extensions/   # Shared: supporting documents, tax profiles, translations
+django_ledger_countries/    # Country plugins
+├── us/                     # US passthrough (default)
+└── de/                     # Germany: SKR03, VAT, supporting-document rules
+```
+
+### Configuration
+
+Set the active country in your Django settings:
+
+```python
+# Default — US behavior (same as upstream django-ledger)
+# DJANGO_LEDGER_COUNTRY = 'us'
+
+# Germany
+DJANGO_LEDGER_COUNTRY = 'de'
+```
+
+Settings are resolved in this order (highest priority first):
+
+1. Country-specific: `DJANGO_LEDGER_DE_DEFAULT_COA`, `DJANGO_LEDGER_DE_REQUIRE_SUPPORTING_DOCUMENT_ON_POST`, …
+2. Global override: `DJANGO_LEDGER_CURRENCY_SYMBOL`, `DJANGO_LEDGER_REQUIRE_SUPPORTING_DOCUMENT_ON_POST`, …
+3. Country plugin defaults (see `django_ledger_countries/de/settings.py` for Germany)
+4. Core django-ledger defaults
+
+| Setting | US default | DE default |
+|---------|------------|------------|
+| `CURRENCY_SYMBOL` | `$` | `€` |
+| `REQUIRE_SUPPORTING_DOCUMENT_ON_POST` | `False` | `True` |
+| `DEFAULT_COA` | upstream US chart | `skr03` |
+
+Example for a German UG:
+
+```python
+DJANGO_LEDGER_COUNTRY = 'de'
+DJANGO_LEDGER_DE_DEFAULT_COA = 'skr03'
+# DJANGO_LEDGER_DE_REQUIRE_SUPPORTING_DOCUMENT_ON_POST = True  # optional override
+```
+
+Provide a custom SKR03 chart via:
+
+```python
+DJANGO_LEDGER_DE_SKR03_DATA = [
+    {'code': '1200', 'role': 'asset_ca_cash', 'balance_type': 'debit', 'name': 'Bank', 'name_en': 'Bank', 'parent': None},
+    # ...
+]
+```
+
+Optional S3 storage for supporting documents:
+
+```python
+DJANGO_LEDGER_SUPPORTING_DOCUMENT_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+```
+
+### How plugins hook into core
+
+Country plugins implement `RegionalPlugin` (`django_ledger/regional/base.py`). Core calls
+the active plugin at these points:
+
+| Hook | When |
+|------|------|
+| `get_default_coa()` | Entity chart-of-accounts population |
+| `register_roles()` | App startup — extend account roles |
+| `on_entity_created()` | New entity saved |
+| `on_coa_populated()` | Default accounts inserted |
+| `adjust_posting()` | Bill/invoice ledger migration (e.g. VAT splits) |
+| `validate_journal_entry()` | Before/at journal entry post |
+| `on_journal_entry_posted()` | After journal entry is posted |
+
+Extensions listen to core signals (e.g. `journal_entry_posted`) for cross-cutting behavior
+such as locking supporting documents after post.
+
+### Adding a new country
+
+1. Create `django_ledger_countries/<code>/` with a `plugin.py` implementing `RegionalPlugin`.
+2. Register the country in `django_ledger_countries/settings.py` (`_get_plugin_for_country`).
+3. Add country defaults and optional `DJANGO_LEDGER_<CODE>_*` settings.
+4. Add tests under `django_ledger_countries/tests/`.
+
+See `docs/source/regional.rst` for more detail.
 
 ## Setting Up Django Ledger for Development
 
@@ -225,6 +327,8 @@ After setting up your development environment you may run tests.
 
 ```shell
 python manage.py test django_ledger
+python manage.py test django_ledger_countries
+python manage.py test django_ledger_extensions
 ```
 
 # Screenshots
