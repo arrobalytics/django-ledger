@@ -13,6 +13,8 @@ from django_ledger_countries.de.coa import skr03
 from django_ledger_countries.de.roles import register_german_roles
 from django_ledger_countries.de.settings import DE_SETTING_DEFAULTS
 from django_ledger_countries.de import vat as vat_module
+from django_ledger_countries.de.coa.starter import apply_starter_activation
+from django_ledger_countries.de.validators import validate_datev_account_code
 from django_ledger_countries.settings import get_ledger_setting
 
 
@@ -43,7 +45,14 @@ class GermanyRegionalPlugin(RegionalPlugin):
         )
 
     def on_coa_populated(self, entity, coa_model) -> None:
+        apply_starter_activation(coa_model)
         self._seed_account_translations(entity)
+
+    def validate_account_code(self, code: str) -> None:
+        validate_datev_account_code(code)
+
+    def enforce_account_code_prefix(self) -> bool:
+        return False
 
     def _seed_account_translations(self, entity) -> None:
         from django_ledger.models.accounts import AccountModel

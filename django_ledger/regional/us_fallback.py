@@ -20,3 +20,13 @@ class USRegionalPlugin(RegionalPlugin):
             'REQUIRE_SUPPORTING_DOCUMENT_ON_POST': False,
             'DEFAULT_COA': None,
         }
+
+    def validate_account_code(self, code: str) -> None:
+        from django.core.exceptions import ValidationError
+        from django.utils.translation import gettext_lazy as _
+
+        if not code or not code.isalnum():
+            raise ValidationError(_('Account code must be alpha numeric, got {%s}') % code)
+
+    def enforce_account_code_prefix(self) -> bool:
+        return True

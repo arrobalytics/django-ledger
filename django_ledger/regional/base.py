@@ -60,3 +60,10 @@ class RegionalPlugin(ABC):
 
     def validate_journal_entry(self, journal_entry: JournalEntryModel) -> None:
         """Raise ``ValidationError`` when posting rules are violated."""
+
+    def validate_account_code(self, code: str) -> None:
+        """Raise ``ValidationError`` when *code* is invalid for this country."""
+
+    def enforce_account_code_prefix(self) -> bool:
+        """When False, skip US-style role prefix checks on account codes."""
+        return True

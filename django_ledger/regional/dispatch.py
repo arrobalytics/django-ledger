@@ -35,3 +35,11 @@ def dispatch_on_entity_created(entity: EntityModel) -> None:
 
 def dispatch_on_coa_populated(entity: EntityModel, coa_model) -> None:
     get_country_plugin().on_coa_populated(entity, coa_model)
+
+
+def dispatch_validate_account_code(code: str) -> None:
+    get_country_plugin().validate_account_code(code)
+
+
+def should_enforce_account_code_prefix() -> bool:
+    return get_country_plugin().enforce_account_code_prefix()

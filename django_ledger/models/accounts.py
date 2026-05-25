@@ -430,8 +430,13 @@ class AccountModelManager(MP_NodeManager):
 
 
 def account_code_validator(value: str):
-    if not value.isalnum():
-        raise AccountModelValidationError(_('Account code must be alpha numeric, got {%s}') % value)
+    try:
+        from django_ledger.regional.dispatch import dispatch_validate_account_code
+
+        dispatch_validate_account_code(value)
+    except ImportError:
+        if not value.isalnum():
+            raise AccountModelValidationError(_('Account code must be alpha numeric, got {%s}') % value)
 
 
 class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
@@ -468,8 +473,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    code = models.CharField(max_length=10, verbose_name=_('Account Code'), validators=[account_code_validator])
-    name = models.CharField(max_length=100, verbose_name=_('Account Name'))
+    code = models.CharField(max_length=12, verbose_name=_('Account Code'), validators=[account_code_validator])
+    name = models.CharField(max_length=255, verbose_name=_('Account Name'))
     role = models.CharField(max_length=30, choices=ACCOUNT_ROLE_CHOICES, verbose_name=_('Account Role'))
     role_default = models.BooleanField(null=True, blank=True, verbose_name=_('Coa Role Default Account'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
@@ -1130,10 +1135,18 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             self.code = self.generate_random_code()
 
         if DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX:
-            pf = self.get_code_prefix()
-            if self.code[0] != pf:
-                raise AccountModelValidationError(f'Account {self.get_role_display()} code {self.code} '
-                                                  f'must start with {pf} for CoA consistency')
+            try:
+                from django_ledger.regional.dispatch import should_enforce_account_code_prefix
+
+                enforce_prefix = should_enforce_account_code_prefix()
+            except ImportError:
+                enforce_prefix = True
+
+            if enforce_prefix:
+                pf = self.get_code_prefix()
+                if self.code[0] != pf:
+                    raise AccountModelValidationError(f'Account {self.get_role_display()} code {self.code} '
+                                                      f'must start with {pf} for CoA consistency')
 
 
 class AccountModel(AccountModelAbstract):

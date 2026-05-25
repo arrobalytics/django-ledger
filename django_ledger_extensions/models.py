@@ -119,7 +119,7 @@ class AccountTranslationModel(CreateUpdateMixIn):
         related_name='translations',
     )
     locale = models.CharField(max_length=8)
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=255)
 
     class Meta:
         verbose_name = _('Account Translation')
@@ -142,7 +142,7 @@ class ItemTranslationModel(CreateUpdateMixIn):
         related_name='translations',
     )
     locale = models.CharField(max_length=8)
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=255)
     regional_code = models.CharField(max_length=32, blank=True, default='')
 
     class Meta:

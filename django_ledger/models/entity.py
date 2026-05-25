@@ -1132,7 +1132,7 @@ class EntityModelAbstract(
                         name=a['name'],
                         role=a['role'],
                         balance_type=a['balance_type'],
-                        active=activate_accounts,
+                        active=a.get('active', activate_accounts),
                         coa_model=coa_model,
                     )
                     for a in v
