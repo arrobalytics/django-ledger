@@ -18,8 +18,16 @@ DJANGO_LEDGER_LOGIN_URL = getattr(settings, 'DJANGO_LEDGER_LOGIN_URL', settings.
 DJANGO_LEDGER_BILL_NUMBER_LENGTH = getattr(settings, 'DJANGO_LEDGER_BILL_NUMBER_LENGTH', 10)
 DJANGO_LEDGER_INVOICE_NUMBER_LENGTH = getattr(settings, 'DJANGO_LEDGER_INVOICE_NUMBER_LENGTH', 10)
 DJANGO_LEDGER_FORM_INPUT_CLASSES = getattr(settings, 'DJANGO_LEDGER_FORM_INPUT_CLASSES', 'input')
-DJANGO_LEDGER_CURRENCY_SYMBOL = getattr(settings, 'DJANGO_LEDGER_CURRENCY_SYMBOL', '$')
-DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL = getattr(settings, 'DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL', False)
+def _resolve_country_setting(name: str, fallback):
+    try:
+        from django_ledger_countries.settings import get_ledger_setting
+        return get_ledger_setting(name, fallback)
+    except ImportError:
+        return getattr(settings, f'DJANGO_LEDGER_{name}', fallback)
+
+
+DJANGO_LEDGER_CURRENCY_SYMBOL = _resolve_country_setting('CURRENCY_SYMBOL', '$')
+DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL = _resolve_country_setting('SPACED_CURRENCY_SYMBOL', False)
 DJANGO_LEDGER_SHOW_FEEDBACK_BUTTON = getattr(settings, 'DJANGO_LEDGER_SHOW_FEEDBACK_BUTTON', False)
 DJANGO_LEDGER_FEEDBACK_EMAIL_LIST = getattr(settings, 'DJANGO_LEDGER_FEEDBACK_EMAIL_LIST', [])
 DJANGO_LEDGER_FEEDBACK_FROM_EMAIL = getattr(settings, 'DJANGO_LEDGER_FEEDBACK_FROM_EMAIL', None)

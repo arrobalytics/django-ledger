@@ -880,6 +880,11 @@ class AccrualMixIn(models.Model):
                 # validates all txs as a whole (for safety)...
                 txs = [tx for _, tx in txs_list]
                 check_tx_balance(tx_data=txs, perform_correction=True)
+
+                from django_ledger.regional.dispatch import dispatch_adjust_posting
+
+                txs = dispatch_adjust_posting(self, txs)
+                check_tx_balance(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
 
                 for _, je in je_list.items():

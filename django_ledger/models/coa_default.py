@@ -320,6 +320,20 @@ def get_default_coa() -> List[Dict]:
     return DEFAULT_CHART_OF_ACCOUNTS
 
 
+def build_chart_of_accounts_root_map(coa_list: List[Dict]) -> Dict:
+    """
+    Build a root-group map from a chart-of-accounts list.
+
+    Used by regional plugins supplying custom charts (e.g. SKR03).
+    """
+    coa = [dict(a) for a in coa_list]
+    for account in coa:
+        if 'root_group' not in account:
+            account['root_group'] = PREFIX_MAP[account['role'].split('_')[0]]
+    coa.sort(key=lambda x: (x['root_group'], x['role'], x['code']))
+    return {k: list(v) for k, v in groupby(coa, key=lambda x: x['root_group'])}
+
+
 if DJANGO_LEDGER_DEFAULT_COA:
     DJANGO_LEDGER_DEFAULT_COA = get_default_coa()
 

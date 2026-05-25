@@ -53,7 +53,8 @@ from django_ledger.models.chart_of_accounts import (
     ChartOfAccountModel,
     ChartOfAccountModelQuerySet,
 )
-from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
+from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP, build_chart_of_accounts_root_map
+from django_ledger.regional.dispatch import dispatch_on_coa_populated, get_regional_default_coa
 from django_ledger.models.customer import CustomerModel, CustomerModelQueryset
 from django_ledger.models.items import (
     ItemModel,
@@ -1117,6 +1118,13 @@ class EntityModelAbstract(
         if not coa_has_accounts or force:
             root_account_qs = coa_accounts_qs.is_coa_root()
 
+            regional_coa = get_regional_default_coa(self)
+            coa_root_map = (
+                build_chart_of_accounts_root_map(regional_coa)
+                if regional_coa is not None
+                else CHART_OF_ACCOUNTS_ROOT_MAP
+            )
+
             root_maps = {
                 root_account_qs.get(role__exact=k): [
                     AccountModel(
@@ -1129,7 +1137,7 @@ class EntityModelAbstract(
                     )
                     for a in v
                 ]
-                for k, v in CHART_OF_ACCOUNTS_ROOT_MAP.items()
+                for k, v in coa_root_map.items()
             }
 
             for root_acc, acc_model_list in root_maps.items():
@@ -1144,6 +1152,8 @@ class EntityModelAbstract(
 
                     account_model.clean()
                     coa_model.insert_account(account_model, root_account_qs=root_account_qs)
+
+            dispatch_on_coa_populated(self, coa_model)
 
         else:
             if not ignore_if_default_coa:
