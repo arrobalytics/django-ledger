@@ -31,6 +31,12 @@ classifiers = [
     "Intended Audience :: End Users/Desktop"
 ]
 
+[project.optional-dependencies]
+s3 = [
+    "django-storages>=1.14",
+    "boto3>=1.35",
+]
+
 [project.urls]
 "Homepage" = "https://www.djangoledger.com"
 "Bug Tracker" = "https://github.com/arrobalytics/django-ledger/issues"

@@ -140,13 +140,12 @@ country plugin rejects posting a journal entry that has no linked supporting doc
 
 Documents are marked immutable after the journal entry is posted.
 
-Optional custom storage (e.g. S3):
+Optional S3 storage — set a bucket name and install ``requirements-s3.txt``:
 
 .. code-block:: python
 
-   DJANGO_LEDGER_SUPPORTING_DOCUMENT_STORAGE = (
-       'storages.backends.s3boto3.S3Boto3Storage'
-   )
+   INSTALLED_APPS += ['storages']
+   DJANGO_LEDGER_AWS_STORAGE_BUCKET_NAME = 'your-bucket-name'
 
 Entity tax profile
 ~~~~~~~~~~~~~~~~~~

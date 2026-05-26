@@ -13,6 +13,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger_extensions.storage import get_beleg_storage
 
 
 def supporting_document_upload_to(instance, filename: str) -> str:
@@ -97,6 +98,7 @@ class SupportingDocumentModel(CreateUpdateMixIn):
 
     file = models.FileField(
         upload_to=supporting_document_upload_to,
+        storage=get_beleg_storage,
         max_length=512,
     )
     document_type = models.CharField(
@@ -163,7 +165,7 @@ class DocumentInboxItem(CreateUpdateMixIn):
         on_delete=models.CASCADE,
         related_name='document_inbox_items',
     )
-    file = models.FileField(upload_to=document_inbox_upload_to, max_length=512)
+    file = models.FileField(upload_to=document_inbox_upload_to, storage=get_beleg_storage, max_length=512)
     source = models.CharField(max_length=32, choices=Source.choices, default=Source.UPLOAD)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.UNLINKED)
     document_type = models.CharField(

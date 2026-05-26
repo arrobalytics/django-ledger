@@ -1,0 +1,5 @@
+# Optional S3 storage for Belege (supporting documents + inbox).
+# Install: pip install -r requirements-s3.txt
+# Or:      pip install "django-ledger[s3]"  (when installed from pyproject)
+django-storages>=1.14
+boto3>=1.35

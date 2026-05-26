@@ -83,8 +83,8 @@ Recommended settings for a Bildungsurlaub school
    # Germany default: require a Beleg before posting a journal entry
    # DJANGO_LEDGER_DE_REQUIRE_SUPPORTING_DOCUMENT_ON_POST = True
 
-   # Optional: S3 (or other) storage for receipts
-   # DJANGO_LEDGER_SUPPORTING_DOCUMENT_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+   # Beleg storage — local disk by default; set bucket name for S3 (see Automation section)
+   # DJANGO_LEDGER_AWS_STORAGE_BUCKET_NAME = 'your-bucket-name'
 
 Run migrations and create a user:
 
@@ -719,6 +719,26 @@ Daily cron
 
    # Preview without sending
    python manage.py send_accounting_reminders --dry-run
+
+S3 storage for Belege (optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install extras and add one setting — inbox uploads and supporting documents go to S3 automatically:
+
+.. code-block:: shell
+
+   pip install -r requirements-s3.txt
+
+.. code-block:: python
+
+   INSTALLED_APPS += ['storages']
+   DJANGO_LEDGER_AWS_STORAGE_BUCKET_NAME = 'your-bucket-name'
+
+Optional: ``DJANGO_LEDGER_AWS_S3_REGION_NAME`` (default ``eu-central-1``),
+``DJANGO_LEDGER_AWS_STORAGE_LOCATION`` (default ``belege`` — prefix inside the bucket).
+
+AWS credentials: standard boto3 chain (``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` env vars,
+``~/.aws/credentials``, or IAM role on EC2/ECS). Create a **private** bucket in ``eu-central-1`` for GDPR.
 
 Monthly cron (suggested)
 ~~~~~~~~~~~~~~~~~~~~~~~~

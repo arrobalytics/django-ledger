@@ -296,11 +296,23 @@ DJANGO_LEDGER_DE_SKR03_DATA = [
 ]
 ```
 
-Optional S3 storage for supporting documents:
+Optional S3 storage for Belege (supporting documents + inbox):
+
+```bash
+pip install -r requirements-s3.txt
+# or: pip install "django-ledger[s3]"
+```
 
 ```python
-DJANGO_LEDGER_SUPPORTING_DOCUMENT_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+INSTALLED_APPS += ['storages']
+
+DJANGO_LEDGER_AWS_STORAGE_BUCKET_NAME = 'your-bucket-name'
+# Optional:
+# DJANGO_LEDGER_AWS_S3_REGION_NAME = 'eu-central-1'   # default
+# DJANGO_LEDGER_AWS_STORAGE_LOCATION = 'belege'       # S3 key prefix
 ```
+
+AWS credentials use the standard boto3 chain (environment variables, `~/.aws/credentials`, or an IAM role on your server). Files are private (`default_acl='private'`).
 
 ### How plugins hook into core
 
