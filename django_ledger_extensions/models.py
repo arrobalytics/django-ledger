@@ -230,9 +230,15 @@ class ExternalPaymentRecord(CreateUpdateMixIn):
     specific payment processor.
     """
 
+    class RecordType(models.TextChoices):
+        PAYMENT = 'payment', _('Payment')
+        REFUND = 'refund', _('Refund')
+
     class Status(models.TextChoices):
         RECEIVED = 'received', _('Received')
         INVOICE_DRAFT = 'invoice_draft', _('Draft invoice created')
+        REFUND_APPLIED = 'refund_applied', _('Refund applied')
+        MANUAL_ACTION_REQUIRED = 'manual_action_required', _('Manual action required')
         FAILED = 'failed', _('Failed')
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -240,6 +246,11 @@ class ExternalPaymentRecord(CreateUpdateMixIn):
         'django_ledger.EntityModel',
         on_delete=models.CASCADE,
         related_name='external_payments',
+    )
+    record_type = models.CharField(
+        max_length=16,
+        choices=RecordType.choices,
+        default=RecordType.PAYMENT,
     )
     provider = models.CharField(
         max_length=64,
@@ -271,6 +282,20 @@ class ExternalPaymentRecord(CreateUpdateMixIn):
         blank=True,
         related_name='external_payments',
     )
+    original_payment = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='refund_records',
+    )
+    staged_transaction = models.ForeignKey(
+        'django_ledger.StagedTransactionModel',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='external_payment_records',
+    )
 
     class Meta:
         verbose_name = _('External Payment Record')
@@ -283,10 +308,90 @@ class ExternalPaymentRecord(CreateUpdateMixIn):
         indexes = [
             models.Index(fields=['entity', 'provider']),
             models.Index(fields=['status']),
+            models.Index(fields=['record_type']),
         ]
 
     def __str__(self) -> str:
-        return f'ExternalPayment<{self.provider}:{self.external_id}>'
+        return f'ExternalPayment<{self.record_type}:{self.provider}:{self.external_id}>'
+
+
+class AccountingReminderRule(CreateUpdateMixIn):
+    """
+    Email reminder rule — run ``send_accounting_reminders`` daily via cron.
+    """
+
+    class ReminderKind(models.TextChoices):
+        VAT_QUARTERLY_FILING = 'vat_quarterly_filing', _('USt-Voranmeldung (quarterly)')
+        MONTHLY_BOOKKEEPING = 'monthly_bookkeeping', _('Monthly bookkeeping close')
+        KLEINUNTERNEHMER_QUARTERLY = 'kleinunternehmer_quarterly', _('Kleinunternehmer turnover check')
+        YEAR_END_HANDOFF = 'year_end_handoff', _('Year-end Steuerberater handoff')
+        CUSTOM = 'custom', _('Custom deadline')
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity = models.ForeignKey(
+        'django_ledger.EntityModel',
+        on_delete=models.CASCADE,
+        related_name='accounting_reminder_rules',
+    )
+    kind = models.CharField(max_length=32, choices=ReminderKind.choices)
+    title = models.CharField(max_length=255, blank=True, default='')
+    lead_days = models.PositiveIntegerField(
+        default=14,
+        help_text=_('Send the reminder this many days before the due date.'),
+    )
+    email_to = models.EmailField(
+        blank=True,
+        default='',
+        help_text=_('Leave blank to use the entity admin email.'),
+    )
+    is_active = models.BooleanField(default=True)
+    custom_month = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text=_('For CUSTOM kind: recurring due date month (1–12).'),
+    )
+    custom_day = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text=_('For CUSTOM kind: recurring due date day (1–31).'),
+    )
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        verbose_name = _('Accounting Reminder Rule')
+        indexes = [
+            models.Index(fields=['entity', 'is_active']),
+        ]
+
+    def __str__(self) -> str:
+        label = self.title or self.get_kind_display()
+        return f'Reminder<{self.entity_id}:{label}>'
+
+
+class AccountingReminderLog(CreateUpdateMixIn):
+    """Tracks sent reminders so daily cron does not duplicate emails."""
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    rule = models.ForeignKey(
+        AccountingReminderRule,
+        on_delete=models.CASCADE,
+        related_name='sent_logs',
+    )
+    period_key = models.CharField(max_length=32)
+    due_date = models.DateField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Accounting Reminder Log')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['rule', 'period_key'],
+                name='uniq_reminder_sent_per_period',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'ReminderLog<{self.rule_id}:{self.period_key}>'
 
 
 class AccountTranslationModel(CreateUpdateMixIn):

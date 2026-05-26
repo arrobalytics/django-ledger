@@ -2,6 +2,8 @@ from django.contrib import admin
 
 from django_ledger_extensions.models import (
     AccountTranslationModel,
+    AccountingReminderLog,
+    AccountingReminderRule,
     DocumentInboxItem,
     EntityTaxProfile,
     ExternalPaymentRecord,
@@ -47,6 +49,7 @@ class ExternalPaymentRecordAdmin(admin.ModelAdmin):
     list_display = (
         'uuid',
         'entity',
+        'record_type',
         'provider',
         'external_id',
         'amount',
@@ -54,10 +57,26 @@ class ExternalPaymentRecordAdmin(admin.ModelAdmin):
         'paid_at',
         'status',
         'invoice',
+        'staged_transaction',
     )
-    list_filter = ('provider', 'status')
+    list_filter = ('provider', 'status', 'record_type')
     search_fields = ('external_id', 'customer_email', 'customer_name', 'description')
     readonly_fields = ('error_message', 'created', 'updated')
+    raw_id_fields = ('original_payment', 'staged_transaction', 'invoice', 'inbox_item')
+
+
+@admin.register(AccountingReminderRule)
+class AccountingReminderRuleAdmin(admin.ModelAdmin):
+    list_display = ('entity', 'kind', 'title', 'lead_days', 'email_to', 'is_active')
+    list_filter = ('kind', 'is_active')
+    search_fields = ('entity__name', 'title', 'email_to')
+
+
+@admin.register(AccountingReminderLog)
+class AccountingReminderLogAdmin(admin.ModelAdmin):
+    list_display = ('rule', 'period_key', 'due_date', 'sent_at')
+    list_filter = ('due_date',)
+    readonly_fields = ('sent_at', 'created', 'updated')
 
 
 @admin.register(AccountTranslationModel)

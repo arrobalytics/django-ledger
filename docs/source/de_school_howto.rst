@@ -704,6 +704,152 @@ Where to find things in Django admin
 - **External payment records** — webapp imports; links to draft invoice
 - **Supporting documents** — files attached to invoices, bills, JEs
 
+Automation, reminders, and Steuerberater handoff
+------------------------------------------------
+
+Run these on a schedule after deploy (cron, systemd timer, Celery beat, etc.).
+
+Daily cron
+~~~~~~~~~~
+
+.. code-block:: bash
+
+   # Send reminder emails when within the lead window (default 14 days before due date)
+   python manage.py send_accounting_reminders
+
+   # Preview without sending
+   python manage.py send_accounting_reminders --dry-run
+
+Monthly cron (suggested)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   python manage.py accounting_health_check --entity=your-entity-slug
+   python manage.py match_bank_payments --entity=your-entity-slug --apply
+   python manage.py export_steuerberater --entity=your-entity-slug --year=2026 --month=3
+
+One-time setup: default reminder rules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   python manage.py seed_accounting_reminders --entity=your-entity-slug
+   python manage.py seed_accounting_reminders --entity=your-entity-slug --email=you@example.com
+
+Creates rules for:
+
+- **USt-Voranmeldung** (standard VAT regime only) — due 10th after quarter end
+- **Monthly bookkeeping close** — 5th of each month
+- **Kleinunternehmer turnover** (small_business regime only)
+- **Year-end Steuerberater handoff** — 31 January
+
+Each rule has ``lead_days`` (default **14** = two weeks before due date). Edit in
+Django admin → *Accounting reminder rules*, or override globally:
+
+.. code-block:: python
+
+   DJANGO_LEDGER_REMINDER_DEFAULT_LEAD_DAYS = 14
+   DJANGO_LEDGER_REMINDER_GRACE_DAYS = 3          # still send if cron missed a day
+   DJANGO_LEDGER_REMINDER_FROM_EMAIL = 'books@yourdomain.de'
+
+Ensure ``EMAIL_BACKEND`` and SMTP settings are configured in production.
+
+Refund import from class webapp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a student cancels and is refunded, your webapp should call:
+
+.. code-block:: python
+
+   from django_ledger_extensions.payments import ExternalRefundPayload, import_external_refund
+
+   record = import_external_refund(entity, ExternalRefundPayload(
+       provider='class_webapp',
+       external_id='refund_456',              # new unique id
+       original_external_id='pay_123',        # original payment id
+       amount=Decimal('490.00'),
+       refunded_at=timezone.now(),
+       reason='Student canceled before course',
+   ))
+
+CLI:
+
+.. code-block:: bash
+
+   python manage.py import_external_refund \\
+     --entity=your-entity-slug \\
+     --provider=class_webapp \\
+     --external-id=refund_456 \\
+     --original-external-id=pay_123 \\
+     --amount=490.00 \\
+     --refunded-at=2026-05-25T16:00:00
+
+Draft invoices are **canceled** automatically; approved unpaid invoices are
+**voided**; **paid** invoices are flagged ``manual_action_required`` for you to
+void or credit in the ledger UI.
+
+Bank payment matching
+~~~~~~~~~~~~~~~~~~~~~
+
+After importing bank CSV via django-ledger's bank import UI:
+
+.. code-block:: bash
+
+   # Show unmatched webapp payments
+   python manage.py match_bank_payments --entity=your-entity-slug
+
+   # Auto-link when exactly one bank line matches amount + date
+   python manage.py match_bank_payments --entity=your-entity-slug --apply
+
+Accounting health check
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Surfaces draft invoices, unlinked Belege, unmatched payments, and refunds needing
+manual action:
+
+.. code-block:: bash
+
+   python manage.py accounting_health_check --entity=your-entity-slug
+   python manage.py accounting_health_check --entity=your-entity-slug --json
+
+Steuerberater export bundle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   python manage.py export_steuerberater \\
+     --entity=your-entity-slug \\
+     --year=2026 \\
+     --output-dir=./exports
+
+Writes ``steuerberater-<slug>-2026.json`` (Beleg index + VAT summary) and
+``journal-<slug>-2026.csv`` (posted transactions). Add ``--month=3`` for a single
+month.
+
+UG admin calendar (operational, not legal advice)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++---------------------------+------------------------+---------------------------+
+| When                      | What                   | Command / action          |
++===========================+========================+===========================+
+| Daily                     | Reminder emails        | ``send_accounting_reminders`` |
++---------------------------+------------------------+---------------------------+
+| Weekly                    | Approve webapp drafts  | Ledger UI + health check  |
+|                           | Link Belege            |                           |
++---------------------------+------------------------+---------------------------+
+| Monthly (by 5th)          | Bank import + match    | ``match_bank_payments --apply`` |
+|                           | Health check           | ``accounting_health_check`` |
++---------------------------+------------------------+---------------------------+
+| Quarterly (standard VAT)  | USt-Voranmeldung draft | ``vat_quarterly_report``  |
+|                           | File via Steuerberater |                           |
++---------------------------+------------------------+---------------------------+
+| Quarterly (Kleinunternehmer) | Turnover vs limits | ``vat_quarterly_report``  |
++---------------------------+------------------------+---------------------------+
+| January                   | Prior-year handoff     | ``export_steuerberater``  |
+|                           | to Steuerberater       |                           |
++---------------------------+------------------------+---------------------------+
+
 Quarterly VAT and turnover report
 ---------------------------------
 
@@ -841,6 +987,24 @@ Management commands reference
         --entity=SLUG --provider=class_webapp --external-id=PAY_ID \\
         --amount=490.00 --paid-at=2026-05-25T14:30:00 \\
         [--customer-email=...] [--receipt=/path/to/file.pdf]
+
+``import_external_refund``
+   Cancel/void a prior imported payment (idempotent).
+
+``send_accounting_reminders``
+   Daily cron — email reminders ``lead_days`` before deadlines.
+
+``seed_accounting_reminders``
+   Create default UG reminder rules for an entity.
+
+``accounting_health_check``
+   Draft invoices, unlinked Belege, unmatched bank payments, etc.
+
+``match_bank_payments``
+   Link webapp payments to bank import staged transactions.
+
+``export_steuerberater``
+   JSON + CSV bundle for Steuerberater handoff.
 
 Settings reference
 ------------------

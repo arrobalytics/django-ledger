@@ -268,6 +268,23 @@ When you receive a supplier PDF (Steuerberater, freelancer, rent): stage in **Be
 
 See the how-to section *When you have real invoices* for full checklists and commands (`link_beleg`, `import_external_payment`).
 
+#### Automation (cron)
+
+```shell
+# Daily — reminder emails (default 14 days before due dates)
+python manage.py send_accounting_reminders
+
+# One-time — seed default reminder rules per entity
+python manage.py seed_accounting_reminders --entity=your-entity-slug --email=you@example.com
+
+# Monthly hygiene
+python manage.py accounting_health_check --entity=your-entity-slug
+python manage.py match_bank_payments --entity=your-entity-slug --apply
+python manage.py export_steuerberater --entity=your-entity-slug --year=2026
+```
+
+Configure SMTP/`EMAIL_BACKEND` in production. Override lead time with `DJANGO_LEDGER_REMINDER_DEFAULT_LEAD_DAYS = 14`.
+
 See `docs/source/regional.rst` for plugin architecture and hook reference.
 
 Provide a custom SKR03 chart via:

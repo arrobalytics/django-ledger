@@ -37,6 +37,20 @@ class ExternalPaymentPayload:
     receipt_description: str = ''
 
 
+@dataclass
+class ExternalRefundPayload:
+    """Idempotent refund event from a class webapp or payment provider."""
+
+    provider: str
+    external_id: str
+    original_external_id: str
+    amount: Decimal
+    refunded_at: datetime
+    reason: str = ''
+    currency: str = 'EUR'
+    metadata: dict = field(default_factory=dict)
+
+
 def _default_uom(entity):
     uom = entity.unitofmeasuremodel_set.first()
     if uom:
@@ -164,6 +178,86 @@ def import_external_payment(entity, payload: ExternalPaymentPayload) -> External
         record.save(
             update_fields=['invoice', 'status', 'error_message', 'inbox_item', 'updated']
         )
+    except Exception as exc:
+        record.status = ExternalPaymentRecord.Status.FAILED
+        record.error_message = str(exc)
+        record.save(update_fields=['status', 'error_message', 'updated'])
+        raise ValidationError(str(exc)) from exc
+
+    return record
+
+
+def import_external_refund(entity, payload: ExternalRefundPayload) -> ExternalPaymentRecord:
+    """
+    Idempotently record a refund against a prior ``import_external_payment``.
+
+    Draft/review invoices are canceled; approved (unpaid) invoices are voided.
+    Paid invoices are flagged for manual void/credit in the ledger UI.
+    """
+    refunded_at = payload.refunded_at
+    if not is_aware(refunded_at):
+        refunded_at = make_aware(refunded_at)
+
+    original = ExternalPaymentRecord.objects.filter(
+        entity=entity,
+        provider=payload.provider,
+        external_id=payload.original_external_id,
+        record_type=ExternalPaymentRecord.RecordType.PAYMENT,
+    ).first()
+    if original is None or not original.invoice_id:
+        raise ValidationError(
+            f'Original payment not found: {payload.provider}:{payload.original_external_id}'
+        )
+
+    record, created = ExternalPaymentRecord.objects.get_or_create(
+        entity=entity,
+        provider=payload.provider,
+        external_id=payload.external_id,
+        defaults={
+            'record_type': ExternalPaymentRecord.RecordType.REFUND,
+            'amount': payload.amount,
+            'currency': payload.currency,
+            'paid_at': refunded_at,
+            'description': payload.reason,
+            'metadata': payload.metadata,
+            'original_payment': original,
+            'invoice': original.invoice,
+        },
+    )
+    if not created and record.status in (
+        ExternalPaymentRecord.Status.REFUND_APPLIED,
+        ExternalPaymentRecord.Status.MANUAL_ACTION_REQUIRED,
+    ):
+        return record
+
+    invoice = original.invoice
+    entity_slug = entity.slug
+    user_model = entity.admin
+
+    try:
+        if invoice.is_draft() or invoice.is_review():
+            invoice.mark_as_canceled(date_canceled=refunded_at.date(), commit=True)
+            record.status = ExternalPaymentRecord.Status.REFUND_APPLIED
+            record.error_message = ''
+        elif invoice.can_void():
+            invoice.mark_as_void(
+                entity_slug=entity_slug,
+                user_model=user_model,
+                date_void=refunded_at.date(),
+                commit=True,
+            )
+            record.status = ExternalPaymentRecord.Status.REFUND_APPLIED
+            record.error_message = ''
+        elif invoice.is_paid() or invoice.is_approved():
+            record.status = ExternalPaymentRecord.Status.MANUAL_ACTION_REQUIRED
+            record.error_message = (
+                'Invoice was approved/paid — void or issue a credit note manually in the ledger UI.'
+            )
+        else:
+            record.status = ExternalPaymentRecord.Status.MANUAL_ACTION_REQUIRED
+            record.error_message = f'Invoice status {invoice.invoice_status} — handle refund manually.'
+
+        record.save(update_fields=['status', 'error_message', 'updated'])
     except Exception as exc:
         record.status = ExternalPaymentRecord.Status.FAILED
         record.error_message = str(exc)
