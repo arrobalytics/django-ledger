@@ -255,7 +255,18 @@ python manage.py vat_quarterly_report --entity=your-entity-slug --year=2026 --qu
 
 **Exempt** output shows turnover for your records; exempt course fees typically require no USt-Voranmeldung.
 
-**Full walkthrough:** [German school / Bildungsurlaub how-to](docs/source/de_school_howto.rst) — setup, account list, daily booking examples, quarterly workflow, FAQ.
+**Full walkthrough:** [German school / Bildungsurlaub how-to](docs/source/de_school_howto.rst) — setup, account list, daily booking examples, **real invoice workflows** (student fees from your class webapp, supplier bills, Beleg inbox), quarterly workflow, FAQ.
+
+#### Real invoices (quick reminder)
+
+When students pay through your class webapp:
+
+1. Webapp calls `import_external_payment()` → **draft invoice**
+2. Ledger UI: review → attach payment receipt (Beleg) → **Approve** → **Mark as paid**
+
+When you receive a supplier PDF (Steuerberater, freelancer, rent): stage in **Beleg inbox** → create **Bill** → `link_beleg` → approve → mark paid when you pay.
+
+See the how-to section *When you have real invoices* for full checklists and commands (`link_beleg`, `import_external_payment`).
 
 See `docs/source/regional.rst` for plugin architecture and hook reference.
 

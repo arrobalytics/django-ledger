@@ -77,15 +77,9 @@ class GermanyRegionalPlugin(RegionalPlugin):
         if not get_ledger_setting('REQUIRE_SUPPORTING_DOCUMENT_ON_POST'):
             return
 
-        from django.contrib.contenttypes.models import ContentType
-        from django_ledger_extensions.models import SupportingDocumentModel
+        from django_ledger_extensions.documents import has_supporting_document_for_posting
 
-        ct = ContentType.objects.get_for_model(journal_entry)
-        has_document = SupportingDocumentModel.objects.filter(
-            content_type=ct,
-            object_id=journal_entry.uuid,
-        ).exists()
-        if not has_document:
+        if not has_supporting_document_for_posting(journal_entry):
             raise ValidationError(
                 _('A supporting document is required before posting this journal entry.')
             )

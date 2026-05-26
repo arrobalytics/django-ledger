@@ -6,8 +6,9 @@ This guide is for **German training providers** using django-ledger with the
 and in-person), freelance teachers, venue rental, and a small active account set
 on top of the full **DATEV SKR03** chart.
 
-It covers setup, daily bookkeeping, tax regimes, and quarterly reporting. For
-architecture and plugin internals, see :doc:`regional`.
+It covers setup, daily bookkeeping, tax regimes, quarterly reporting, and
+**step-by-step workflows for real invoices** (student fees, supplier bills,
+Belege). For architecture and plugin internals, see :doc:`regional`.
 
 **Viewing this guide:** it is part of the Sphinx docs. Build locally with
 ``cd docs && make html`` and open ``docs/build/html/de_school_howto.html``, or
@@ -419,6 +420,290 @@ To disable for local dev only:
 
    DJANGO_LEDGER_DE_REQUIRE_SUPPORTING_DOCUMENT_ON_POST = False
 
+Beleg inbox (staging before you know the ledger object)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Not every receipt arrives with an invoice or journal entry UUID. Use the
+**document inbox** to stage photos, PDFs, or email attachments first and link
+them later.
+
+Model: ``django_ledger_extensions.models.DocumentInboxItem``
+
+Python API:
+
+.. code-block:: python
+
+   from decimal import Decimal
+   from django_ledger_extensions.documents import create_inbox_item, link_inbox_item_to_object
+
+   inbox = create_inbox_item(
+       entity,
+       uploaded_file,
+       description='Freelancer invoice May',
+       suggested_amount=Decimal('800.00'),
+       external_source='email',
+       external_id='msg-12345',  # optional idempotency for connectors
+   )
+
+   # Later, when you have the target:
+   link_inbox_item_to_object(inbox, journal_entry)  # or invoice / bill
+
+Management command:
+
+.. code-block:: bash
+
+   python manage.py link_beleg --inbox=<uuid> --invoice=<uuid>
+   python manage.py link_beleg --inbox=<uuid> --journal-entry=<uuid>
+
+One-step manual expense with photo:
+
+.. code-block:: python
+
+   from django_ledger_extensions.documents import create_quick_expense
+
+   je, doc = create_quick_expense(
+       entity,
+       amount=Decimal('25.00'),
+       expense_account=expense_account,
+       description='Office supplies',
+       file=uploaded_file,
+   )
+
+Import course payments from your class webapp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Payments from your class registration webapp (or any future connector) can
+create a **draft invoice** without tying the ledger to Stripe or another
+processor. The connector name is just a string (``class_webapp``, ``stripe``,
+``paypal``, …).
+
+Stable import API:
+
+.. code-block:: python
+
+   from decimal import Decimal
+   from django.utils import timezone
+   from django_ledger_extensions.payments import ExternalPaymentPayload, import_external_payment
+
+   record = import_external_payment(entity, ExternalPaymentPayload(
+       provider='class_webapp',
+       external_id='pay_123',          # unique per provider + entity
+       amount=Decimal('490.00'),
+       paid_at=timezone.now(),
+       customer_email='student@example.com',
+       customer_name='Alex Student',
+       product_name='Bildungsurlaub course',
+       description='May 2026 cohort',
+       receipt_file=uploaded_file,     # optional
+   ))
+   draft_invoice = record.invoice
+
+Re-running the same ``provider`` + ``external_id`` is **idempotent** — you get
+the same ``ExternalPaymentRecord`` and draft invoice back.
+
+CLI for manual testing:
+
+.. code-block:: bash
+
+   python manage.py import_external_payment \\
+     --entity=your-entity-slug \\
+     --provider=class_webapp \\
+     --external-id=pay_123 \\
+     --amount=490.00 \\
+     --paid-at=2026-05-25T14:30:00 \\
+     --customer-email=student@example.com \\
+     --receipt=/path/to/receipt.pdf
+
+After import, review the draft invoice, attach any missing Beleg, then approve
+and post through your normal workflow. Germany validation accepts a supporting
+document on the **invoice** as well as on the journal entry.
+
+When you have real invoices (workflows)
+---------------------------------------
+
+Use this section when you start booking **real** student fees and **real**
+supplier paperwork — not test data. It ties together the ledger UI, Belege, and
+(class webapp) payment import.
+
+Three document types you will handle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++------------------+---------------------------+-------------------------------+
+| Direction        | What it is                | Ledger object                 |
++==================+===========================+===============================+
+| **Outgoing**     | Invoice **you send**      | **Invoice** (student course   |
+|                  | to a student              | fee)                          |
++------------------+---------------------------+-------------------------------+
+| **Incoming**     | Invoice **you receive**   | **Bill** (Steuerberater,      |
+|                  | from a supplier           | freelancer, rent, …)           |
++------------------+---------------------------+-------------------------------+
+| **Small receipt**| Photo/PDF without a       | **Journal entry** via         |
+|                  | formal bill               | ``create_quick_expense``      |
++------------------+---------------------------+-------------------------------+
+
+**Golden rule (Germany):** before any journal entry **posts**, there must be a
+supporting document on the **journal entry** *or* on the wrapped **invoice/bill**
+on the same ledger. Attach the PDF or payment receipt **before** you click
+*Approve* / *Mark as paid* / *Post*.
+
+Outgoing: student paid via your class webapp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Typical case: the student already paid online; your webapp creates a **draft
+invoice** in the ledger.
+
+**1. Import (automatic from webapp, or manual once for testing)**
+
+.. code-block:: python
+
+   record = import_external_payment(entity, ExternalPaymentPayload(...))
+   invoice = record.invoice   # status: draft
+
+Or via CLI:
+
+.. code-block:: shell
+
+   python manage.py import_external_payment \\
+     --entity=your-entity-slug \\
+     --provider=class_webapp \\
+     --external-id=<payment-id-from-webapp> \\
+     --amount=490.00 \\
+     --paid-at=2026-05-25T14:30:00 \\
+     --customer-email=student@example.com \\
+     --receipt=/path/to/payment-receipt.pdf
+
+**2. Review the draft** (ledger UI → Invoices)
+
+- Customer name and email correct?
+- Line item (course name) and **amount** match what was charged?
+- Draft date reasonable?
+- If you did **not** pass ``receipt_file``, attach the payment receipt now
+  (Django admin → supporting documents on the invoice, or ``link_beleg`` from
+  inbox).
+
+**3. Approve the invoice**
+
+- In the invoice detail view: **Mark as approved**.
+- On accrual entities this creates the revenue / receivable journal entry and
+  **posts the ledger**.
+- The Beleg on the **invoice** satisfies Germany's pre-post check.
+
+**4. Mark as paid**
+
+- The money is already in your bank, so: **Mark as paid** with the **actual
+  payment date** (same day the webapp recorded payment).
+- This books bank ↔ receivable and locks the invoice ledger.
+
+**5. Quarterly report**
+
+- Only **posted** amounts count. After step 3–4, run
+  ``vat_quarterly_report`` at quarter-end.
+
+.. note::
+
+   Re-importing the same ``provider`` + ``external_id`` is safe — you get the
+   same draft invoice back, not a duplicate.
+
+Outgoing: student invoice before payment (manual)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use when you invoice first and the bank transfer arrives days later.
+
+#. **Create invoice** in the ledger UI (customer, course line item, amount).
+#. **Attach** your sent invoice PDF (or quote) as supporting document on the
+   invoice.
+#. **Mark as approved** when you send it to the student.
+#. When payment hits the bank: **Mark as paid** with payment date.
+#. If the bank receipt was not attached earlier, stage it in the **Beleg inbox**
+   and ``link_beleg`` to the invoice **before** marking paid (or attach to the
+   payment journal entry once created).
+
+Incoming: supplier invoice (Bill)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For Steuerberater, freelance teachers (with invoice), venue rent, etc.
+
+#. **Save the PDF** — either upload to **Beleg inbox** (email/camera) or keep
+   the file ready.
+#. **Create a Bill** in the ledger UI: vendor, amount, expense account
+   (e.g. ``4955 00`` Steuerberater, ``3100 11`` Honorare, ``4210 10`` Miete).
+#. **Link the Beleg** to the bill:
+
+   .. code-block:: shell
+
+      python manage.py link_beleg --inbox=<inbox-uuid> --bill=<bill-uuid>
+
+   Or attach via Django admin → supporting documents.
+
+#. **Mark as approved** — posts expense and accounts payable (plus VAT split if
+   ``standard`` regime).
+#. **Mark as paid** when you pay from the bank (attach bank transfer receipt if
+   not already on the bill or payment entry).
+
+Small expense without a formal bill
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Coffee, stationery, a simple receipt — no supplier invoice:
+
+.. code-block:: python
+
+   je, doc = create_quick_expense(
+       entity,
+       amount=Decimal('25.00'),
+       expense_account=expense_account,  # e.g. 4980 10 IT consumables
+       description='Office supplies',
+       file=receipt_photo,
+   )
+
+Then open the journal entry in the UI, check accounts, and **post**. The Beleg
+is already on the JE.
+
+Beleg checklist (print this mentally)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++-------------------------------+----------------------------------------------+
+| Situation                     | Attach Beleg to…                             |
++===============================+==============================================+
+| Class webapp payment import   | Invoice (auto if ``receipt_file`` passed)    |
+| Manual student invoice        | Invoice (your PDF) + bank receipt when paid  |
+| Supplier bill                 | Bill (their invoice PDF)                     |
+| Quick expense                 | Journal entry (done by ``create_quick_expense``) |
+| Staged email/camera photo     | Inbox first → ``link_beleg`` when you know   |
+|                               | invoice / bill / JE UUID                     |
++-------------------------------+----------------------------------------------+
+
+Invoice / bill status flow (ledger UI)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Student invoice (outgoing)**
+
+.. code-block:: text
+
+   draft  →  [review]  →  approved  →  paid
+              ↑              ↑            ↑
+         webapp import   books revenue   books bank;
+         or manual       + receivable    locks ledger
+
+**Supplier bill (incoming)**
+
+.. code-block:: text
+
+   draft  →  approved  →  paid
+              ↑            ↑
+         books expense   clears AP +
+         + AP            bank payment
+
+Do **not** skip **approved** before **paid** on accrual entities — that is
+when the main ledger entries are created.
+
+Where to find things in Django admin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- **Entity tax profiles** — regime (exempt / Kleinunternehmer / standard)
+- **Document inbox items** — unlinked receipts waiting for ``link_beleg``
+- **External payment records** — webapp imports; links to draft invoice
+- **Supporting documents** — files attached to invoices, bills, JEs
+
 Quarterly VAT and turnover report
 ---------------------------------
 
@@ -538,6 +823,25 @@ Management commands reference
 
       python manage.py vat_quarterly_report --entity=SLUG [--year=Y] [--quarter=1-4] [--json]
 
+``link_beleg``
+   Link a staged inbox item to an invoice, bill, or journal entry.
+
+   .. code-block:: shell
+
+      python manage.py link_beleg --inbox=INBOX_UUID --invoice=INVOICE_UUID
+      python manage.py link_beleg --inbox=INBOX_UUID --bill=BILL_UUID
+      python manage.py link_beleg --inbox=INBOX_UUID --journal-entry=JE_UUID
+
+``import_external_payment``
+   Create a draft invoice from an external payment (class webapp, webhook test, …).
+
+   .. code-block:: shell
+
+      python manage.py import_external_payment \\
+        --entity=SLUG --provider=class_webapp --external-id=PAY_ID \\
+        --amount=490.00 --paid-at=2026-05-25T14:30:00 \\
+        [--customer-email=...] [--receipt=/path/to/file.pdf]
+
 Settings reference
 ------------------
 
@@ -591,11 +895,14 @@ End-to-end checklist
 #. Confirm **Entity tax profile** regime in Django admin
 #. Activate any extra accounts you need in chart of accounts UI
 
-**Each month**
+**Each month (real invoices)**
 
-#. Enter invoices, bills, and bank transactions
-#. Attach supporting documents
-#. Post journal entries
+#. **Student fees:** import from class webapp (or create invoice manually) →
+   review draft → Beleg on invoice → **Approve** → **Mark as paid**
+#. **Supplier costs:** inbox PDF → create **Bill** → ``link_beleg`` → **Approve**
+   → **Mark as paid** when bank payment goes out
+#. **Small receipts:** ``create_quick_expense`` + post JE
+#. Confirm nothing is stuck in **draft** with missing Belege before quarter-end
 
 **Each quarter**
 
@@ -625,6 +932,15 @@ FAQ
 
 **Does this file USt-Voranmeldung to ELSTER?**
    No. It summarizes ledger data. ELSTER filing is separate.
+
+**Student paid in the webapp — what do I click in the ledger?**
+   Open the **draft invoice** → check amount/customer → ensure payment receipt
+   is attached → **Mark as approved** → **Mark as paid** (with payment date).
+   See *When you have real invoices* above.
+
+**I have a PDF from my Steuerberater — what now?**
+   Upload to inbox (or admin) → create a **Bill** → ``link_beleg`` → approve →
+   pay when you transfer the money.
 
 **Where is the architecture documented?**
    :doc:`regional`
