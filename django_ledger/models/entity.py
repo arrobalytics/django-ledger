@@ -1487,9 +1487,9 @@ class EntityModelAbstract(
         """
         if coa_model:
             if isinstance(coa_model, UUID):
-                coa_model = self.chartofaccountsmodel_set.get(uuid__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(uuid__exact=coa_model)
             elif isinstance(coa_model, str):
-                coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(slug__exact=coa_model)
             elif isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=raise_exception)
         else:
@@ -1533,9 +1533,9 @@ class EntityModelAbstract(
         """
         if coa_model:
             if isinstance(coa_model, UUID):
-                coa_model = self.chartofaccountsmodel_set.get(uuid__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(uuid__exact=coa_model)
             elif isinstance(coa_model, str):
-                coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(slug__exact=coa_model)
             elif isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=raise_exception)
         else:

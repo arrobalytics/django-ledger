@@ -474,3 +474,129 @@ class EntityChartOfAccountsHighLevelAPITest(TestCase):
         self.assertTrue(
             entity_model.get_default_coa_accounts().filter(uuid=account_model.uuid).exists()
         )
+
+    def test_create_account_accepts_explicit_coa_uuid(self):
+        entity_model, _default_coa = self.create_entity_with_default_coa(
+            entity_name="API Explicit UUID Account Entity",
+            coa_name="API Explicit UUID Default CoA",
+        )
+        explicit_coa = entity_model.create_chart_of_accounts(
+            coa_name="API Explicit UUID CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        account_model = entity_model.create_account(
+            code="1030",
+            name="API Explicit UUID Cash Account",
+            role=ASSET_CA_CASH,
+            balance_type=DEBIT,
+            active=True,
+            coa_model=explicit_coa.uuid,
+        )
+
+        self.assertEqual(account_model.coa_model_id, explicit_coa.uuid)
+        self.assertTrue(
+            entity_model.get_coa_accounts(coa_model=explicit_coa)
+            .filter(uuid=account_model.uuid)
+            .exists()
+        )
+        self.assertFalse(
+            entity_model.get_default_coa_accounts().filter(uuid=account_model.uuid).exists()
+        )
+
+    def test_create_account_accepts_explicit_coa_slug(self):
+        entity_model, _default_coa = self.create_entity_with_default_coa(
+            entity_name="API Explicit Slug Account Entity",
+            coa_name="API Explicit Slug Default CoA",
+        )
+        explicit_coa = entity_model.create_chart_of_accounts(
+            coa_name="API Explicit Slug CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        account_model = entity_model.create_account(
+            code="1040",
+            name="API Explicit Slug Cash Account",
+            role=ASSET_CA_CASH,
+            balance_type=DEBIT,
+            active=True,
+            coa_model=explicit_coa.slug,
+        )
+
+        self.assertEqual(account_model.coa_model_id, explicit_coa.uuid)
+        self.assertTrue(
+            entity_model.get_coa_accounts(coa_model=explicit_coa)
+            .filter(uuid=account_model.uuid)
+            .exists()
+        )
+        self.assertFalse(
+            entity_model.get_default_coa_accounts().filter(uuid=account_model.uuid).exists()
+        )
+
+    def test_create_account_by_kwargs_accepts_explicit_coa_uuid(self):
+        entity_model, _default_coa = self.create_entity_with_default_coa(
+            entity_name="API Explicit UUID Kwargs Account Entity",
+            coa_name="API Explicit UUID Kwargs Default CoA",
+        )
+        explicit_coa = entity_model.create_chart_of_accounts(
+            coa_name="API Explicit UUID Kwargs CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        returned_coa, account_model = entity_model.create_account_by_kwargs(
+            {
+                "code": "1050",
+                "name": "API Explicit UUID Kwargs Cash Account",
+                "role": ASSET_CA_CASH,
+                "balance_type": DEBIT,
+                "active": True,
+            },
+            coa_model=explicit_coa.uuid,
+        )
+
+        self.assertEqual(returned_coa, explicit_coa)
+        self.assertEqual(account_model.coa_model_id, explicit_coa.uuid)
+        self.assertTrue(
+            entity_model.get_coa_accounts(coa_model=explicit_coa)
+            .filter(uuid=account_model.uuid)
+            .exists()
+        )
+        self.assertFalse(
+            entity_model.get_default_coa_accounts().filter(uuid=account_model.uuid).exists()
+        )
+
+    def test_create_account_by_kwargs_accepts_explicit_coa_slug(self):
+        entity_model, _default_coa = self.create_entity_with_default_coa(
+            entity_name="API Explicit Slug Kwargs Account Entity",
+            coa_name="API Explicit Slug Kwargs Default CoA",
+        )
+        explicit_coa = entity_model.create_chart_of_accounts(
+            coa_name="API Explicit Slug Kwargs CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        returned_coa, account_model = entity_model.create_account_by_kwargs(
+            {
+                "code": "1060",
+                "name": "API Explicit Slug Kwargs Cash Account",
+                "role": ASSET_CA_CASH,
+                "balance_type": DEBIT,
+                "active": True,
+            },
+            coa_model=explicit_coa.slug,
+        )
+
+        self.assertEqual(returned_coa, explicit_coa)
+        self.assertEqual(account_model.coa_model_id, explicit_coa.uuid)
+        self.assertTrue(
+            entity_model.get_coa_accounts(coa_model=explicit_coa)
+            .filter(uuid=account_model.uuid)
+            .exists()
+        )
+        self.assertFalse(
+            entity_model.get_default_coa_accounts().filter(uuid=account_model.uuid).exists()
+        )
