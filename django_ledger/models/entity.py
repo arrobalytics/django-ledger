@@ -864,14 +864,7 @@ class EntityModelAbstract(
         -------
 
         """
-        entity_model = cls(
-            name=name,
-            accrual_method=use_accrual_method,
-            fy_start_month=fy_start_month,
-            admin=admin,
-        )
-        entity_model.clean()
-        entity_model = cls.add_root(instance=entity_model)
+        parent_entity_model = None
         if parent_entity:
             if isinstance(parent_entity, str):
                 # get by slug...
@@ -907,8 +900,17 @@ class EntityModelAbstract(
             else:
                 raise EntityModelValidationError(_('Only slug, UUID or EntityModel allowed.'))
 
-            parent_entity.add_child(instance=entity_model)
-        return entity_model
+        entity_model = cls(
+            name=name,
+            accrual_method=use_accrual_method,
+            fy_start_month=fy_start_month,
+            admin=admin,
+        )
+        entity_model.clean()
+
+        if parent_entity_model:
+            return parent_entity_model.add_child(instance=entity_model)
+        return cls.add_root(instance=entity_model)
 
     # ### ACCRUAL METHODS ######
     def get_accrual_method(self) -> str:

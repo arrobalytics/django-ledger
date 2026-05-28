@@ -14,6 +14,7 @@ from django.test import TestCase
 from django_ledger.models.entity import (
     EntityManagementModel,
     EntityModel,
+    EntityModelValidationError,
 )
 
 
@@ -68,6 +69,14 @@ class EntityCreationAPITest(TestCase):
     def assert_is_slug_with_random_suffix(self, slug, base_slug):
         self.assertRegex(slug, rf"^{re.escape(base_slug)}-[a-z0-9]{{8}}$")
 
+    def assert_entity_is_child_of_parent(self, child_entity, parent_entity):
+        child_entity.refresh_from_db()
+        parent_entity.refresh_from_db()
+
+        self.assertFalse(child_entity.is_root())
+        self.assertTrue(child_entity.is_child_of(parent_entity))
+        self.assertEqual(child_entity.get_parent().uuid, parent_entity.uuid)
+
     def test_create_root_entity_assigns_public_fields_and_tree_root(self):
         entity_model = self.create_entity(
             name="API Root Entity",
@@ -102,6 +111,63 @@ class EntityCreationAPITest(TestCase):
         self.assertTrue(cash_entity.is_cash_method())
         self.assertFalse(cash_entity.is_accrual_method())
         self.assertEqual(cash_entity.get_accrual_method(), EntityModel.CASH_METHOD)
+
+    def test_create_child_entity_accepts_parent_model_instance(self):
+        parent_entity = self.create_entity(name="API Parent Model Entity")
+
+        child_entity = self.create_entity(
+            name="API Child From Parent Model Entity",
+            parent_entity=parent_entity,
+        )
+
+        self.assert_entity_is_child_of_parent(child_entity, parent_entity)
+
+    def test_create_child_entity_accepts_parent_slug(self):
+        parent_entity = self.create_entity(name="API Parent Slug Entity")
+
+        child_entity = self.create_entity(
+            name="API Child From Parent Slug Entity",
+            parent_entity=parent_entity.slug,
+        )
+
+        self.assert_entity_is_child_of_parent(child_entity, parent_entity)
+
+    def test_create_child_entity_accepts_parent_uuid(self):
+        parent_entity = self.create_entity(name="API Parent UUID Entity")
+
+        child_entity = self.create_entity(
+            name="API Child From Parent UUID Entity",
+            parent_entity=parent_entity.uuid,
+        )
+
+        self.assert_entity_is_child_of_parent(child_entity, parent_entity)
+
+    def test_create_child_entity_rejects_parent_administered_by_other_user_without_side_effect(self):
+        parent_entity = self.create_entity(
+            name="API Other Admin Parent Entity",
+            admin=self.other_admin_user,
+        )
+
+        with self.assertRaises(EntityModelValidationError):
+            self.create_entity(
+                name="API Rejected Other Admin Child Entity",
+                parent_entity=parent_entity,
+            )
+
+        self.assertFalse(
+            EntityModel.objects.filter(name="API Rejected Other Admin Child Entity").exists()
+        )
+
+    def test_create_child_entity_rejects_invalid_parent_type_without_side_effect(self):
+        with self.assertRaises(EntityModelValidationError):
+            self.create_entity(
+                name="API Invalid Parent Type Child Entity",
+                parent_entity=object(),
+            )
+
+        self.assertFalse(
+            EntityModel.objects.filter(name="API Invalid Parent Type Child Entity").exists()
+        )
 
     def test_for_user_includes_admin_and_manager_entities_only(self):
         entity_model = self.create_entity(name="API Scoped Entity")
