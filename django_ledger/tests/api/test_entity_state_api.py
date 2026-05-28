@@ -1,14 +1,11 @@
 """
 High-level API behavior tests for EntityStateModel numbering state contracts.
 
-This file is part of a human-reviewed, AI-assisted contribution using
-OpenAI GPT-5.5. The goal is to strengthen deterministic business-logic
-coverage around Django Ledger's public/high-level API contracts without
-replacing or reorganizing the existing test suite.
+These tests document deterministic, user-visible numbering behavior and the
+state scoping that backs it.
 """
 
 from datetime import date, datetime
-from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -27,6 +24,7 @@ from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.items import ItemModel
 from django_ledger.models.vendor import VendorModel
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
 
 
 class EntityStateHighLevelAPITest(TestCase):
@@ -53,12 +51,12 @@ class EntityStateHighLevelAPITest(TestCase):
             return datetime(2026, 1, 15, 12, 0, tzinfo=ZoneInfo(settings.TIME_ZONE))
         return datetime(2026, 1, 15, 12, 0)
 
-    def create_entity_setup(self, *, name="API Entity State Contract Entity"):
+    def create_entity_setup(self, *, name="API Entity State Contract Entity", fy_start_month=1):
         entity_model = EntityModel.create_entity(
             name=name,
             admin=self.user,
             use_accrual_method=True,
-            fy_start_month=1,
+            fy_start_month=fy_start_month,
         )
 
         coa_model = entity_model.create_chart_of_accounts(
@@ -242,7 +240,7 @@ class EntityStateHighLevelAPITest(TestCase):
             commit=True,
         )
 
-    def create_bill(self, setup):
+    def create_bill(self, setup, *, date_draft=date(2026, 1, 15)):
         bill_model = BillModel(
             vendor=setup["vendor_model"],
             cash_account=setup["cash_account"],
@@ -253,13 +251,13 @@ class EntityStateHighLevelAPITest(TestCase):
         _ledger_model, bill_model = bill_model.configure(
             entity_slug=setup["entity_model"],
             user_model=self.user,
-            date_draft=date(2026, 1, 15),
+            date_draft=date_draft,
             commit=True,
         )
 
         return bill_model
 
-    def create_invoice(self, setup):
+    def create_invoice(self, setup, *, date_draft=date(2026, 1, 15)):
         invoice_model = InvoiceModel(
             customer=setup["customer_model"],
             cash_account=setup["cash_account"],
@@ -270,13 +268,13 @@ class EntityStateHighLevelAPITest(TestCase):
         _ledger_model, invoice_model = invoice_model.configure(
             entity_slug=setup["entity_model"],
             user_model=self.user,
-            date_draft=date(2026, 1, 15),
+            date_draft=date_draft,
             commit=True,
         )
 
         return invoice_model
 
-    def create_estimate(self, setup):
+    def create_estimate(self, setup, *, date_draft=date(2026, 1, 15)):
         estimate_model = EstimateModel(
             terms=EstimateModel.CONTRACT_TERMS_FIXED,
         )
@@ -285,27 +283,27 @@ class EntityStateHighLevelAPITest(TestCase):
             entity_slug=setup["entity_model"],
             customer_model=setup["customer_model"],
             user_model=self.user,
-            date_draft=date(2026, 1, 15),
+            date_draft=date_draft,
             estimate_title="API Entity State Estimate",
             commit=True,
         )
 
         return estimate_model
 
-    def create_purchase_order(self, setup):
+    def create_purchase_order(self, setup, *, draft_date=date(2026, 1, 15)):
         po_model = PurchaseOrderModel()
 
         po_model.configure(
             entity_slug=setup["entity_model"],
             po_title="API Entity State Purchase Order",
             user_model=self.user,
-            draft_date=date(2026, 1, 15),
+            draft_date=draft_date,
             commit=True,
         )
 
         return po_model
 
-    def create_journal_entry(self, setup):
+    def create_journal_entry(self, setup, *, timestamp=None):
         ledger_model, _created = LedgerModel.objects.get_or_create(
             entity=setup["entity_model"],
             ledger_xid="api-entity-state-ledger",
@@ -316,7 +314,7 @@ class EntityStateHighLevelAPITest(TestCase):
 
         journal_entry = JournalEntryModel.objects.create(
             ledger=ledger_model,
-            timestamp=self.make_timestamp(),
+            timestamp=timestamp if timestamp is not None else self.make_timestamp(),
             description="API Entity State Journal Entry",
         )
 
@@ -333,26 +331,31 @@ class EntityStateHighLevelAPITest(TestCase):
             key=key,
         )
 
-    def test_entity_state_key_constants_are_public_contract(self):
-        self.assertEqual(EntityStateModel.KEY_JOURNAL_ENTRY, "je")
-        self.assertEqual(EntityStateModel.KEY_PURCHASE_ORDER, "po")
-        self.assertEqual(EntityStateModel.KEY_BILL, "bill")
-        self.assertEqual(EntityStateModel.KEY_INVOICE, "invoice")
-        self.assertEqual(EntityStateModel.KEY_ESTIMATE, "estimate")
-        self.assertEqual(EntityStateModel.KEY_VENDOR, "vendor")
-        self.assertEqual(EntityStateModel.KEY_CUSTOMER, "customer")
-        self.assertEqual(EntityStateModel.KEY_ITEM, "item")
-        self.assertEqual(EntityStateModel.KEY_RECEIPT, "receipt")
+    def assert_number_ends_with_sequence(self, number, sequence):
+        self.assertTrue(number)
+        self.assertTrue(number.endswith(str(sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)))
 
     def test_customer_vendor_and_item_states_are_entity_scoped_without_fiscal_year(self):
         setup = self.create_entity_setup()
 
-        self.create_customer(setup, suffix="A")
-        self.create_customer(setup, suffix="B")
-        self.create_vendor(setup, suffix="A")
-        self.create_vendor(setup, suffix="B")
-        self.create_service_item(setup, suffix="A")
-        self.create_service_item(setup, suffix="B")
+        customer_a = self.create_customer(setup, suffix="A")
+        customer_b = self.create_customer(setup, suffix="B")
+        vendor_a = self.create_vendor(setup, suffix="A")
+        vendor_b = self.create_vendor(setup, suffix="B")
+        service_item_a = self.create_service_item(setup, suffix="A")
+        service_item_b = self.create_service_item(setup, suffix="B")
+
+        self.assertNotEqual(customer_a.customer_number, customer_b.customer_number)
+        self.assert_number_ends_with_sequence(customer_a.customer_number, 2)
+        self.assert_number_ends_with_sequence(customer_b.customer_number, 3)
+
+        self.assertNotEqual(vendor_a.vendor_number, vendor_b.vendor_number)
+        self.assert_number_ends_with_sequence(vendor_a.vendor_number, 2)
+        self.assert_number_ends_with_sequence(vendor_b.vendor_number, 3)
+
+        self.assertNotEqual(service_item_a.item_number, service_item_b.item_number)
+        self.assert_number_ends_with_sequence(service_item_a.item_number, 3)
+        self.assert_number_ends_with_sequence(service_item_b.item_number, 4)
 
         customer_state = self.get_state(
             setup,
@@ -384,21 +387,45 @@ class EntityStateHighLevelAPITest(TestCase):
         self.assertIsNone(item_state.entity_unit_id)
         self.assertIsNone(item_state.fiscal_year)
 
-    def test_document_states_are_entity_and_fiscal_year_scoped(self):
+    def test_document_numbers_advance_by_document_type_and_fiscal_year(self):
         setup = self.create_entity_setup()
         fy_key = setup["entity_model"].get_fy_for_date(dt=date(2026, 1, 15))
 
-        self.create_bill(setup)
-        self.create_bill(setup)
+        bill_a = self.create_bill(setup)
+        bill_b = self.create_bill(setup)
 
-        self.create_invoice(setup)
-        self.create_invoice(setup)
+        invoice_a = self.create_invoice(setup)
+        invoice_b = self.create_invoice(setup)
 
-        self.create_estimate(setup)
-        self.create_estimate(setup)
+        estimate_a = self.create_estimate(setup)
+        estimate_b = self.create_estimate(setup)
 
-        self.create_purchase_order(setup)
-        self.create_purchase_order(setup)
+        po_a = self.create_purchase_order(setup)
+        po_b = self.create_purchase_order(setup)
+
+        self.assertNotEqual(bill_a.bill_number, bill_b.bill_number)
+        self.assertIn(f"-{fy_key}-", bill_a.bill_number)
+        self.assertIn(f"-{fy_key}-", bill_b.bill_number)
+        self.assert_number_ends_with_sequence(bill_a.bill_number, 1)
+        self.assert_number_ends_with_sequence(bill_b.bill_number, 2)
+
+        self.assertNotEqual(invoice_a.invoice_number, invoice_b.invoice_number)
+        self.assertIn(f"-{fy_key}-", invoice_a.invoice_number)
+        self.assertIn(f"-{fy_key}-", invoice_b.invoice_number)
+        self.assert_number_ends_with_sequence(invoice_a.invoice_number, 1)
+        self.assert_number_ends_with_sequence(invoice_b.invoice_number, 2)
+
+        self.assertNotEqual(estimate_a.estimate_number, estimate_b.estimate_number)
+        self.assertIn(f"-{fy_key}-", estimate_a.estimate_number)
+        self.assertIn(f"-{fy_key}-", estimate_b.estimate_number)
+        self.assert_number_ends_with_sequence(estimate_a.estimate_number, 1)
+        self.assert_number_ends_with_sequence(estimate_b.estimate_number, 2)
+
+        self.assertNotEqual(po_a.po_number, po_b.po_number)
+        self.assertIn(f"-{fy_key}-", po_a.po_number)
+        self.assertIn(f"-{fy_key}-", po_b.po_number)
+        self.assert_number_ends_with_sequence(po_a.po_number, 1)
+        self.assert_number_ends_with_sequence(po_b.po_number, 2)
 
         bill_state = self.get_state(
             setup,
@@ -431,15 +458,20 @@ class EntityStateHighLevelAPITest(TestCase):
         self.assertIsNone(estimate_state.entity_unit_id)
         self.assertIsNone(po_state.entity_unit_id)
 
-    def test_document_state_sequences_are_isolated_by_entity(self):
+    def test_document_numbers_start_independently_per_entity(self):
         setup_a = self.create_entity_setup(name="API Entity State A")
         setup_b = self.create_entity_setup(name="API Entity State B")
 
         fy_a = setup_a["entity_model"].get_fy_for_date(dt=date(2026, 1, 15))
         fy_b = setup_b["entity_model"].get_fy_for_date(dt=date(2026, 1, 15))
 
-        self.create_bill(setup_a)
-        self.create_bill(setup_b)
+        bill_a = self.create_bill(setup_a)
+        bill_b = self.create_bill(setup_b)
+
+        self.assertIn(f"-{fy_a}-", bill_a.bill_number)
+        self.assertIn(f"-{fy_b}-", bill_b.bill_number)
+        self.assert_number_ends_with_sequence(bill_a.bill_number, 1)
+        self.assert_number_ends_with_sequence(bill_b.bill_number, 1)
 
         bill_state_a = self.get_state(
             setup_a,
@@ -456,12 +488,61 @@ class EntityStateHighLevelAPITest(TestCase):
         self.assertEqual(bill_state_b.sequence, 1)
         self.assertNotEqual(bill_state_a.entity_model_id, bill_state_b.entity_model_id)
 
-    def test_journal_entry_state_uses_journal_entry_key_and_fiscal_year(self):
+    def test_document_numbering_resets_across_non_calendar_fiscal_year(self):
+        setup = self.create_entity_setup(fy_start_month=4)
+
+        march_bill = self.create_bill(setup, date_draft=date(2026, 3, 31))
+        april_bill_a = self.create_bill(setup, date_draft=date(2026, 4, 1))
+        april_bill_b = self.create_bill(setup, date_draft=date(2026, 4, 2))
+
+        march_fy = setup["entity_model"].get_fy_for_date(dt=date(2026, 3, 31))
+        april_fy = setup["entity_model"].get_fy_for_date(dt=date(2026, 4, 1))
+
+        self.assertEqual(march_fy, 2025)
+        self.assertEqual(april_fy, 2026)
+
+        self.assertIn(f"-{march_fy}-", march_bill.bill_number)
+        self.assert_number_ends_with_sequence(march_bill.bill_number, 1)
+
+        self.assertIn(f"-{april_fy}-", april_bill_a.bill_number)
+        self.assertIn(f"-{april_fy}-", april_bill_b.bill_number)
+        self.assertNotEqual(april_bill_a.bill_number, april_bill_b.bill_number)
+        self.assert_number_ends_with_sequence(april_bill_a.bill_number, 1)
+        self.assert_number_ends_with_sequence(april_bill_b.bill_number, 2)
+
+        march_state = self.get_state(
+            setup,
+            key=EntityStateModel.KEY_BILL,
+            fiscal_year=march_fy,
+        )
+        april_state = self.get_state(
+            setup,
+            key=EntityStateModel.KEY_BILL,
+            fiscal_year=april_fy,
+        )
+
+        bill_state_count = EntityStateModel.objects.filter(
+            entity_model=setup["entity_model"],
+            entity_unit=None,
+            key=EntityStateModel.KEY_BILL,
+        ).count()
+
+        self.assertEqual(bill_state_count, 2)
+        self.assertEqual(march_state.sequence, 1)
+        self.assertEqual(april_state.sequence, 2)
+
+    def test_journal_entry_numbers_advance_by_fiscal_year_without_entity_unit(self):
         setup = self.create_entity_setup()
         fy_key = setup["entity_model"].get_fy_for_date(dt=self.make_timestamp())
 
-        self.create_journal_entry(setup)
-        self.create_journal_entry(setup)
+        journal_entry_a = self.create_journal_entry(setup)
+        journal_entry_b = self.create_journal_entry(setup)
+
+        self.assertNotEqual(journal_entry_a.je_number, journal_entry_b.je_number)
+        self.assertIn(f"-{fy_key}-", journal_entry_a.je_number)
+        self.assertIn(f"-{fy_key}-", journal_entry_b.je_number)
+        self.assert_number_ends_with_sequence(journal_entry_a.je_number, 1)
+        self.assert_number_ends_with_sequence(journal_entry_b.je_number, 2)
 
         je_state = self.get_state(
             setup,
