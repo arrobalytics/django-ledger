@@ -515,7 +515,7 @@ class EntityModelClosingEntryMixIn:
 
     def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> Tuple:
         closing_date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        return self.get_closing_entry_digest_for_date(to_date=closing_date, **kwargs)
+        return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
 
     # ---> Closing Entry QuerySet <---
     def get_closing_entry_queryset_for_date(self, closing_date: date):

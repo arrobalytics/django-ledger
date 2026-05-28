@@ -166,6 +166,21 @@ class EntityClosingEntryHighLevelAPITest(TestCase):
         self.assertEqual(closing_entry.closing_date, date(2025, 2, 28))
         self.assert_closing_transactions_match_activity(ce_txs, setup)
 
+    def test_get_closing_entry_digest_for_fiscal_year_uses_entity_fiscal_year_end(self):
+        setup = self.create_entity_setup(
+            name="API Entity Closing Entry Fiscal Digest Entity",
+            fy_start_month=4,
+        )
+        entity_model = setup["entity_model"]
+        self.create_posted_activity(setup, tx_date=date(2026, 3, 15))
+
+        closing_entry, ce_txs = entity_model.get_closing_entry_digest_for_fiscal_year(
+            fiscal_year=2025,
+        )
+
+        self.assertEqual(closing_entry.closing_date, date(2026, 3, 31))
+        self.assert_closing_transactions_match_activity(ce_txs, setup)
+
     def test_create_closing_entry_for_date_persists_entry_and_transactions(self):
         setup = self.create_entity_setup()
         entity_model = setup["entity_model"]
