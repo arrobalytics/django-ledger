@@ -2817,6 +2817,7 @@ class EntityModelAbstract(
             self.last_closing_date = None
 
         self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = [d.isoformat() for d in date_list]
+        self._CLOSING_ENTRY_DATES = None
         if commit:
             self.save(update_fields=['last_closing_date', 'updated', 'meta'])
         return date_list

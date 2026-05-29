@@ -244,6 +244,26 @@ class EntityClosingEntryHighLevelAPITest(TestCase):
         self.assertEqual(persisted_entity.fetch_closing_entry_dates_meta(as_date=False), ["2025-01-31"])
         self.assert_closing_transactions_match_activity(ce_txs, setup)
 
+    def test_close_entity_books_refreshes_same_instance_closing_date_cache(self):
+        setup = self.create_entity_setup()
+        entity_model = setup["entity_model"]
+        self.create_posted_activity(setup, tx_date=date(2025, 1, 15))
+
+        self.assertEqual(entity_model.fetch_closing_entry_dates_meta(), [])
+
+        closing_entry, _ce_txs = entity_model.close_entity_books(
+            closing_date=date(2025, 1, 31),
+        )
+        closing_entry.refresh_from_db()
+
+        self.assertTrue(closing_entry.posted)
+        self.assertEqual(entity_model.last_closing_date, date(2025, 1, 31))
+        self.assertEqual(
+            entity_model.meta[entity_model.META_KEY_CLOSING_ENTRY_DATES],
+            ["2025-01-31"],
+        )
+        self.assertEqual(entity_model.fetch_closing_entry_dates_meta(), [date(2025, 1, 31)])
+
     def test_close_books_for_month_uses_month_end(self):
         setup = self.create_entity_setup()
         entity_model = setup["entity_model"]
