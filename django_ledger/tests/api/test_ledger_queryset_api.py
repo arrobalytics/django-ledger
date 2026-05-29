@@ -185,6 +185,26 @@ class LedgerQuerySetAPITest(TestCase):
         self.assertTrue(ledger_qs.visible().filter(uuid=visible_ledger.uuid).exists())
         self.assertFalse(ledger_qs.visible().filter(uuid=hidden_ledger.uuid).exists())
 
+    def test_unposted_filter_returns_only_unposted_ledgers(self):
+        entity_model = self.create_entity(name="API Ledger Unposted Filter Entity")
+        posted_ledger = self.create_ledger(
+            entity_model,
+            name="API Posted Filter Ledger",
+            ledger_xid="api-posted-filter-ledger",
+            posted=True,
+        )
+        unposted_ledger = self.create_ledger(
+            entity_model,
+            name="API Unposted Filter Ledger",
+            ledger_xid="api-unposted-filter-ledger",
+            posted=False,
+        )
+
+        unposted_qs = LedgerModel.objects.for_entity(entity_model).unposted()
+
+        self.assertTrue(unposted_qs.filter(uuid=unposted_ledger.uuid).exists())
+        self.assertFalse(unposted_qs.filter(uuid=posted_ledger.uuid).exists())
+
     def test_entity_slug_uses_manager_annotation_and_direct_instance_fallback(self):
         entity_model = self.create_entity(name="API Ledger Entity Slug Entity")
         ledger_model = self.create_ledger(

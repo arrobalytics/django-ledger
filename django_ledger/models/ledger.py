@@ -131,15 +131,15 @@ class LedgerModelQuerySet(QuerySet):
     def unposted(self) -> 'LedgerModelQuerySet':
         """
         Filters a queryset or a similar iterable-like object to include only items that
-        have the attribute `posted` set to `True`. This method returns a new instance
+        have the attribute `posted` set to `False`. This method returns a new instance
         containing the filtered results.
 
         Returns
         -------
         LedgerModelQuerySet
-            A new instance containing only the filtered results with `posted` set to True.
+            A new instance containing only the filtered results with `posted` set to False.
         """
-        return self.filter(posted=True)
+        return self.filter(posted=False)
 
     def hidden(self) -> 'LedgerModelQuerySet':
         """
