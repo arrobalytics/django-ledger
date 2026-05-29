@@ -3090,7 +3090,7 @@ class EntityModelAbstract(
         str
             EntityModel transaction import URL as a string.
         """
-        return reverse('django_ledger:data-import-jobs-list', kwargs={'entity_slug': self.slug})
+        return reverse('django_ledger:import-job-list', kwargs={'entity_slug': self.slug})
 
     def get_coa_list_url(self) -> str:
         return reverse(viewname='django_ledger:coa-list', kwargs={'entity_slug': self.slug})
@@ -3117,6 +3117,7 @@ class EntityModelAbstract(
             'django_ledger:account-list',
             kwargs={
                 'entity_slug': self.slug,
+                'coa_slug': self.get_default_coa().slug,
             },
         )
 
