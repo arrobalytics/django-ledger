@@ -2198,9 +2198,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 )
             return
         self.matched_transaction = False
+        self.matched_transaction_model = None
         if commit:
             with transaction.atomic():
-                self.save(update_fields=['matched_transaction', 'updated'])
+                self.save(update_fields=['matched_transaction', 'matched_transaction_model', 'updated'])
 
     def can_delete(self) -> bool:
         if self.is_children():

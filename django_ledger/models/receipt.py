@@ -415,9 +415,11 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         bool
             True if the receipt date is after the entity's last closing date.
         """
+        last_closing_date = self.last_closing_date
         return all(
             [
-                self.last_closing_date < self.receipt_date,
+                self.receipt_date is not None,
+                last_closing_date is None or last_closing_date < self.receipt_date,
             ]
         )
 
