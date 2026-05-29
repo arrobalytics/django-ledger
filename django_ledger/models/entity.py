@@ -2081,17 +2081,34 @@ class EntityModelAbstract(
                 _(f'Invalid Account Type: choices are {BankAccountModel.VALID_ACCOUNT_TYPES}')
             )
 
-        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(
-            roles=[BankAccountModel.ACCOUNT_TYPE_DEFAULT_ROLE_MAPPING[account_type]]
-        ).is_role_default()
+        if account_model:
+            if coa_model:
+                coa_model = self.get_coa_accounts(
+                    coa_model=coa_model,
+                    active=True,
+                    return_coa_model=True,
+                )[0]
+                self.validate_account_model_for_coa(
+                    account_model=account_model,
+                    coa_model=coa_model,
+                )
+            else:
+                self.validate_chart_of_accounts_for_entity(
+                    coa_model=account_model.coa_model,
+                )
+        else:
+            account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+            account_model_qs = account_model_qs.with_roles(
+                roles=[BankAccountModel.ACCOUNT_TYPE_DEFAULT_ROLE_MAPPING[account_type]]
+            ).is_role_default()
+            account_model = account_model_qs.get()
 
         bank_account_model = BankAccountModel(
             name=name,
             entity_model=self,
             account_type=account_type,
             active=active,
-            account_model=account_model_qs.get() if not account_model else account_model,
+            account_model=account_model,
             **bank_account_model_kwargs,
         )
 

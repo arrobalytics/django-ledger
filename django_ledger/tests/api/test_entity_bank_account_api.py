@@ -133,6 +133,33 @@ class EntityBankAccountAPITest(TestCase):
             setup["explicit_cash_account"].uuid,
         )
 
+    def test_create_bank_account_rejects_cross_entity_explicit_account_model_without_side_effect(self):
+        setup = self.create_entity_with_bank_account_setup(
+            name="API Bank Account Explicit Account Entity"
+        )
+        other_setup = self.create_entity_with_bank_account_setup(
+            name="API Other Bank Account Explicit Account Entity",
+            admin=self.other_admin_user,
+        )
+        bank_account_count = BankAccountModel.objects.count()
+
+        with self.assertRaises(EntityModelValidationError):
+            self.create_bank_account(
+                setup["entity_model"],
+                name="API Cross Entity Explicit Account Bank Account",
+                account_number="000000099",
+                routing_number="000000199",
+                account_model=other_setup["explicit_cash_account"],
+            )
+
+        self.assertEqual(BankAccountModel.objects.count(), bank_account_count)
+        self.assertFalse(
+            setup["entity_model"]
+            .get_bank_accounts(active=False)
+            .filter(name="API Cross Entity Explicit Account Bank Account")
+            .exists()
+        )
+
     def test_create_bank_account_rejects_invalid_account_type(self):
         setup = self.create_entity_with_bank_account_setup()
 
