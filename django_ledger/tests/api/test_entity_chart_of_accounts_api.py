@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from django_ledger.io.roles import ASSET_CA_CASH, DEBIT, EXPENSE_OPERATIONAL
-from django_ledger.models import AccountModel
+from django_ledger.models import AccountModel, ChartOfAccountModel
 from django_ledger.models.entity import EntityModel, EntityModelValidationError
 
 
@@ -24,6 +24,11 @@ class EntityChartOfAccountsHighLevelAPITest(TestCase):
         cls.user = user_model.objects.create_user(
             username="api_contract_user",
             email="api-contract-user@example.com",
+            password="NeverUseThisPassword12345",
+        )
+        cls.unrelated_user = user_model.objects.create_user(
+            username="api_contract_unrelated_user",
+            email="api-contract-unrelated-user@example.com",
             password="NeverUseThisPassword12345",
         )
 
@@ -115,6 +120,28 @@ class EntityChartOfAccountsHighLevelAPITest(TestCase):
         self.assertEqual(coa_model.entity_id, entity_model.uuid)
         self.assertTrue(coa_model.active)
         self.assertEqual(entity_model.default_coa_id, coa_model.uuid)
+
+    def test_create_chart_of_accounts_returns_configured_chart_with_root_structure(self):
+        entity_model = self.create_entity(name="API Entity CoA Orchestration Entity")
+
+        coa_model = entity_model.create_chart_of_accounts(
+            coa_name="API Entity Orchestrated CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        self.assertIsInstance(coa_model, ChartOfAccountModel)
+        self.assertEqual(coa_model.entity_id, entity_model.uuid)
+        self.assertEqual(coa_model.name, "API Entity Orchestrated CoA")
+        self.assertTrue(coa_model.slug)
+        self.assertTrue(coa_model.is_configured())
+
+        root_node = coa_model.get_coa_root_node()
+        root_accounts_qs = coa_model.get_coa_root_accounts_qs()
+
+        self.assertTrue(root_node.is_coa_root())
+        self.assertTrue(root_accounts_qs.exists())
+        self.assertTrue(all(account.is_root_account() for account in root_accounts_qs))
 
     def test_create_chart_of_accounts_configures_root_account_tree(self):
         entity_model = self.create_entity()
@@ -448,6 +475,77 @@ class EntityChartOfAccountsHighLevelAPITest(TestCase):
                 account_model=other_account,
                 coa_model=default_coa,
             )
+
+    def test_create_chart_of_accounts_without_default_does_not_replace_existing_default(self):
+        entity_model, first_coa = self.create_entity_with_default_coa(
+            entity_name="API Entity Preserve Default CoA Entity",
+            coa_name="API Entity Preserve Default First CoA",
+        )
+
+        second_coa = entity_model.create_chart_of_accounts(
+            coa_name="API Entity Preserve Default Second CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        entity_model.refresh_from_db()
+        first_coa.refresh_from_db()
+        second_coa.refresh_from_db()
+
+        self.assertEqual(entity_model.default_coa_id, first_coa.uuid)
+        self.assertTrue(first_coa.is_default())
+        self.assertFalse(second_coa.is_default())
+
+    def test_entity_can_own_multiple_coas_and_queryset_exposes_each(self):
+        entity_model, default_coa = self.create_entity_with_default_coa(
+            entity_name="API Entity Multiple CoA Entity",
+            coa_name="API Entity Multiple Default CoA",
+        )
+        second_coa = entity_model.create_chart_of_accounts(
+            coa_name="API Entity Multiple Second CoA",
+            commit=True,
+            assign_as_default=False,
+        )
+
+        entity_coa_qs = ChartOfAccountModel.objects.for_entity(entity_model)
+
+        self.assertTrue(entity_coa_qs.filter(uuid=default_coa.uuid).exists())
+        self.assertTrue(entity_coa_qs.filter(uuid=second_coa.uuid).exists())
+        self.assertEqual(
+            [coa.uuid for coa in (default_coa, second_coa) if coa.is_default()],
+            [default_coa.uuid],
+        )
+
+    def test_populate_default_coa_creates_known_default_accounts(self):
+        entity_model = self.create_entity(name="API Entity Known Default CoA Entity")
+
+        entity_model.populate_default_coa(activate_accounts=True)
+        entity_model.refresh_from_db()
+
+        default_accounts_qs = entity_model.get_default_coa_accounts(active=True)
+        cash_account = default_accounts_qs.get(code="1010")
+        expense_account = default_accounts_qs.get(code="6190")
+
+        self.assertEqual(cash_account.role, ASSET_CA_CASH)
+        self.assertEqual(cash_account.name, "Cash")
+        self.assertEqual(cash_account.coa_model_id, entity_model.default_coa_id)
+
+        self.assertEqual(expense_account.role, EXPENSE_OPERATIONAL)
+        self.assertEqual(expense_account.name, "Office Expense")
+        self.assertEqual(expense_account.coa_model_id, entity_model.default_coa_id)
+
+    def test_entity_created_coa_is_visible_through_user_scoped_queryset(self):
+        entity_model, coa_model = self.create_entity_with_default_coa(
+            entity_name="API Entity CoA User Scope Entity",
+            coa_name="API Entity CoA User Scope CoA",
+        )
+
+        entity_coa_qs = ChartOfAccountModel.objects.for_entity(entity_model)
+        admin_qs = entity_coa_qs.for_user(self.user)
+        unrelated_qs = entity_coa_qs.for_user(self.unrelated_user)
+
+        self.assertTrue(admin_qs.filter(uuid=coa_model.uuid).exists())
+        self.assertFalse(unrelated_qs.filter(uuid=coa_model.uuid).exists())
 
     def test_create_account_by_kwargs_uses_default_coa(self):
         entity_model, default_coa = self.create_entity_with_default_coa(
