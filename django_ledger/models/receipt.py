@@ -705,7 +705,6 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 self.receipt_date = localdate() if not receipt_date else receipt_date
                 self.charge_account = charge_account
                 self.receipt_account = receipt_account
-                self.unit_model = unit_model
                 self.staged_transaction_model = staged_transaction_model
 
                 if self.is_transfer_receipt():
@@ -748,7 +747,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                         vendor_model = VendorModel.objects.for_entity(entity_model=entity_model).get(
                             vendor_number__iexact=vendor_model
                         )
-                    elif isinstance(customer_model, UUID):
+                    elif isinstance(vendor_model, UUID):
                         vendor_model = VendorModel.objects.for_entity(entity_model=entity_model).get(
                             uuid__exact=vendor_model
                         )
@@ -763,11 +762,11 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                 # get customer model
                 if customer_model:
                     if isinstance(customer_model, str):
-                        customer_model = CustomerModel.objects.for_entity(entity_model=customer_model).get(
+                        customer_model = CustomerModel.objects.for_entity(entity_model=entity_model).get(
                             customer_number__iexact=customer_model
                         )
                     elif isinstance(customer_model, UUID):
-                        customer_model = CustomerModel.objects.for_entity(entity_model=customer_model).get(
+                        customer_model = CustomerModel.objects.for_entity(entity_model=entity_model).get(
                             uuid__exact=customer_model
                         )
                     elif isinstance(customer_model, CustomerModel):
@@ -789,6 +788,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
                         )
                     elif isinstance(unit_model, EntityUnitModel):
                         unit_model.validate_for_entity(entity_model=entity_model)
+                    self.unit_model = unit_model
 
                 self.ledger_model = entity_model.create_ledger(
                     name=entity_model.name,
