@@ -332,11 +332,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
             self.date_draft = get_localdate() if not draft_date else draft_date
             self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
+            self.entity = entity_model
 
             if estimate_model:
                 self.action_bind_estimate(estimate_model=estimate_model, commit=False)
-
-            self.entity = entity_model
 
             if self.can_generate_po_number():
                 self.generate_po_number(commit=commit)
