@@ -719,6 +719,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if commit:
             self.save(update_fields=[
                 'po_status',
+                'date_draft',
                 'updated'
             ])
         po_status_draft.send_robust(sender=self.__class__,
@@ -1012,7 +1013,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not all_items_received:
             raise PurchaseOrderModelValidationError('All items must be received before PO is fulfilled.')
 
-        self.date_fulfilled = date_fulfilled
         self.po_status = self.PO_STATUS_FULFILLED
         self.clean()
 
@@ -1022,6 +1022,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             self.save(update_fields=[
                 'date_fulfilled',
                 'po_status',
+                'po_amount_received',
                 'updated'
             ])
         po_status_fulfilled.send_robust(sender=self.__class__,
@@ -1087,7 +1088,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         # all bills associated with this PO...
         bill_model_qs = self.get_po_bill_queryset()
-        bill_model_qs = bill_model_qs.only('bill_status')
 
         if not all(b.is_void() for b in bill_model_qs):
             raise PurchaseOrderModelValidationError('Must void all PO bills before PO can be voided.')
@@ -1098,7 +1098,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         if commit:
             self.save(update_fields=[
-                'void_date',
+                'date_void',
                 'po_status',
                 'updated'
             ])
