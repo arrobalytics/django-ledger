@@ -882,6 +882,12 @@ class InvoiceModelAbstract(
                 raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
                                                   f'Estimate {self.ce_model.estimate_number}')
             return False
+        elif self.entity_model_id and self.entity_model_id != estimate_model.entity_id:
+            if raise_exception:
+                raise InvoiceModelValidationError(
+                    f'Invalid EstimateModel for entity {self.entity_model.slug}'
+                )
+            return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
