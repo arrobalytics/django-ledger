@@ -293,6 +293,8 @@ class VendorModelAbstract(
             is_valid = entity_model == self.entity_model
         elif isinstance(entity_model, UUID):
             is_valid = entity_model == self.entity_model_id
+        else:
+            is_valid = False
 
         if not is_valid:
             raise VendorModelValidationError(
@@ -408,6 +410,7 @@ class VendorModelAbstract(
         Custom defined clean method that fetches the next vendor number if not yet fetched.
         Additional validation may be provided.
         """
+        super().clean()
         if self.can_generate_vendor_number():
             self.generate_vendor_number(commit=False)
 
