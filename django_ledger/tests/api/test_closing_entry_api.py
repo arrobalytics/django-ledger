@@ -322,13 +322,22 @@ class ClosingEntryHighLevelAPITest(TestCase):
         self.assertTrue(closing_date_qs.filter(uuid=debit_tx.uuid).exists())
         self.assertTrue(closing_date_qs.filter(uuid=other_debit_tx.uuid).exists())
 
-    def test_closing_entry_transaction_for_entity_currently_exposes_lazy_loader_bug(self):
+    def test_closing_entry_transaction_for_entity_limits_queryset_to_entity_scope(self):
         setup = self.create_entity_setup()
+        other_setup = self.create_entity_setup(name="API Other Closing Entry Transaction Entity")
         closing_entry = self.create_closing_entry(setup, closing_date=date(2025, 12, 31))
-        self.create_balanced_closing_entry_transactions(closing_entry, setup)
+        other_closing_entry = self.create_closing_entry(other_setup, closing_date=date(2025, 12, 31))
 
-        with self.assertRaises(AttributeError):
-            ClosingEntryTransactionModel.objects.for_entity(setup["entity_model"])
+        debit_tx, _credit_tx = self.create_balanced_closing_entry_transactions(closing_entry, setup)
+        other_debit_tx, _other_credit_tx = self.create_balanced_closing_entry_transactions(
+            other_closing_entry,
+            other_setup,
+        )
+
+        scoped_qs = ClosingEntryTransactionModel.objects.for_entity(setup["entity_model"])
+
+        self.assertTrue(scoped_qs.filter(uuid=debit_tx.uuid).exists())
+        self.assertFalse(scoped_qs.filter(uuid=other_debit_tx.uuid).exists())
 
     def test_closing_entry_transaction_negative_balance_flips_tx_type_and_abs_balance(self):
         setup = self.create_entity_setup()
