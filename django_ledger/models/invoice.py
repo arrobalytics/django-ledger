@@ -92,7 +92,7 @@ class InvoiceModelQuerySet(QuerySet):
         InvoiceModelQuerySet
             Returns a QuerySet of in review invoices only.
         """
-        return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_DRAFT)
+        return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_REVIEW)
 
     def approved(self):
         """
