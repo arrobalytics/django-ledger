@@ -1551,9 +1551,9 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         Returns
         -------
         bool
-            True if received, else False.
+            True if ordered, else False.
         """
-        return self.po_item_status == self.STATUS_RECEIVED
+        return self.po_item_status == self.STATUS_ORDERED
 
     def is_canceled(self):
         """
