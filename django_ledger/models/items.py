@@ -475,7 +475,7 @@ class ItemModelManager(Manager):
     def for_estimate(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for EstimateModels for a specific EntityModel &
-        UserModel. These types of items qualify as products.
+        UserModel. These types of items qualify as products or services sold.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
@@ -489,7 +489,7 @@ class ItemModelManager(Manager):
             A Filtered ItemModelQuerySet.
         """
         qs = self.for_entity_active(entity_model=entity_model, **kwargs)
-        return qs.products()
+        return qs.estimates()
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
