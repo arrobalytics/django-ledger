@@ -995,6 +995,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         if not po_items:
             po_items, po_items_agg = self.get_itemtxs_data(queryset=po_items)
+        else:
+            self.validate_item_transaction_qs(po_items)
 
         self.date_fulfilled = get_localdate() if not date_fulfilled else date_fulfilled
         self.po_amount_received = self.po_amount
@@ -1016,8 +1018,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         self.clean()
 
         if commit:
-            # todo: what if PO items is list???...
-            po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
+            if isinstance(po_items, list):
+                ItemTransactionModel.objects.filter(
+                    uuid__in=[i.uuid for i in po_items]
+                ).update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
+            else:
+                po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
             self.save(update_fields=[
                 'date_fulfilled',
                 'po_status',
@@ -1151,7 +1157,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         -------
         BillModelQuerySet
         """
-        return BillModel.objects.filter(bill_items__purchaseordermodel__uuid__exact=self.uuid)
+        return BillModel.objects.filter(itemtransactionmodel__po_model__uuid__exact=self.uuid)
 
     def get_status_action_date(self):
         """
