@@ -986,6 +986,7 @@ class ItemTransactionModelQuerySet(QuerySet):
         """
         return self.filter(
             Q(bill_model_id__isnull=True) &
+            Q(invoice_model_id__isnull=True) &
             Q(po_model_id__isnull=True) &
             Q(ce_model_id__isnull=True)
         )
