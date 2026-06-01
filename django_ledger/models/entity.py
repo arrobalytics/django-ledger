@@ -2514,7 +2514,11 @@ class EntityModelAbstract(
             if uom_model.entity_id != self.uuid:
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
-        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        coa_model, account_model_qs = self.get_coa_accounts(
+            coa_model=coa_model,
+            active=True,
+            return_coa_model=True,
+        )
         account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_INVENTORY)
         if not inventory_account:
             inventory_account = account_model_qs.is_role_default().get()
