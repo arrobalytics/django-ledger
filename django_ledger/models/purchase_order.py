@@ -423,7 +423,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 total_items=Count('uuid')
             )
         return queryset, {
-            'po_total_amount__sum': sum(i.total_amount for i in queryset),
+            'po_total_amount__sum': sum(i.po_total_amount or 0 for i in queryset),
             'bill_amount_paid__sum': sum(i.bill_model.amount_paid for i in queryset if i.bill_model_id),
             'total_items': len(queryset)
         } if not lazy_agg else None
