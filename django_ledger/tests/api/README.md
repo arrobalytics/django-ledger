@@ -1,207 +1,142 @@
 # High-Level API Behavior Tests
 
+## Purpose
+
 This directory contains deterministic, high-level behavior tests for Django Ledger's public model API.
 
-The goal of this test suite is not to replace the existing test suite, reorganize project testing strategy, or prescribe a different testing philosophy. Instead, it adds an isolated and readable layer of contract-style tests around the public APIs that downstream applications are likely to depend on.
+The goal is not to replace the existing test suite or prescribe a new testing strategy. These tests add a readable contract layer around public APIs that downstream applications are likely to call directly: model methods, managers, querysets, numbering helpers, lifecycle actions, and cross-model orchestration.
 
-These tests were added as a human-reviewed, AI-assisted contribution using OpenAI GPT-5.5. The intent is to be transparent about the development process while keeping responsibility, review, and final judgment with the human contributor.
+The suite now contains 800+ high-level API tests covering the main accounting, document, import, inventory, and party-model surfaces.
 
 ## Why this directory exists
 
-Django Ledger exposes a rich programming API through its models, managers, querysets, and domain methods. Many important behaviors are not merely field-level behaviors; they involve coordinated model interactions such as:
+Django Ledger exposes important behavior through coordinated model interactions rather than isolated field validation alone. Examples include:
 
-* entity-scoped number generation,
-* fiscal-year-scoped document numbering,
-* entity-unit-scoped journal entry sequencing,
+* entity-scoped and fiscal-year-scoped number generation,
 * ledger and journal entry posting behavior,
+* document lifecycle transitions,
 * item transaction ownership across documents,
-* import job staging and migration behavior,
-* receipt generation from staged transactions,
-* closing entry migration into locked journal entries,
+* import job and staged transaction migration,
+* receipt and closing entry behavior,
 * queryset and manager-level filtering contracts.
 
-This directory focuses on those higher-level behaviors.
-
-The tests are intentionally placed under `django_ledger/tests/api/` to keep them separate from the existing test modules. This makes the scope explicit: these are public API behavior tests, not internal implementation tests.
+The tests are intentionally placed under `django_ledger/tests/api/` to make the scope explicit: these are public API behavior tests, not private implementation tests.
 
 ## Design goals
 
-The test suite follows a few guiding principles:
-
 1. **Deterministic setup**
 
-   Tests avoid randomized fixture generation. Each test creates the minimum entity, chart of accounts, accounts, counterparties, items, documents, or staged transactions needed to express the behavior under test.
+   Tests avoid randomized fixture generation. Each module creates the minimum entity, chart of accounts, accounts, counterparties, items, documents, imports, or transactions needed to express the behavior under test.
 
 2. **Public API first**
 
-   Tests prefer public model methods, manager methods, queryset methods, and documented high-level flows over implementation details.
+   Tests prefer public model methods, manager methods, queryset methods, and high-level flows over private helpers or implementation details.
 
 3. **Behavior over implementation**
 
-   The tests assert externally meaningful contracts such as generated numbers, state transitions, ownership links, ledger effects, and queryset results.
+   Assertions focus on externally meaningful contracts such as generated numbers, state transitions, ownership links, ledger effects, queryset results, and public helper output.
 
 4. **Refactor safety**
 
-   The suite is designed to provide confidence before larger model refactors, including possible swappable-model work. If concrete models, abstract bases, foreign keys, or manager implementations change, these tests should help confirm that public behavior remains stable.
+   The suite is intended to provide confidence before larger refactors, including possible swappable-model work. If concrete models, abstract bases, foreign keys, manager implementations, or wrapper relationships change, these tests should help confirm that public behavior remains stable.
 
 5. **Small focused tests**
 
-   Each test tries to verify one business-level invariant. Shared helpers are kept local to each file so individual test modules remain readable in isolation.
+   Test files are grouped by model family or behavior family. Shared setup is kept local enough that each module remains understandable in isolation.
 
-## Current coverage
+## Coverage overview
 
-At the time this README was written, the high-level API suite contains 160 passing tests.
+### Core accounting engine
 
-The suite covers the following areas.
-
-### Core accounting
+Covered model families include:
 
 * `EntityModel`
 * `EntityStateModel`
 * `EntityUnitModel`
-* `ChartOfAccountModel`
+* `ChartOfAccountModel` and bundled default CoA data
 * `AccountModel`
 * `LedgerModel`
 * `JournalEntryModel`
 * `TransactionModel`
-* `IOBluePrint` / IO commit behavior
 
-Covered contracts include:
+Covered behavior includes entity creation, fiscal-period helpers, tree behavior, default chart of accounts orchestration, account creation and role defaults, ledger lifecycle predicates and transitions, journal entry verification and numbering, transaction filtering and validation, entity state sequencing, and core queryset/user scoping contracts.
 
-* entity creation,
-* default chart of accounts behavior,
-* account creation and role defaults,
-* ledger and journal entry creation,
-* balanced transaction behavior,
-* IO blueprint dispatch and commit behavior,
-* journal entry number generation,
-* entity-unit-scoped journal entry state sequencing.
+### Import, staging, receipts, and closing
 
-### Commercial foundation
+Covered model families include:
 
-* `CustomerModel`
-* `VendorModel`
-* `UnitOfMeasureModel`
-* `ItemModel`
-* `ItemTransactionModel`
 * `BankAccountModel`
+* `ImportJobModel`
+* `StagedTransactionModel`
 * `ReceiptModel`
+* `ClosingEntryModel`
+* `ClosingEntryTransactionModel`
 
-Covered contracts include:
+Covered behavior includes bank account configuration, import job setup and annotations, staged transaction splitting and matching, import/undo behavior, receipt configuration and deletion guards, closing entry posting/unposting, closing transaction normalization, and locked-period behavior.
 
-* customer and vendor creation,
-* active, inactive, hidden, and visible queryset behavior,
-* unit of measure creation,
-* service, product, inventory, and expense item creation,
-* item transaction ownership across documents,
-* bank account configuration and entity scoping,
-* sales, expense, transfer, and refund receipt behavior,
-* receipt number generation via `EntityStateModel.KEY_RECEIPT`.
+### Commercial documents
 
-### Documents
+Covered model families include:
 
 * `BillModel`
 * `InvoiceModel`
 * `EstimateModel`
 * `PurchaseOrderModel`
-* `ClosingEntryModel`
-* `ClosingEntryTransactionModel`
 
-Covered contracts include:
+Covered behavior includes document configuration, itemization, lifecycle transitions, payment or fulfillment behavior where applicable, document numbering, URL/message helpers, status signals, queryset filters, deletion/void guards, and selected cross-document bindings.
 
-* document configuration,
-* draft, review, approved, paid, completed, and fulfilled state behavior where applicable,
-* document amount aggregation from item transactions,
-* entity-scoped and fiscal-year-scoped document numbering,
-* purchase order fulfillment guard rails,
-* closing entry posting and unposting,
-* locked closing journal entry generation,
-* balanced closing entry validation,
-* closing entry transaction normalization.
+### Items, units, and line items
 
-### Import and staging
+Covered model families include:
 
-* `ImportJobModel`
-* `StagedTransactionModel`
+* `UnitOfMeasureModel`
+* `ItemModel`
+* `ItemTransactionModel`
 
-Covered contracts include:
+Covered behavior includes unit creation and scoping, item role/account behavior, product/service/expense/inventory helpers, item transaction ownership across documents, amount/status helpers, inventory pipeline filters, inventory count aggregation, and inventory update behavior.
 
-* import job configuration and ledger creation,
-* import job entity scoping,
-* pending/imported annotation behavior,
-* staged transaction filtering by entity and import job,
-* staged transaction splitting,
-* parent/child staged transaction behavior,
-* customer/vendor mutual exclusion,
-* staged transaction readiness for import,
-* non-receipt staged transaction migration into journal entries,
-* receipt staged transaction migration into `ReceiptModel` and posted journal entries.
+### Commercial parties
 
-### QuerySet and manager contracts
+Covered model families include:
 
-The suite includes explicit coverage for public queryset and manager APIs such as:
+* `CustomerModel`
+* `VendorModel`
 
-* `for_entity(...)`
-* `for_user(...)`
-* `active()`
-* `inactive()`
-* `hidden()`
-* `visible()`
-* `draft()`
-* `approved()`
-* `paid()`
-* `posted()`
-* `not_posted()`
-* `services()`
-* `products()`
-* `expenses()`
-* `inventory_all()`
-* `contracts()`
-* `estimates()`
-* `for_customer(...)`
-* `for_vendor(...)`
-* `for_dates(...)`
-* `for_import_job(...)`
+Covered behavior includes entity/user scoping, active/inactive/hidden/visible filters, direct numbering APIs, entity factory helpers, display and URL helpers, upload paths, contact validation, customer tax collection validation, and light vendor tax/financial-account helper behavior.
 
-These contracts are important because downstream code often depends on queryset behavior as much as direct model methods.
+### Infrastructure and compatibility
 
-## Known observations captured by the suite
+Covered infrastructure includes:
 
-The test suite intentionally documents some non-obvious current behaviors.
+* `lazy_loader` model and report class resolution,
+* public schema constant top-level shape,
+* deprecated `entity_slug=` compatibility behavior,
+* selected IO blueprint/commit behavior.
 
-### Entity state scoping
+These tests are intentionally smoke-level. They protect public infrastructure contracts without asserting private import mechanics or full schema bodies.
 
-`EntityStateModel` sequences are scoped by:
+## Behavior patterns documented by the suite
 
-```text
-entity_model + entity_unit + fiscal_year + key
-```
+The suite intentionally documents recurring behavior patterns that downstream code may depend on:
 
-Customer, vendor, and item numbering use entity-level state without fiscal year or entity unit.
+* `EntityStateModel` sequences are scoped by entity, optional entity unit, fiscal year, and key.
+* Customer, vendor, and item numbering use entity-level state without fiscal year or entity unit.
+* Bills, invoices, estimates, purchase orders, receipts, and journal entries use fiscal-year-scoped numbering.
+* Journal entry numbering also uses entity-unit scoping when an entity unit is present.
+* Some `commit=False` APIs still mutate the in-memory model and may consume entity state sequence values.
+* Hidden-but-active records are often included by `active()` filters but excluded by `visible()` filters.
+* Cross-entity bindings are guarded for accounts, counterparties, documents, receipts, imports, inventory, and staged transactions.
+* Some documents have wrapper ledgers before they are fully migrated into accounting transactions.
+* Staged transaction operations that rely on annotation-backed state are exercised through annotated queryset instances.
 
-Bills, invoices, estimates, purchase orders, receipts, and journal entries use fiscal-year-scoped state.
+## Bug fixes and characterization coverage
 
-Journal entries additionally use `entity_unit` when present.
+The suite distinguishes between public bugs and characterization:
 
-### EntityUnitModel creation
+* Clear public bugs discovered during test development received minimal production fixes and regression tests.
+* Surprising but stable current behavior is documented as characterization when changing it would require a broader product or API decision.
 
-`EntityUnitModel` is based on Treebeard `MP_Node`. It should be created through Treebeard APIs such as `add_root(...)`, not by plain `Model(...).save()` construction.
-
-### ClosingEntry behavior
-
-Posting a balanced closing entry creates locked and posted journal entries under the closing entry ledger. Unposting removes those generated journal entries and transactions.
-
-Closing entries cannot be posted with future timestamps because the generated journal entries are validated as posted journal entries.
-
-### StagedTransaction annotation dependency
-
-Some staged transaction operations, such as `add_split()`, expect annotation-backed fields like `children_count`. Tests use annotated queryset instances when exercising those behaviors.
-
-### Current upstream issue surfaced by tests
-
-`ClosingEntryTransactionModel.objects.for_entity(...)` currently exposes an apparent bug: it calls `lazy_loader.get_entity(...)`, but that method is not available on the lazy loader. The test suite documents this current behavior explicitly instead of hiding it.
-
-This can be addressed separately with a focused regression test and fix.
+This keeps the suite useful for maintainers: tests describe expected public behavior without turning every oddity into an immediate refactor.
 
 ## Running the suite
 
@@ -209,6 +144,24 @@ Run all high-level API behavior tests:
 
 ```bash
 python manage.py test django_ledger.tests.api
+```
+
+Latest full API suite result after the Customer/Vendor campaign:
+
+```bash
+.venv/bin/python manage.py test django_ledger.tests.api
+# Ran 816 tests
+# OK (skipped=1)
+```
+
+The final isolated infrastructure and compatibility smoke tests were also run:
+
+```bash
+.venv/bin/python manage.py test \
+  django_ledger.tests.api.test_model_infrastructure_api \
+  django_ledger.tests.api.test_deprecated_entity_slug_api
+# Ran 6 tests
+# OK
 ```
 
 Run an individual module:
@@ -221,22 +174,21 @@ python manage.py test django_ledger.tests.api.test_closing_entry_api
 
 ## Contribution notes
 
-These tests are intentionally verbose in setup. The verbosity is a tradeoff: it keeps each test module understandable without relying on hidden randomized fixtures or broad shared test state.
+These tests are intentionally more explicit than fixture-heavy tests. The verbosity is a tradeoff: it keeps each behavior contract readable without relying on hidden randomized fixtures or broad shared state.
 
-The suite is intended to support future refactors by making current public behavior explicit. It should be especially useful before changes involving:
+The suite is especially useful before changes involving:
 
 * abstract/concrete model boundaries,
 * swappable model support,
 * manager/queryset refactors,
 * foreign key target changes,
 * document lifecycle changes,
-* ledger posting internals,
-* entity state and numbering internals.
+* ledger and journal entry posting internals,
+* entity state and numbering internals,
+* import/staging and receipt orchestration.
 
 ## AI assistance disclosure
 
-This test suite was developed with AI assistance from OpenAI GPT-5.5 and reviewed by a human contributor.
+This test suite was developed with AI assistance and human review.
 
-The AI system helped draft test structures, identify likely behavior contracts, and iterate on failures. The human contributor ran the tests, inspected failures, reviewed behavior against the source code, and decided which contracts should be preserved.
-
-The contribution should therefore be understood as human-owned and human-reviewed, with AI used as a development aid.
+AI was used to help draft test structures, identify likely behavior contracts, and iterate on failures. The human contributor ran the tests, inspected failures, reviewed behavior against the source code, and made the final decisions about which contracts and fixes to keep.
