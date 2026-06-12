@@ -499,6 +499,21 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     )
     objeto_origen = fields.GenericForeignKey('content_type', 'object_id')
 
+    content_type_agrupador = models.ForeignKey(
+        ContentType,
+        verbose_name=_('Tipo de origen del agrupador'),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='content_type_agrupador'
+    )
+    object_agrupador_id = models.PositiveIntegerField(
+        verbose_name=_('objeto agrupador'),
+        null=True,
+        blank=True,
+    )
+    objeto_agrupador_origen = fields.GenericForeignKey('content_type_agrupador', 'object_agrupador_id')
+
     class Meta:
         abstract = True
         ordering = ['-created']
@@ -513,6 +528,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['cleared']),
             models.Index(fields=['reconciled']),
             models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['content_type_agrupador', 'object_agrupador_id']),
         ]
 
     def __str__(self):
