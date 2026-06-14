@@ -9,6 +9,7 @@ Contributions to this module:
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Q
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
@@ -170,19 +171,19 @@ class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
 
 
 class LedgerModelModelActionView(LedgerModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'ledger_pk'
     action_name = None
     commit = True
 
     def get_redirect_url(self, *args, **kwargs):
-        next_url = self.request.GET.get('next', None)
+        next_url = self.get_safe_next_url()
         if next_url:
             return next_url
         ledger_model: LedgerModel = self.object
         return ledger_model.get_journal_entry_list_url()
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
         ledger_model: LedgerModel = self.get_object()
@@ -193,7 +194,7 @@ class LedgerModelModelActionView(LedgerModelModelBaseView, RedirectView, SingleO
         except ValidationError as e:
             messages.add_message(request, message=e.message, level=messages.ERROR, extra_tags='is-danger')
 
-        return super().get(request, **kwargs)
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))
 
 
 # Ledger Balance Sheet Views...

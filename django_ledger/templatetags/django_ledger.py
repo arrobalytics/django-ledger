@@ -468,7 +468,7 @@ def modal_action_v2(
         action_url: str,
         message: str,
         html_id: str,
-        http_method: str = 'get',
+        http_method: str = 'post',
 ):
     return {
         'object': model,

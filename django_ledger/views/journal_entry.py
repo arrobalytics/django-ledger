@@ -9,7 +9,7 @@ from typing import Optional
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
@@ -252,7 +252,7 @@ class BaseJournalEntryActionView(
     RedirectView,
     SingleObjectMixin
 ):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'je_pk'
     action_name = None
     commit = True
@@ -263,7 +263,7 @@ class BaseJournalEntryActionView(
         ).for_ledger(ledger_pk=self.kwargs['ledger_pk'])
 
     def get_redirect_url(self, *args, **kwargs):
-        next_url = self.request.GET.get('next')
+        next_url = self.get_safe_next_url()
         if next_url:
             return next_url
         return reverse('django_ledger:je-list',
@@ -272,12 +272,12 @@ class BaseJournalEntryActionView(
                            'ledger_pk': kwargs['ledger_pk']
                        })
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseJournalEntryActionView, self).get(request, *args, **kwargs)
         je_model: BaseJournalEntryActionView = self.get_object()
+        self.object = je_model
 
         try:
             getattr(je_model, self.action_name)(commit=self.commit,
@@ -288,4 +288,4 @@ class BaseJournalEntryActionView(
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))

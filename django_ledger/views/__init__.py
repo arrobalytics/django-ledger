@@ -14,6 +14,7 @@ from django_ledger.views.chart_of_accounts import *
 from django_ledger.views.customer import *
 from django_ledger.views.data_import import *
 from django_ledger.views.djl_api import *
+from django_ledger.views.enterprise import *
 from django_ledger.views.entity import *
 from django_ledger.views.estimate import *
 from django_ledger.views.financial_statement import *

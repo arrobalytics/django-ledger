@@ -97,32 +97,40 @@
                                             </a>
                                             <hr class="dropdown-divider">
                                             {% if account.can_activate %}
-                                                <a href="{{ account.get_action_activate_url }}"
-                                                   class="dropdown-item has-text-success">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
-                                                    {% trans 'Activate' %}
-                                                </a>
+                                                <form method="post" action="{{ account.get_action_activate_url }}">
+                                                    {% csrf_token %}
+                                                <button type="submit" class="dropdown-item has-text-success">
+                                                     <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
+                                                     {% trans 'Activate' %}
+                                                </button>
+                                                </form>
                                             {% endif %}
                                             {% if account.can_deactivate %}
-                                                <a href="{{ account.get_action_deactivate_url }}"
-                                                   class="dropdown-item has-text-danger">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
-                                                    {% trans 'Deactivate' %}
-                                                </a>
+                                                <form method="post" action="{{ account.get_action_deactivate_url }}">
+                                                    {% csrf_token %}
+                                                <button type="submit" class="dropdown-item has-text-danger">
+                                                     <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
+                                                     {% trans 'Deactivate' %}
+                                                </button>
+                                                </form>
                                             {% endif %}
                                             {% if account.can_lock %}
-                                                <a href="{{ account.get_action_lock_url }}"
-                                                   class="dropdown-item has-text-warning">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
-                                                    {% trans 'Lock' %}
-                                                </a>
+                                                <form method="post" action="{{ account.get_action_lock_url }}">
+                                                    {% csrf_token %}
+                                                <button type="submit" class="dropdown-item has-text-warning">
+                                                     <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
+                                                     {% trans 'Lock' %}
+                                                </button>
+                                                </form>
                                             {% endif %}
                                             {% if account.can_unlock %}
-                                                <a href="{{ account.get_action_unlock_url }}"
-                                                   class="dropdown-item has-text-info">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
-                                                    {% trans 'Unlock' %}
-                                                </a>
+                                                <form method="post" action="{{ account.get_action_unlock_url }}">
+                                                    {% csrf_token %}
+                                                <button type="submit" class="dropdown-item has-text-info">
+                                                     <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
+                                                     {% trans 'Unlock' %}
+                                                </button>
+                                                </form>
                                             {% endif %}
                                         </div>
                                     </div>

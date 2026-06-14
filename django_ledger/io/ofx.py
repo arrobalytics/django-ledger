@@ -62,6 +62,15 @@ class OFXFileManager:
             ][0]
         return self.ACCOUNT_DATA
 
+    def get_accounts(self):
+        """
+        Returns parsed OFX account statement metadata.
+
+        Older callers expect a list even though django-ledger currently supports
+        importing a single account per OFX file.
+        """
+        return [self.get_account_data()]
+
     def get_account_number(self):
         return self.get_account_data()['account'].acctid
 

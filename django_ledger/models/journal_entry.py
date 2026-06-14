@@ -398,6 +398,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         null=True,
         verbose_name=_('Associated Entity Unit')
     )
+    currency = models.ForeignKey(
+        'django_ledger.CurrencyModel',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        verbose_name=_('Transaction Currency')
+    )
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
     activity = models.CharField(
         choices=ACTIVITIES,
         max_length=20,
@@ -670,18 +678,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if len(txs_qs) > 0:
             balances = self.get_txs_balances(txs_qs=txs_qs, as_dict=True)
-            is_valid = balances[CREDIT] == balances[DEBIT]
+            is_valid = balances.get(CREDIT, Decimal('0.00')) == balances.get(DEBIT, Decimal('0.00'))
             if not is_valid:
                 if raise_exception:
                     raise JournalEntryValidationError(
                         message='Balance of {0} CREDITs are {1} does not match DEBITs {2}.'.format(
                             self,
-                            balances[CREDIT],
-                            balances[DEBIT]
+                            balances.get(CREDIT, Decimal('0.00')),
+                            balances.get(DEBIT, Decimal('0.00'))
                         )
                     )
             return is_valid
-        return True
+        if raise_exception:
+            raise JournalEntryValidationError('Journal entry must have transactions.')
+        return False
 
     def is_txs_qs_coa_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
@@ -824,6 +834,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
+        try:
+            from django_ledger.services.enterprise import assert_period_open
+            assert_period_open(self.ledger.entity, self.timestamp.date())
+        except ImportError:
+            pass
         if verify and not self.is_verified():
             txs_qs, verified = self.verify()
             if not len(txs_qs):
@@ -955,6 +970,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
+        if self.is_posted():
+            self.posted = False
+
         if not self.can_unlock():
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
@@ -964,7 +982,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.activity = None
             if not self.is_locked():
                 if commit:
-                    self.save(verify=False)
+                    self.save(
+                        verify=False,
+                        update_fields=[
+                            'posted',
+                            'locked',
+                            'activity',
+                            'updated'
+                        ]
+                    )
                 journal_entry_unlocked.send_robust(sender=self.__class__,
                                                    instance=self,
                                                    commited=commit,
@@ -1363,7 +1389,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.je_number = f'{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}'
 
                 if commit:
-                    self.save(update_fields=['je_number'])
+                    self.save(update_fields=['je_number'], verify=False)
 
         return self.je_number
 
@@ -1425,13 +1451,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             except JournalEntryValidationError as e:
                 raise e
 
-            # if not len(txs_qs):
-            #     if raise_exception:
-            #         raise JournalEntryValidationError('Journal entry has no transactions.')
-
-            # if len(txs_qs) < 2:
-            #     if raise_exception:
-            #         raise JournalEntryValidationError('At least two transactions required.')
+            if len(txs_qs) < 2:
+                if raise_exception:
+                    raise JournalEntryValidationError('At least two transactions required.')
+                return txs_qs, self.is_verified()
 
             if all([
                 is_balance_valid,

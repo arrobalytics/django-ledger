@@ -14,6 +14,7 @@ from itertools import groupby
 from typing import Dict, Optional, Union
 from uuid import UUID
 
+import bleach
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import (
@@ -830,7 +831,9 @@ class AccrualMixIn(models.Model):
                 JournalEntryModel = lazy_loader.get_journal_entry_model()
                 TransactionModel = lazy_loader.get_txs_model()
 
-                unit_uuids = list(set(k[1] for k in idx_keys))
+                unit_uuids = list(set(unit_uuid for (_, unit_uuid, _), amt in diff_idx.items() if amt))
+                if not unit_uuids:
+                    return item_data, io_data
 
                 if je_timestamp:
                     je_timestamp = validate_io_timestamp(dt=je_timestamp)
@@ -1221,7 +1224,39 @@ class MarkdownNotesMixIn(models.Model):
         """
         if not self.markdown_notes:
             return ''
-        return markdown(force_str(self.markdown_notes))
+        html = markdown(force_str(self.markdown_notes))
+        return bleach.clean(
+            html,
+            tags=[
+                'a',
+                'abbr',
+                'acronym',
+                'blockquote',
+                'br',
+                'code',
+                'em',
+                'h1',
+                'h2',
+                'h3',
+                'h4',
+                'h5',
+                'h6',
+                'hr',
+                'li',
+                'ol',
+                'p',
+                'pre',
+                'strong',
+                'ul',
+            ],
+            attributes={
+                'a': ['href', 'title'],
+                'abbr': ['title'],
+                'acronym': ['title'],
+            },
+            protocols=['http', 'https', 'mailto'],
+            strip=True,
+        )
 
     def clean(self):
         super().clean()

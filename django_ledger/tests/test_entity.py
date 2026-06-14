@@ -218,7 +218,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
 
         # ENTITY-DETAIL VIEW...
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             # this will redirect to entity-detail-month...
             entity_detail_url = reverse('django_ledger:entity-dashboard',
                                         kwargs={
@@ -226,7 +226,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                         })
             response = self.CLIENT.get(entity_detail_url)
 
-        with self.assertNumQueries(8):  # previously 10
+        with self.assertNumQueries(7):  # previously 10
             local_dt = get_localdate()
             entity_month_detail_url = reverse('django_ledger:entity-dashboard-month',
                                               kwargs={
@@ -236,7 +236,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                               })
             self.assertRedirects(response, entity_month_detail_url)
 
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(7):
             # same as before, but this time the session must not be update because user has not suited entities...
             response = self.CLIENT.get(entity_month_detail_url)
             self.assertContains(response, text=entity_model.name)

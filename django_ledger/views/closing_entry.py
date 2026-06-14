@@ -192,7 +192,7 @@ class ClosingEntryDeleteView(ClosingEntryModelBaseView, DeleteView):
 class ClosingEntryModelActionView(ClosingEntryModelBaseView,
                                   RedirectView,
                                   SingleObjectMixin):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'closing_entry_pk'
     action_name = None
     commit = True
@@ -204,12 +204,12 @@ class ClosingEntryModelActionView(ClosingEntryModelBaseView,
                            'closing_entry_pk': kwargs['closing_entry_pk']
                        })
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(ClosingEntryModelActionView, self).get(request, *args, **kwargs)
         closing_entry_model: ClosingEntryModel = self.get_object()
+        self.object = closing_entry_model
 
         try:
             getattr(closing_entry_model, self.action_name)(commit=self.commit, **kwargs)
@@ -218,4 +218,4 @@ class ClosingEntryModelActionView(ClosingEntryModelBaseView,
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))

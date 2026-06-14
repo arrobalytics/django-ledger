@@ -37,6 +37,7 @@ urlpatterns = [
     path('home/', include('django_ledger.urls.home')),
     path('receipt/', include('django_ledger.urls.receipt')),
     path('api/', include('django_ledger.urls.djl_api')),
+    path('enterprise/', include('django_ledger.urls.enterprise')),
     path('', views.RootUrlView.as_view(), name='root'),
 ]
 

@@ -336,6 +336,13 @@ class InvoiceModelAbstract(
     customer = models.ForeignKey('django_ledger.CustomerModel',
                                  on_delete=models.RESTRICT,
                                  verbose_name=_('Customer'))
+    currency = models.ForeignKey('django_ledger.CurrencyModel',
+                                 on_delete=models.PROTECT,
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Document Currency'))
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    base_amount_due = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.RESTRICT,
@@ -971,6 +978,12 @@ class InvoiceModelAbstract(
             payment_date = get_localtime()
 
         if commit:
+            try:
+                from django_ledger.services.enterprise import assert_period_open
+                period_date = payment_date.date() if hasattr(payment_date, 'date') else payment_date
+                assert_period_open(self.ledger.entity, period_date)
+            except ImportError:
+                pass
             self.migrate_state(
                 user_model=None,
                 entity_slug=self.ledger.entity.slug,

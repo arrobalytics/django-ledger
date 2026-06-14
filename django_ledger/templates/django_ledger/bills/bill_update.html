@@ -88,12 +88,18 @@
                                            href="{% url 'django_ledger:je-list' ledger_pk=bill_model.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                             {% trans 'Ledger Journal Entries' %}
                                         </a>
-                                        <a href="{% url "django_ledger:bill-action-lock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
-                                           class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Ledger' %}</a>
-                                        <a href="{% url "django_ledger:bill-action-unlock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
-                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Ledger' %}</a>
-                                        <a href="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
-                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate' %}</a>
+                                        <form method="post" action="{% url "django_ledger:bill-action-lock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Ledger' %}</button>
+                                        </form>
+                                        <form method="post" action="{% url "django_ledger:bill-action-unlock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Ledger' %}</button>
+                                        </form>
+                                        <form method="post" action="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate' %}</button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

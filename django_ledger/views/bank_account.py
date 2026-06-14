@@ -7,6 +7,7 @@ Contributions to this module:
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView, RedirectView
@@ -99,7 +100,7 @@ class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
 class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
                                      RedirectView,
                                      SingleObjectMixin):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'bank_account_pk'
     action_name = None
     commit = True
@@ -110,12 +111,12 @@ class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
                            'entity_slug': kwargs['entity_slug']
                        })
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseBankAccountModelActionView, self).get(request, *args, **kwargs)
         ba_model: BankAccountModel = self.get_object()
+        self.object = ba_model
 
         try:
             getattr(ba_model, self.action_name)(commit=self.commit, **kwargs)
@@ -124,7 +125,7 @@ class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))
 
 
 class BankAccountModelActionMarkAsActiveView(BaseBankAccountModelActionView):

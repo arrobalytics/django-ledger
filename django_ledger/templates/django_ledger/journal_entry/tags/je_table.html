@@ -74,30 +74,38 @@
                                     </a>
                                     <hr class="dropdown-divider">
                                     {% if journal_entry_model.can_post %}
-                                        <a class="dropdown-item has-text-info"
-                                           href="{{ journal_entry_model.get_action_post_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
-                                            {% trans 'Post' %}
-                                        </a>
+                                        <form method="post" action="{{ journal_entry_model.get_action_post_url }}?next={{ next_url }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-info">
+                                             <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
+                                             {% trans 'Post' %}
+                                        </button>
+                                        </form>
                                     {% elif journal_entry_model.can_unpost %}
-                                        <a class="dropdown-item has-text-warning"
-                                           href="{{ journal_entry_model.get_action_unpost_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
-                                            {% trans 'UnPost' %}
-                                        </a>
+                                        <form method="post" action="{{ journal_entry_model.get_action_unpost_url }}?next={{ next_url }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-warning">
+                                             <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
+                                             {% trans 'UnPost' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                     {% if journal_entry_model.can_lock %}
-                                        <a class="dropdown-item has-text-info"
-                                           href="{{ journal_entry_model.get_action_lock_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
-                                            {% trans 'Lock' %}
-                                        </a>
+                                        <form method="post" action="{{ journal_entry_model.get_action_lock_url }}?next={{ next_url }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-info">
+                                             <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
+                                             {% trans 'Lock' %}
+                                        </button>
+                                        </form>
                                     {% elif journal_entry_model.can_unlock %}
-                                        <a class="dropdown-item has-text-warning"
-                                           href="{{ journal_entry_model.get_action_unlock_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
-                                            {% trans 'Unlock' %}
-                                        </a>
+                                        <form method="post" action="{{ journal_entry_model.get_action_unlock_url }}?next={{ next_url }}">
+                                            {% csrf_token %}
+                                        <button type="submit" class="dropdown-item has-text-warning">
+                                             <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
+                                             {% trans 'Unlock' %}
+                                        </button>
+                                        </form>
                                     {% endif %}
                                     {% if journal_entry_model.can_delete %}
                                         <hr class="dropdown-divider">

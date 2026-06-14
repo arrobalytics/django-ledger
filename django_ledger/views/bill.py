@@ -272,6 +272,7 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.select_related(
+            'entity_model',
             'ledger',
             'ledger__entity',
             'vendor',
@@ -279,8 +280,11 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
             'prepaid_account',
             'unearned_account',
             'cash_account__coa_model',
+            'cash_account__coa_model__entity',
             'prepaid_account__coa_model',
-            'unearned_account__coa_model'
+            'prepaid_account__coa_model__entity',
+            'unearned_account__coa_model',
+            'unearned_account__coa_model__entity',
         )
 
 
@@ -496,7 +500,7 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
 
 # ACTION VIEWS...
 class BaseBillActionView(BillModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'bill_pk'
     action_name = None
     commit = True
@@ -508,12 +512,12 @@ class BaseBillActionView(BillModelModelBaseView, RedirectView, SingleObjectMixin
                            'bill_pk': kwargs['bill_pk']
                        })
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseBillActionView, self).get(request, *args, **kwargs)
         bill_model: BillModel = self.get_object()
+        self.object = bill_model
 
         try:
             getattr(bill_model, self.action_name)(commit=self.commit, **kwargs)
@@ -522,7 +526,7 @@ class BaseBillActionView(BillModelModelBaseView, RedirectView, SingleObjectMixin
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))
 
 
 class BillModelActionMarkAsDraftView(BaseBillActionView):

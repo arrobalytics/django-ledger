@@ -375,8 +375,7 @@ class PurchaseOrderModelDetailView(PurchaseOrderModelModelViewQuerySetMixIn, Det
         )
         context['po_items'] = po_items_qs
         context['po_total_amount'] = sum(
-            i['po_total_amount'] for i in po_items_qs.values(
-                'po_total_amount', 'po_item_status') if i['po_item_status'] != 'cancelled')
+            i.po_total_amount for i in po_items_qs if i.po_item_status != ItemTransactionModel.STATUS_CANCELED)
         return context
 
 
@@ -429,7 +428,7 @@ class BasePurchaseOrderActionActionView(
     RedirectView,
     SingleObjectMixin
 ):
-    http_method_names = ['get']
+    http_method_names = ['post']
     pk_url_kwarg = 'po_pk'
     action_name = None
     commit = True
@@ -441,12 +440,12 @@ class BasePurchaseOrderActionActionView(
                            'po_pk': po_pk
                        })
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BasePurchaseOrderActionActionView, self).get(request, *args, **kwargs)
         po_model: PurchaseOrderModel = self.get_object()
+        self.object = po_model
 
         try:
             getattr(po_model, self.action_name)(commit=self.commit, **kwargs)
@@ -455,7 +454,7 @@ class BasePurchaseOrderActionActionView(
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))
 
 
 class PurchaseOrderMarkAsDraftView(BasePurchaseOrderActionActionView):

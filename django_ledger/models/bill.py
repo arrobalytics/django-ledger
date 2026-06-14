@@ -373,6 +373,15 @@ class BillModelAbstract(
     vendor = models.ForeignKey(
         'django_ledger.VendorModel', on_delete=models.CASCADE, verbose_name=_('Vendor')
     )
+    currency = models.ForeignKey(
+        'django_ledger.CurrencyModel',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('Document Currency'),
+    )
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=10, null=True, blank=True)
+    base_amount_due = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
 
     cash_account = models.ForeignKey(
         'django_ledger.AccountModel',
@@ -619,7 +628,12 @@ class BillModelAbstract(
         """
         if not queryset:
             queryset = self.itemtransactionmodel_set.all().select_related(
-                'item_model', 'entity_unit', 'po_model', 'bill_model'
+                'item_model',
+                'entity_unit',
+                'po_model',
+                'bill_model',
+                'bill_model__entity_model',
+                'bill_model__ledger__entity',
             )
         else:
             self.validate_itemtxs_qs(queryset)
@@ -1059,6 +1073,12 @@ class BillModelAbstract(
             payment_date = get_localtime()
 
         if commit:
+            try:
+                from django_ledger.services.enterprise import assert_period_open
+                period_date = payment_date.date() if hasattr(payment_date, 'date') else payment_date
+                assert_period_open(self.ledger.entity, period_date)
+            except ImportError:
+                pass
             self.migrate_state(
                 user_model=None,
                 entity_slug=self.ledger.entity.slug,

@@ -18,3 +18,4 @@ from django_ledger.models.entity import *
 
 from django_ledger.models.data_import import *
 from django_ledger.models.receipt import *
+from django_ledger.models.enterprise import *

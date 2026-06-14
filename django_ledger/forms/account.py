@@ -61,6 +61,15 @@ class AccountModelCreateForm(ModelForm):
     def clean_coa_model(self):
         return self.COA_MODEL
 
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+        if code and AccountModel.objects.filter(
+            coa_model=self.COA_MODEL,
+            code__exact=code
+        ).exists():
+            raise ValidationError(_('Account with this Chart of Accounts and Account Code already exists'))
+        return code
+
     class Meta:
         model = AccountModel
         fields = [

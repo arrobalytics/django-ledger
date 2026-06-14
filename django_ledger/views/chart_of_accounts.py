@@ -6,6 +6,7 @@ from typing import Optional
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.http import HttpResponseRedirect
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import UpdateView, ListView, RedirectView, CreateView
 from django.views.generic.detail import SingleObjectMixin
@@ -98,7 +99,7 @@ class ChartOfAccountModelUpdateView(ChartOfAccountModelModelBaseViewMixIn, Updat
 class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
                                    RedirectView,
                                    SingleObjectMixin):
-    http_method_names = ['get']
+    http_method_names = ['post']
     slug_url_kwarg = 'coa_slug'
     action_name = None
     commit = True
@@ -107,12 +108,12 @@ class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
         chart_of_accounts_model: ChartOfAccountModel = self.get_object()
         return chart_of_accounts_model.get_coa_list_url()
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(CharOfAccountModelActionView, self).get(request, *args, **kwargs)
         coa_model: ChartOfAccountModel = self.get_object()
+        self.object = coa_model
 
         try:
             getattr(coa_model, self.action_name)(commit=self.commit, **kwargs)
@@ -125,4 +126,4 @@ class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
                                  message=e.message,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
-        return response
+        return HttpResponseRedirect(self.get_redirect_url(*args, **kwargs))
