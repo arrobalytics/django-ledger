@@ -51,7 +51,13 @@ class BaseReportSupport(FPDF):
         )
         w = self.get_string_width(self.get_report_name())
         self.set_x((self.PAGE_WIDTH - w) / 2)
-        self.cell(w, 3, self.get_report_name(), ln=1)
+        self.cell(
+            w=w,
+            h=3,
+            text=self.get_report_name(),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
 
         # Report Title
         self.set_font(
@@ -64,7 +70,7 @@ class BaseReportSupport(FPDF):
         self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w=w,
                   h=6,
-                  txt=report_title,
+                  text=report_title,
                   border=0,
                   new_x=XPos.LMARGIN,
                   new_y=YPos.NEXT,
@@ -80,7 +86,7 @@ class BaseReportSupport(FPDF):
             self.set_x((self.PAGE_WIDTH - w) / 2)
             self.cell(w=w,
                       h=6,
-                      txt=self.REPORT_SUBTITLE.title(),
+                      text=self.REPORT_SUBTITLE.title(),
                       border=0,
                       new_x=XPos.LMARGIN,
                       new_y=YPos.NEXT,
@@ -106,7 +112,7 @@ class BaseReportSupport(FPDF):
         self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w=w,
                   h=5,
-                  txt=period,
+                  text=period,
                   new_x=XPos.LMARGIN,
                   new_y=YPos.NEXT,
                   align='C')
@@ -125,7 +131,7 @@ class BaseReportSupport(FPDF):
             self.cell(
                 w=w,
                 h=5,
-                txt=header['title'],
+                text=header['title'],
                 align=header['align'],
             )
         self.ln(8)
@@ -142,7 +148,7 @@ class BaseReportSupport(FPDF):
             h=5,
             markdown=True,
             align='R',
-            txt=f'**{self.CURRENCY_SYMBOL}{currency_format(amt)}**'
+            text=f'**{self.CURRENCY_SYMBOL}{currency_format(amt)}**'
         )
         self.set_default_font()
 
@@ -189,7 +195,7 @@ class BaseReportSupport(FPDF):
         self.cell(
             w=w,
             h=6,
-            txt=title,
+            text=title,
             align=align
         )
         self.set_default_font()
@@ -197,16 +203,30 @@ class BaseReportSupport(FPDF):
     def footer(self):
         self.set_y(-25)
         self.set_font(self.FONT_FAMILY, 'I', 8)
-        self.cell(0, 5, 'Page ' + str(self.page_no()) + '/{nb}', 0, 1, 'C')
+        self.cell(
+            w=0,
+            h=5,
+            text=f'Page {self.page_no()}/{{nb}}',
+            border=0,
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+            align='C',
+        )
         self.set_font(family=self.FONT_FAMILY, size=self.FONT_SIZE - 3)
         self.image(self.get_report_footer_logo_path(),
                    w=30, x=(200 - 30) / 2,
                    link='https://www.djangoledger.com')
         self.ln(1)
-        self.cell(0, 5,
-                  'Powered by Django Ledger. Open Source software under GPLv3 License. '
-                  'Created by Miguel Sanda <msanda@arrobalytics.com>',
-                  0, 1, 'C')
+        self.cell(
+            w=0,
+            h=5,
+            text='Powered by Django Ledger. Open Source software under GPLv3 License. '
+                'Created by Miguel Sanda <msanda@arrobalytics.com>',
+            border=0,
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+            align='C'
+        )
 
     def create_pdf_report(self):
         raise NotImplementedError()
