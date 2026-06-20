@@ -38,9 +38,9 @@ from django_ledger.settings import (
 
 
 def vendor_picture_upload_to(instance, filename):
-    if not instance.customer_number:
-        instance.generate_customer_number(commit=False)
-    vendor_number = instance.customer_number
+    if not instance.vendor_number:
+        instance.generate_vendor_number(commit=False)
+    vendor_number = instance.vendor_number
     name, ext = os.path.splitext(filename)
     safe_name = slugify(name)
     return f'vendor_pictures/{vendor_number}/{safe_name}{ext.lower()}'
@@ -293,6 +293,8 @@ class VendorModelAbstract(
             is_valid = entity_model == self.entity_model
         elif isinstance(entity_model, UUID):
             is_valid = entity_model == self.entity_model_id
+        else:
+            is_valid = False
 
         if not is_valid:
             raise VendorModelValidationError(
@@ -408,6 +410,7 @@ class VendorModelAbstract(
         Custom defined clean method that fetches the next vendor number if not yet fetched.
         Additional validation may be provided.
         """
+        super().clean()
         if self.can_generate_vendor_number():
             self.generate_vendor_number(commit=False)
 

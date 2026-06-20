@@ -515,7 +515,7 @@ class EntityModelClosingEntryMixIn:
 
     def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> Tuple:
         closing_date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        return self.get_closing_entry_digest_for_date(to_date=closing_date, **kwargs)
+        return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
 
     # ---> Closing Entry QuerySet <---
     def get_closing_entry_queryset_for_date(self, closing_date: date):
@@ -864,14 +864,7 @@ class EntityModelAbstract(
         -------
 
         """
-        entity_model = cls(
-            name=name,
-            accrual_method=use_accrual_method,
-            fy_start_month=fy_start_month,
-            admin=admin,
-        )
-        entity_model.clean()
-        entity_model = cls.add_root(instance=entity_model)
+        parent_entity_model = None
         if parent_entity:
             if isinstance(parent_entity, str):
                 # get by slug...
@@ -907,8 +900,17 @@ class EntityModelAbstract(
             else:
                 raise EntityModelValidationError(_('Only slug, UUID or EntityModel allowed.'))
 
-            parent_entity.add_child(instance=entity_model)
-        return entity_model
+        entity_model = cls(
+            name=name,
+            accrual_method=use_accrual_method,
+            fy_start_month=fy_start_month,
+            admin=admin,
+        )
+        entity_model.clean()
+
+        if parent_entity_model:
+            return parent_entity_model.add_child(instance=entity_model)
+        return cls.add_root(instance=entity_model)
 
     # ### ACCRUAL METHODS ######
     def get_accrual_method(self) -> str:
@@ -1485,9 +1487,9 @@ class EntityModelAbstract(
         """
         if coa_model:
             if isinstance(coa_model, UUID):
-                coa_model = self.chartofaccountsmodel_set.get(uuid__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(uuid__exact=coa_model)
             elif isinstance(coa_model, str):
-                coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(slug__exact=coa_model)
             elif isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=raise_exception)
         else:
@@ -1531,9 +1533,9 @@ class EntityModelAbstract(
         """
         if coa_model:
             if isinstance(coa_model, UUID):
-                coa_model = self.chartofaccountsmodel_set.get(uuid__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(uuid__exact=coa_model)
             elif isinstance(coa_model, str):
-                coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
+                coa_model = self.chartofaccountmodel_set.get(slug__exact=coa_model)
             elif isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=raise_exception)
         else:
@@ -2079,17 +2081,34 @@ class EntityModelAbstract(
                 _(f'Invalid Account Type: choices are {BankAccountModel.VALID_ACCOUNT_TYPES}')
             )
 
-        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(
-            roles=[BankAccountModel.ACCOUNT_TYPE_DEFAULT_ROLE_MAPPING[account_type]]
-        ).is_role_default()
+        if account_model:
+            if coa_model:
+                coa_model = self.get_coa_accounts(
+                    coa_model=coa_model,
+                    active=True,
+                    return_coa_model=True,
+                )[0]
+                self.validate_account_model_for_coa(
+                    account_model=account_model,
+                    coa_model=coa_model,
+                )
+            else:
+                self.validate_chart_of_accounts_for_entity(
+                    coa_model=account_model.coa_model,
+                )
+        else:
+            account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+            account_model_qs = account_model_qs.with_roles(
+                roles=[BankAccountModel.ACCOUNT_TYPE_DEFAULT_ROLE_MAPPING[account_type]]
+            ).is_role_default()
+            account_model = account_model_qs.get()
 
         bank_account_model = BankAccountModel(
             name=name,
             entity_model=self,
             account_type=account_type,
             active=active,
-            account_model=account_model_qs.get() if not account_model else account_model,
+            account_model=account_model,
             **bank_account_model_kwargs,
         )
 
@@ -2495,7 +2514,11 @@ class EntityModelAbstract(
             if uom_model.entity_id != self.uuid:
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
-        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        coa_model, account_model_qs = self.get_coa_accounts(
+            coa_model=coa_model,
+            active=True,
+            return_coa_model=True,
+        )
         account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_INVENTORY)
         if not inventory_account:
             inventory_account = account_model_qs.is_role_default().get()
@@ -2815,6 +2838,7 @@ class EntityModelAbstract(
             self.last_closing_date = None
 
         self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = [d.isoformat() for d in date_list]
+        self._CLOSING_ENTRY_DATES = None
         if commit:
             self.save(update_fields=['last_closing_date', 'updated', 'meta'])
         return date_list
@@ -3070,7 +3094,7 @@ class EntityModelAbstract(
         str
             EntityModel transaction import URL as a string.
         """
-        return reverse('django_ledger:data-import-jobs-list', kwargs={'entity_slug': self.slug})
+        return reverse('django_ledger:import-job-list', kwargs={'entity_slug': self.slug})
 
     def get_coa_list_url(self) -> str:
         return reverse(viewname='django_ledger:coa-list', kwargs={'entity_slug': self.slug})
@@ -3097,6 +3121,7 @@ class EntityModelAbstract(
             'django_ledger:account-list',
             kwargs={
                 'entity_slug': self.slug,
+                'coa_slug': self.get_default_coa().slug,
             },
         )
 
