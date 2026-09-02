@@ -421,9 +421,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
 
             self.entity = entity_model
 
+            if customer_model.entity_model_id != entity_model.uuid:
+                raise EstimateModelValidationError(
+                    f'Invalid CustomerModel for entity {entity_model.slug}'
+                )
+
             self.customer = customer_model
-            if not date_draft:
-                self.date_draft = get_localdate()
+            self.date_draft = get_localdate() if not date_draft else date_draft
 
             self.clean()
             self.clean_fields()

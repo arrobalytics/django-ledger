@@ -144,10 +144,12 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             k: sum(v.balance for v in l) for k, l in ce_txs_gb
         }
 
-        if len(ce_txs_sum) and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
+        debit_balance = ce_txs_sum.get(TransactionModel.DEBIT, Decimal('0.00'))
+        credit_balance = ce_txs_sum.get(TransactionModel.CREDIT, Decimal('0.00'))
+
+        if len(ce_txs_sum) and debit_balance != credit_balance:
             raise ClosingEntryValidationError(
-                message=f'Invalid transactions. Credits {ce_txs_sum[TransactionModel.CREDIT]} '
-                        f'do not equal Debits {ce_txs_sum[TransactionModel.DEBIT]}'
+                message=f'Invalid transactions. Credits {credit_balance} do not equal Debits {debit_balance}'
             )
 
         key_func = lambda i: (str(i.unit_model_id) if i.unit_model_id else '', i.activity if i.activity else '')
@@ -353,7 +355,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_delete_url(self, entity_slug: Optional[str] = None) -> str:
         if not entity_slug:
             entity_slug = self.entity_model.slug
-        return reverse(viewname='django_ledger:closing-entry-action-delete',
+        return reverse(viewname='django_ledger:closing-entry-delete',
                        kwargs={
                            'entity_slug': entity_slug,
                            'closing_entry_pk': self.uuid
@@ -409,7 +411,7 @@ class ClosingEntryTransactionModelManager(Manager):
     @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: EntityModel | str | UUID = None,
                    **kwargs) -> ClosingEntryTransactionModelQuerySet:
-        EntityModel = lazy_loader.get_entity(entity_model)
+        EntityModel = lazy_loader.get_entity_model()
 
         qs = self.get_queryset()
 
@@ -428,7 +430,7 @@ class ClosingEntryTransactionModelManager(Manager):
         elif isinstance(entity_model, UUID):
             qs = qs.filter(closing_entry_model__entity_model_id=entity_model)
         elif isinstance(entity_model, str):
-            qs = qs.filter(closing_entry_model__slug__exact=entity_model)
+            qs = qs.filter(closing_entry_model__entity_model__slug__exact=entity_model)
         else:
             raise ClosingEntryValidationError(
                 message=_('Must pass EntityModel or UUID or str')
