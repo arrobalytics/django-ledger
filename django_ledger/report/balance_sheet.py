@@ -64,7 +64,7 @@ class BalanceSheetReport(BaseReportSupport):
             self.cell(
                 w=self.get_string_width(d['role_name']),
                 h=2,
-                txt=d['role_name']
+                text=d['role_name']
             )
             self.ln(h=5)
 
@@ -75,12 +75,12 @@ class BalanceSheetReport(BaseReportSupport):
                 self.cell(
                     w=self.TABLE_HEADERS['role']['width'],
                     h=account_height,
-                    txt=''
+                    text=''
                 )
                 self.cell(
                     w=self.TABLE_HEADERS['code']['width'],
                     h=account_height,
-                    txt='      {code}'.format(code=acc['code'])
+                    text='      {code}'.format(code=acc['code'])
                 )
 
                 if acc['activity']:
@@ -88,26 +88,26 @@ class BalanceSheetReport(BaseReportSupport):
                     self.cell(
                         w=self.TABLE_HEADERS['name']['width'],
                         h=account_height,
-                        txt=f'{acc["name"]} ({act})'
+                        text=f'{acc["name"]} ({act})'
                     )
                 else:
                     self.cell(
                         w=self.TABLE_HEADERS['name']['width'],
                         h=account_height,
-                        txt=acc['name']
+                        text=acc['name']
                     )
 
                 self.cell(
                     w=self.TABLE_HEADERS['balance_type']['width'],
                     h=account_height,
-                    txt=acc['balance_type'],
+                    text=acc['balance_type'],
                     align='C'
                 )
                 self.cell(
                     w=self.TABLE_HEADERS['balance']['width'],
                     h=account_height,
                     align='R',
-                    txt=f"{self.CURRENCY_SYMBOL}{currency_format(acc['balance'])}"
+                    text=f"{self.CURRENCY_SYMBOL}{currency_format(acc['balance'])}"
                 )
                 self.ln(5)
 
@@ -115,7 +115,7 @@ class BalanceSheetReport(BaseReportSupport):
             self.cell(
                 w=20,
                 h=2,
-                txt='Total {r}'.format(r=d['role_name'])
+                text='Total {r}'.format(r=d['role_name'])
             )
 
             self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
@@ -124,7 +124,7 @@ class BalanceSheetReport(BaseReportSupport):
                 w=20,
                 h=2,
                 align='R',
-                txt='{s}{tot}'.format(s=currency_symbol(),
+                text='{s}{tot}'.format(s=currency_symbol(),
                                       tot=currency_format(d['total_balance']))
             )
             self.ln(3)
@@ -148,7 +148,7 @@ class BalanceSheetReport(BaseReportSupport):
                 w=20,
                 h=2,
                 align='R',
-                txt='Total Assets: {s}{tot}'.format(s=currency_symbol(),
+                text='Total Assets: {s}{tot}'.format(s=currency_symbol(),
                                                     tot=currency_format(section_data['total_balance']))
             )
         self.ln(h=5)
@@ -168,7 +168,7 @@ class BalanceSheetReport(BaseReportSupport):
                 w=20,
                 h=2,
                 align='R',
-                txt='Total Liabilities: {s}{tot}'.format(s=currency_symbol(),
+                text='Total Liabilities: {s}{tot}'.format(s=currency_symbol(),
                                                          tot=currency_format(section_data['total_balance']))
             )
         self.ln(h=5)
@@ -189,14 +189,14 @@ class BalanceSheetReport(BaseReportSupport):
         self.cell(
             w=20,
             h=2,
-            txt='Retained Earnings'
+            text='Retained Earnings'
         )
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(r='Retained Earnings',
+            text='{s}{tot}'.format(r='Retained Earnings',
                                   s=currency_symbol(),
                                   tot=currency_format(bs_data['retained_earnings_balance']))
         )
@@ -210,7 +210,7 @@ class BalanceSheetReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='Total Equity: {s}{tot}'.format(s=currency_symbol(),
+            text='Total Equity: {s}{tot}'.format(s=currency_symbol(),
                                                 tot=currency_format(bs_data['equity_balance']))
         )
         self.ln(h=10)
@@ -221,7 +221,7 @@ class BalanceSheetReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='Total Liabilities + Equity: {s}{tot}'.format(s=currency_symbol(),
+            text='Total Liabilities + Equity: {s}{tot}'.format(s=currency_symbol(),
                                                               tot=currency_format(
                                                                   bs_data['liabilities_equity_balance']))
         )
