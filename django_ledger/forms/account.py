@@ -13,7 +13,6 @@ from django.forms import (
     TextInput,
     Select,
     ModelForm,
-    ChoiceField,
     ValidationError,
     CheckboxInput,
     HiddenInput,
@@ -100,25 +99,7 @@ class AccountModelUpdateForm(MoveNodeForm):
     AccountModelUpdateForm
 
     A form for updating the account model, inheriting from MoveNodeForm.
-
-    Attributes
-    ----------
-    _position : ChoiceField
-        A choice field for selecting the position.
-    _ref_node_id : ChoiceField
-        An optional choice field for selecting the relative node.
     """
-
-    _position = ChoiceField(
-        required=True,
-        label=_('Position'),
-        widget=Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-    )
-    _ref_node_id = ChoiceField(
-        required=False,
-        label=_('Relative to'),
-        widget=Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -103,6 +103,44 @@ class AccountModelTests(DjangoLedgerBaseTest):
         self.assertEqual(response_create.status_code, 200)
         self.assertContains(response_create, 'Account with this Chart of Accounts and Account Code already exists')
 
+    def test_account_update_persists_name_change(self):
+
+        entity_model: EntityModel = self.get_random_entity_model()
+        account_model: AccountModel = self.get_random_account(entity_model=entity_model)
+
+        account_update_url = reverse(
+            viewname='django_ledger:account-update',
+            kwargs={
+                'entity_slug': entity_model.slug,
+                'coa_slug': account_model.coa_slug,
+                'account_pk': account_model.uuid
+            }
+        )
+
+        self.login_client()
+        response = self.CLIENT.get(account_update_url)
+        self.assertEqual(response.status_code, 200, msg='Fail to GET Account Update page.')
+
+        # resubmit the form unchanged, other than the account name...
+        form = response.context['form']
+        form_data = {
+            field_name: form[field_name].value()
+            for field_name in form.fields
+            if form[field_name].value() is not None
+        }
+        NEW_ACCOUNT_NAME = 'Renamed Test Account'
+        form_data['name'] = NEW_ACCOUNT_NAME
+
+        response_update = self.CLIENT.post(account_update_url, data=form_data)
+        self.assertEqual(
+            response_update.status_code, 302,
+            msg=f'Account update form did not redirect on valid submission. Errors: '
+                f'{response_update.context["form"].errors if response_update.status_code == 200 else None}'
+        )
+
+        account_model.refresh_from_db()
+        self.assertEqual(account_model.name, NEW_ACCOUNT_NAME)
+
     def test_account_activation(self):
 
         entity_model: EntityModel = self.get_random_entity_model()
