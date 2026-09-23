@@ -105,7 +105,7 @@ from django.db.models import Case, DecimalField, F, QuerySet, Sum, When
 from django.db.models.functions import TruncMonth
 from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
-from django.utils.timezone import is_naive, localdate, localtime, make_aware
+from django.utils.timezone import is_naive, localdate, localtime, make_aware, make_naive
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger import settings
@@ -355,6 +355,7 @@ def validate_io_timestamp(
       are enabled.
     - String inputs are first attempted to be parsed into `date` objects before
       attempting to parse them into `datetime` objects if the initial attempt fails.
+      Parsed datetimes retain their time and UTC offset; date-only strings use midnight.
     - When `no_parse_localdate` is True, the function defaults to returning the
       local time for cases where parsing is not possible.
     """
@@ -374,8 +375,12 @@ def validate_io_timestamp(
             fdt = parse_datetime(dt)
             if not fdt:
                 raise InvalidDateInputError(message=f'Could not parse date from {dt}')
-            elif is_naive(fdt):
+            elif global_settings.USE_TZ and is_naive(fdt):
                 fdt = make_aware(fdt)
+            elif not global_settings.USE_TZ and not is_naive(fdt):
+                # Aware values cannot be saved with USE_TZ off; use local time.
+                fdt = make_naive(fdt)
+            return fdt
         if global_settings.USE_TZ:
             return make_aware(
                 datetime.combine(
