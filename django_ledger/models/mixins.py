@@ -10,8 +10,10 @@ import logging
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from html import unescape as _unescape
 from itertools import groupby
 from typing import Dict, Optional, Union
+from urllib.parse import urlsplit as _urlsplit
 from uuid import UUID
 
 from django.conf import settings
@@ -25,8 +27,11 @@ from django.core.validators import (
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
+from django.utils.safestring import mark_safe as _mark_safe
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
+from markdown.extensions import Extension as _MarkdownExtension
+from markdown.treeprocessors import Treeprocessor as _Treeprocessor
 
 from django_ledger.io import (
     ASSET_CA_CASH,
@@ -1193,6 +1198,36 @@ class PaymentTermsMixIn(models.Model):
         self.set_due_date()
 
 
+_SAFE_URL_SCHEMES = frozenset({'', 'http', 'https', 'mailto'})
+
+
+def _is_safe_url(value: str) -> bool:
+    # Browsers decode entities and drop ASCII control characters and spaces before reading a scheme.
+    cleaned = ''.join(ch for ch in _unescape(value) if ord(ch) > 0x20 and ord(ch) != 0x7F)
+    try:
+        return _urlsplit(cleaned).scheme.lower() in _SAFE_URL_SCHEMES
+    except ValueError:
+        return False
+
+
+class _DropUnsafeUrls(_Treeprocessor):
+    def run(self, root):
+        for element in root.iter():
+            for attribute in ('href', 'src'):
+                value = element.get(attribute)
+                if value is not None and not _is_safe_url(value):
+                    del element.attrib[attribute]
+
+
+class _UntrustedMarkdown(_MarkdownExtension):
+    """Escapes raw HTML and removes links or images whose URL scheme is not allowed."""
+
+    def extendMarkdown(self, md):
+        md.preprocessors.deregister('html_block')
+        md.inlinePatterns.deregister('html')
+        md.treeprocessors.register(_DropUnsafeUrls(md), 'drop_unsafe_urls', 0)
+
+
 class MarkdownNotesMixIn(models.Model):
     """
     Implements functionality used to add a Mark-Down notes to a base Django Model.
@@ -1212,16 +1247,17 @@ class MarkdownNotesMixIn(models.Model):
 
     def notes_html(self):
         """
-        Compiles the markdown_notes field into html.
+        Compiles the markdown_notes field into html. Raw HTML in the notes is escaped and links or
+        images with a scheme other than http, https or mailto lose their URL.
 
         Returns
         -------
         str
-            Compiled HTML document as a string.
+            Compiled HTML document as a safe string.
         """
         if not self.markdown_notes:
             return ''
-        return markdown(force_str(self.markdown_notes))
+        return _mark_safe(markdown(force_str(self.markdown_notes), extensions=[_UntrustedMarkdown()]))
 
     def clean(self):
         super().clean()

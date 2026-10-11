@@ -255,14 +255,15 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
         context['total_amount__sum'] = item_data['total_amount__sum']
 
         if not bill_model.is_configured():
-            link = format_html(f"""
-            <a href="{reverse("django_ledger:bill-update", kwargs={
+            update_url = reverse('django_ledger:bill-update', kwargs={
                 'entity_slug': self.kwargs['entity_slug'],
                 'bill_pk': bill_model.uuid
-            })}">here</a>
-            """)
-            msg = f'Bill {bill_model.bill_number} has not been fully set up. ' + \
-                  f'Please update or assign associated accounts {link}.'
+            })
+            msg = format_html(
+                'Bill {} has not been fully set up. Please update or assign associated accounts <a href="{}">here</a>.',
+                bill_model.bill_number,
+                update_url,
+            )
             messages.add_message(self.request,
                                  message=msg,
                                  level=messages.WARNING,
