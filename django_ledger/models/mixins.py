@@ -7,6 +7,7 @@ functionality.
 """
 
 import logging
+import re
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -20,7 +21,8 @@ from django.core.validators import (
     MaxValueValidator,
     MinLengthValidator,
     MinValueValidator,
-    int_list_validator,
+    RegexValidator,
+    int_list_validator,  # noqa: F401  re-exported through django_ledger.models
 )
 from django.db import models
 from django.db.models import QuerySet
@@ -1300,14 +1302,14 @@ class FinancialAccountInfoMixin(models.Model):
         max_length=30,
         null=True,
         blank=True,
-        validators=[int_list_validator(sep='', message=_('Only digits allowed'))],
+        validators=[RegexValidator(re.compile(r'^\d+\Z'), code='invalid', message=_('Only digits allowed'))],
         verbose_name=_('Account Number'),
     )
     routing_number = models.CharField(
         max_length=30,
         null=True,
         blank=True,
-        validators=[int_list_validator(sep='', message=_('Only digits allowed'))],
+        validators=[RegexValidator(re.compile(r'^\d+\Z'), code='invalid', message=_('Only digits allowed'))],
         verbose_name=_('Routing Number'),
     )
     aba_number = models.CharField(
