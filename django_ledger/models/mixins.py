@@ -32,6 +32,7 @@ from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 from markdown.extensions import Extension as _MarkdownExtension
 from markdown.treeprocessors import Treeprocessor as _Treeprocessor
+from markdown.util import AMP_SUBSTITUTE as _AMP_SUBSTITUTE
 
 from django_ledger.io import (
     ASSET_CA_CASH,
@@ -1203,7 +1204,8 @@ _SAFE_URL_SCHEMES = frozenset({'', 'http', 'https', 'mailto'})
 
 def _is_safe_url(value: str) -> bool:
     # Browsers decode entities and drop ASCII control characters and spaces before reading a scheme.
-    cleaned = ''.join(ch for ch in _unescape(value) if ord(ch) > 0x20 and ord(ch) != 0x7F)
+    # Automatic email links hold their entities behind Markdown's ampersand placeholder until serialisation.
+    cleaned = ''.join(ch for ch in _unescape(value.replace(_AMP_SUBSTITUTE, '&')) if ord(ch) > 0x20 and ord(ch) != 0x7F)
     try:
         return _urlsplit(cleaned).scheme.lower() in _SAFE_URL_SCHEMES
     except ValueError:
@@ -1225,7 +1227,7 @@ class _UntrustedMarkdown(_MarkdownExtension):
     def extendMarkdown(self, md):
         md.preprocessors.deregister('html_block')
         md.inlinePatterns.deregister('html')
-        md.treeprocessors.register(_DropUnsafeUrls(md), 'drop_unsafe_urls', 0)
+        md.treeprocessors.register(_DropUnsafeUrls(md), 'drop_unsafe_urls', -1)
 
 
 class MarkdownNotesMixIn(models.Model):

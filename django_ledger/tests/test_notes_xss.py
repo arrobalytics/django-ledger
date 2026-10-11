@@ -14,6 +14,7 @@ from django_ledger.tests.base import DjangoLedgerBaseTest
 
 SAFE_SCHEMES = {'', 'http', 'https', 'mailto'}
 ALLOWED_ATTRIBUTES = {'href', 'src', 'alt', 'title'}
+TEMPLATE_HANDLER = r"^djLedger\.toggleModal\('[\w-]+'\)$"
 
 
 class _Elements(HTMLParser):
@@ -83,6 +84,9 @@ class NotesHtmlTests(SimpleTestCase):
     def test_entities_autolinks_and_attribute_quoting_are_unchanged(self):
         self.assertEqual(notes_html('&copy; &amp; &#60;script&#62;'), '<p>&copy; &amp; &#60;script&#62;</p>')
         self.assertIn('href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;', notes_html('<a@b.c>'))
+        self.assertEqual(
+            [attrs.get('href') for tag, attrs in elements(notes_html('<a@b.c>')) if tag == 'a'], ['mailto:a@b.c']
+        )
         self.assertEqual(notes_html('<https://x.y>'), '<p><a href="https://x.y">https://x.y</a></p>')
         self.assertEqual(
             notes_html('![alt "q" <x>][r]\n\n[r]: javascript:alert(1) "t"'),
@@ -126,7 +130,7 @@ class SafeRenderingTemplateTests(SimpleTestCase):
         self.assertIn('<a href="/bills/1/update/">here</a>', html)
         self.assertIn('&lt;b&gt;Bill&lt;/b&gt;', html)
 
-    def test_message_storage_keeps_safe_data_only_when_built_safely(self):
+    def test_message_storage_preserves_safe_data_classification(self):
         safe = format_html('<a href="{}">here</a>', '/x/')
         encoded = MessageEncoder().encode([Message(30, safe), Message(30, '<b>plain</b>')])
         decoded = MessageDecoder().decode(encoded)
@@ -147,9 +151,10 @@ class DetailPageXssTests(DjangoLedgerBaseTest):
     def assert_no_injected_markup(self, html):
         for tag, attrs in elements(html):
             self.assertFalse(tag == 'img' and attrs.get('src') == 'x', attrs)
-            self.assertFalse(
-                any(name.startswith('on') and 'alert(7)' in (value or '') for name, value in attrs.items())
-            )
+            handlers = {name: value for name, value in attrs.items() if name.startswith('on')}
+            for name, value in handlers.items():
+                self.assertEqual(name, 'onclick', attrs)
+                self.assertRegex(value, TEMPLATE_HANDLER, attrs)
             for name in ('href', 'src'):
                 self.assertNotIn('javascript:alert(7)', (attrs.get(name) or '').lower())
 
