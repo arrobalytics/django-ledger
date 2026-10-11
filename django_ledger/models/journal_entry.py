@@ -920,11 +920,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
-        if not self.can_lock():
-            if raise_exception:
-                if raise_exception:
-                    raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
-                return
+        if not self.can_lock() and raise_exception:
+            raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
         if not self.is_locked():
             self.generate_activity(force_update=True)
             self.locked = True

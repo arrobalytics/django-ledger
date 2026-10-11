@@ -815,7 +815,7 @@ class InvoiceModelAbstract(
         """
         return all([
             self.is_approved(),
-            float(self.amount_paid) == 0.00
+            self.amount_paid == 0
         ])
 
     def can_cancel(self):
