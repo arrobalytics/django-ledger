@@ -23,9 +23,9 @@
             </tbody>
             <tfoot>
             <tr>
-                <th colspan="2"></th>
-                <th class="has-text-right">{% trans 'Total Value' %}</th>
-                <th class="has-text-right">{% currency_symbol %}{{ inventory_total_value | currency_format }}</th>
+                <td colspan="2"></td>
+                <th scope="row" class="has-text-right">{% trans 'Total Value' %}</th>
+                <td class="has-text-right has-text-weight-bold">{% currency_symbol %}{{ inventory_total_value | currency_format }}</td>
             </tr>
             </tfoot>
         </table>

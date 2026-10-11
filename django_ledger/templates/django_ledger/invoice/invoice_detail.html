@@ -117,12 +117,12 @@
                                     </tbody>
                                     <tfoot>
                                     <tr>
-                                        <th></th>
-                                        <th></th>
-                                        <th>{% trans 'Total' %}</th>
-                                        <th>
+                                        <td></td>
+                                        <td></td>
+                                        <th scope="row">{% trans 'Total' %}</th>
+                                        <td class="has-text-weight-bold">
                                             {% currency_symbol %}{{ total_amount_due | currency_format }}
-                                        </th>
+                                        </td>
 
                                     </tr>
                                     </tfoot>

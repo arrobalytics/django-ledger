@@ -1,9 +1,11 @@
 {% load static %}
 {% load django_ledger %}
 {% load cache %}
+{% load get_current_language from i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 
 <!DOCTYPE html>
-<html>
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
