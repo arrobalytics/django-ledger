@@ -11,7 +11,9 @@ RUN pip3 install --upgrade pip
 
 RUN pip3 install -U pipenv
 
-COPY . /app/
+COPY requirements.txt manage.py entrypoint.sh /app/
+COPY dev_env /app/dev_env
+COPY django_ledger /app/django_ledger
 
 RUN pipenv install
 
