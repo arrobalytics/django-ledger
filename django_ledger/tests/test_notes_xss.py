@@ -80,6 +80,19 @@ class NotesHtmlTests(SimpleTestCase):
         self.assertEqual(hrefs, ['https://example.com', '/bills/', 'mailto:a@b.c', '#top'])
         self.assertIn('1 &lt; 2', html)
 
+    def test_entities_autolinks_and_attribute_quoting_are_unchanged(self):
+        self.assertEqual(notes_html('&copy; &amp; &#60;script&#62;'), '<p>&copy; &amp; &#60;script&#62;</p>')
+        self.assertIn('href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;', notes_html('<a@b.c>'))
+        self.assertEqual(notes_html('<https://x.y>'), '<p><a href="https://x.y">https://x.y</a></p>')
+        self.assertEqual(
+            notes_html('![alt "q" <x>][r]\n\n[r]: javascript:alert(1) "t"'),
+            '<p><img alt="alt &quot;q&quot; &lt;x&gt;" title="t" /></p>',
+        )
+        self.assertEqual(
+            notes_html('![a" onerror="alert(1)](https://e.com/i.png)'),
+            '<p><img alt="a&quot; onerror=&quot;alert(1)" src="https://e.com/i.png" /></p>',
+        )
+
     def test_raw_html_is_shown_as_text(self):
         self.assertEqual(notes_html('<b>b</b>'), '<p>&lt;b&gt;b&lt;/b&gt;</p>')
 
