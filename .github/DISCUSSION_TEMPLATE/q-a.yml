@@ -1,0 +1,52 @@
+title: "[Q&A]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask how to use **Django Ledger** — entities, CoA, journal entries, documents, statements, or imports.
+
+        Prefer this over Issues for support questions. Also welcome on [Discord](https://discord.gg/c7PZcbYgrc).
+        Check the [docs](https://django-ledger.readthedocs.io/en/latest/) and [Get Started guide](https://www.djangoledger.com/get-started) first.
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Installation / Django project setup
+        - EntityModel / multi-tenancy
+        - Chart of Accounts / accounts / roles
+        - Ledgers / Journal Entries / Transactions
+        - Bills / Invoices / POs / Estimates
+        - Financial statements / IO digest / reporting
+        - Closing entries / fiscal periods
+        - Inventory / Items
+        - OFX/QFX / bank import
+        - Extending models / custom roles
+        - Performance / large datasets
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What are you trying to achieve? What have you tried?
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Relevant code or config
+      description: Minimal snippet (models usage, settings, digest call, etc.).
+      render: python
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Django Ledger, Django, and Python versions.
+      placeholder: django-ledger 0.8.5 · Django 5.1 · Python 3.12

@@ -1,0 +1,48 @@
+title: "[Idea]: "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Brainstorm enhancements to Django Ledger before filing a formal feature issue.
+
+        Mature ideas can be promoted to a [Feature request](https://github.com/arrobalytics/django-ledger/issues/new?template=02-feature-request.yml).
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Double-entry engine
+        - Commercial documents
+        - Reporting & analytics
+        - Imports / banking
+        - Multi-tenancy / permissions
+        - UI / Admin
+        - Developer experience
+        - Ecosystem / integrations
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should change, and what problem does it solve for integrators or bookkeeping workflows?
+    validations:
+      required: true
+
+  - type: textarea
+    id: sketch
+    attributes:
+      label: Rough sketch
+      description: Optional API shape, model changes, or user flow. Not a full design doc.
+
+  - type: checkboxes
+    id: next
+    attributes:
+      label: Next step
+      options:
+        - label: Looking for feedback only right now
+        - label: I may turn this into a Feature issue / PR later
