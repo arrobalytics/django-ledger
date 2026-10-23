@@ -1,0 +1,81 @@
+name: Feature request
+description: Propose a new capability or enhancement to the double-entry engine, documents, or APIs.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a concrete idea that adds value to **Django Ledger** (engine, documents, reporting, imports, or DX).
+
+        Please read [Contribute.md](https://github.com/arrobalytics/django-ledger/blob/dev/Contribute.md) before opening a large proposal.
+        For early brainstorming, consider a [Discussion](https://github.com/arrobalytics/django-ledger/discussions) first.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      description: Where would this live?
+      multiple: true
+      options:
+        - Double-entry engine / Journal Entries / Transactions
+        - Chart of Accounts / roles / hierarchies
+        - Entity / multi-tenancy / permissions
+        - Commercial documents (Bills, Invoices, POs, Estimates)
+        - Financial statements & ratios
+        - Closing entries / fiscal year
+        - Inventory / Items / UoM
+        - Banking & OFX/QFX imports
+        - IO / digest / reporting API
+        - UI / Admin / templates
+        - Performance / scalability
+        - Developer experience / tooling
+        - Documentation / examples / notebooks
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What accounting, product, or developer problem does this solve?
+      placeholder: Example — There is no clean way to reverse a posted journal entry while preserving an audit trail.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you want. Mention models, APIs, or UI flows if you have them in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: accounting
+    attributes:
+      label: Accounting / domain notes
+      description: Any double-entry, GAAP/IFRS, or bookkeeping constraints maintainers should know about?
+      placeholder: Should reverse entries create contra transactions? Must statements remain historically consistent?
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds, existing Django Ledger APIs, or other libraries you evaluated.
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Who benefits?
+      description: Integrators building apps, end users of the Entity UI, report consumers, etc.
+
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: Contribution interest
+      options:
+        - label: I am willing to help implement this (with guidance).
+        - label: I can help with tests, docs, or examples.
+        - label: This is a request only; I cannot contribute code right now.

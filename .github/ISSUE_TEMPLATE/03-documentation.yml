@@ -1,0 +1,52 @@
+name: Documentation
+description: Report missing, unclear, or incorrect docs, examples, or notebooks.
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve Django Ledger docs (Read the Docs, README, notebooks, or in-code API docs).
+
+  - type: dropdown
+    id: doc-location
+    attributes:
+      label: Where is the problem?
+      options:
+        - Read the Docs (django-ledger.readthedocs.io)
+        - README / project root
+        - Get Started guide (djangoledger.com)
+        - QuickStart Notebook
+        - Docstrings / API reference
+        - Contribute.md or community docs
+        - Other / missing entirely
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link or file path
+      description: URL or path to the page/section (if it exists).
+      placeholder: https://django-ledger.readthedocs.io/en/latest/...
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is wrong or missing?
+      description: Unclear steps, outdated API, wrong accounting explanation, missing migration notes, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: What should the docs say instead? Sample wording welcome.
+
+  - type: checkboxes
+    id: offer
+    attributes:
+      label: Contribution
+      options:
+        - label: I can open a PR to fix this documentation.

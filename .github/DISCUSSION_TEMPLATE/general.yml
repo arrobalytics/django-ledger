@@ -1,0 +1,29 @@
+title: "[General]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        General conversation about **Django Ledger** that does not fit Q&A, Ideas, or Show & Tell.
+
+        Bugs and actionable feature work belong in [Issues](https://github.com/arrobalytics/django-ledger/issues).
+        Security reports belong in [private advisories](https://github.com/arrobalytics/django-ledger/security/advisories/new).
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Discussion kind
+      options:
+        - Community / roadmap chat
+        - Integration announcement
+        - Release / version feedback
+        - Meta (process, templates, docs site)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: content
+    attributes:
+      label: What would you like to discuss?
+    validations:
+      required: true

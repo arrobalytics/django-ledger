@@ -1,0 +1,56 @@
+title: "[Show & Tell]: "
+labels: ["show-and-tell"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share how you use **Django Ledger** — apps built on it, custom CoA designs, imports, reporting pipelines, or teaching materials.
+
+  - type: input
+    id: project-name
+    attributes:
+      label: Project or use case name
+      placeholder: Acme ERP / teaching lab / personal bookkeeping app
+    validations:
+      required: true
+
+  - type: textarea
+    id: story
+    attributes:
+      label: What did you build?
+      description: How Django Ledger fits your stack, and what accounting workflows you cover.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: features-used
+    attributes:
+      label: Features you relied on
+      multiple: true
+      options:
+        - EntityModel / multi-tenancy
+        - Chart of Accounts
+        - Journal Entries / Ledgers
+        - Bills / Invoices / POs
+        - Financial statements
+        - Closing entries
+        - Inventory
+        - OFX/QFX import
+        - IO digest / programmatic reporting
+        - Entity Management UI / Admin
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: tips
+    attributes:
+      label: Tips or lessons learned
+      description: Patterns that worked, pitfalls, or APIs you wish you had found sooner.
+
+  - type: input
+    id: links
+    attributes:
+      label: Links
+      description: Repo, blog post, demo, or screenshots (optional).
+      placeholder: https://...

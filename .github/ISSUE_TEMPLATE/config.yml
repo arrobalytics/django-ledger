@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://django-ledger.readthedocs.io/en/latest/
+    about: Installation, API reference, and usage guides for Django Ledger.
+  - name: Get Started Guide
+    url: https://www.djangoledger.com/get-started
+    about: Free getting-started guide for integrating Django Ledger into your project.
+  - name: Discord Community
+    url: https://discord.gg/c7PZcbYgrc
+    about: Ask questions, share integrations, and chat with other Django Ledger users.
+  - name: Security / sensitive reports
+    url: https://github.com/arrobalytics/django-ledger/security/advisories/new
+    about: Do not file public issues for security vulnerabilities. Use private advisories instead.

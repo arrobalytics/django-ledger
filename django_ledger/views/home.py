@@ -10,12 +10,11 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import RedirectView, ListView
 
-from django_ledger.models.entity import EntityModel
+
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class RootUrlView(RedirectView):
-
     def get_redirect_url(self, *args, **kwargs):
         if not self.request.user.is_authenticated:
             return reverse('django_ledger:login')
@@ -38,6 +37,4 @@ class DashboardView(DjangoLedgerSecurityMixIn, ListView):
         return context
 
     def get_queryset(self):
-        return EntityModel.objects.for_user(
-            user_model=self.request.user
-        ).order_by('-created')
+        return self.get_authorized_entity_queryset()

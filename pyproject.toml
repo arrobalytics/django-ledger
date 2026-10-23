@@ -7,10 +7,10 @@ description = "Double entry accounting system built on the Django Web Framework.
 keywords = ["django", "finance", "bookkeeping", "accounting", "balance sheet", "income statement", "general ledger", "money", "engine"]
 license = "GPL-3.0-or-later"
 authors = [
-    { name = "Miguel Sanda", email = "msanda@edmagroup.com" }
+    { name = "Miguel Sanda", email = "msanda@arrobalytics.com" }
 ]
 maintainers = [
-    { name = "Miguel Sanda", email = "msanda@edmagroup.com" }
+    { name = "Miguel Sanda", email = "msanda@arrobalytics.com" }
 ]
 dependencies = [
     "django>=4.2",
@@ -45,6 +45,7 @@ dev = [
     "jupyterlab>=4.4.9",
     "myst-parser>=4.0.1",
     "notebook>=7.4.7",
+    "python-dotenv>=1.2.3",
     "renku-sphinx-theme>=0.5.0",
     "sphinx>=8.2.3",
 ]
@@ -52,6 +53,15 @@ readthedocs = [
     "myst-parser>=4.0.1",
     "renku-sphinx-theme>=0.5.0",
     "sphinx>=8.2.3",
+]
+postgresql = [
+    "psycopg[pool,binary]",
+]
+mysql = [
+    "mysqlclient~=2.2",
+]
+mariadb = [
+    "mysqlclient~=2.2",
 ]
 
 [tool.setuptools.packages.find]

@@ -831,8 +831,8 @@ inventory_model.is_inventory()
 # Financial Statement PDF Reports
 
 ## Set Up
-- Must enable PDF support by installing dependencies via *pipenv*.
-    - pipenv install --categories pdf
+- Must ensure PDF support dependencies are installed (e.g. via *uv*).
+    - uv sync
 
 ## Balance Sheet
 

@@ -1,0 +1,135 @@
+name: Bug report
+description: Report incorrect balances, broken journal entries, statement errors, or other defects.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve **Django Ledger**.
+
+        Before filing, please check existing [issues](https://github.com/arrobalytics/django-ledger/issues) and the [docs](https://django-ledger.readthedocs.io/en/latest/).
+        For usage questions, prefer [Discussions](https://github.com/arrobalytics/django-ledger/discussions) or [Discord](https://discord.gg/c7PZcbYgrc).
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Which part of Django Ledger is involved?
+      multiple: true
+      options:
+        - Entity / multi-tenancy
+        - Chart of Accounts / AccountModel
+        - Ledgers / Journal Entries / Transactions
+        - Bills / Invoices / Receipts
+        - Purchase Orders / Estimates / Sales Orders
+        - Customers / Vendors
+        - Financial statements (Income Statement, Balance Sheet, Cash Flow)
+        - Closing entries / fiscal periods
+        - Inventory / Items / Units of Measure
+        - Bank accounts / OFX & QFX import
+        - IO library / digest / reporting API
+        - Django Admin / Entity Management UI
+        - Forms / Views / Templates
+        - Migrations / database
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What went wrong? Be specific about accounting outcome if relevant (e.g. unbalanced JE, wrong statement totals, missing postings).
+      placeholder: Example — Posting a bill payment creates a journal entry that does not balance, or Balance Sheet cash does not match ledger cash account.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps or a short code snippet that reproduces the issue.
+      placeholder: |
+        1. Create an EntityModel with default CoA
+        2. Create Invoice X for Customer Y
+        3. Mark as paid / post JE
+        4. Observe ...
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened (including expected balances or statement figures if known)?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead? Include error messages, traceback, or incorrect amounts.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: django-ledger-version
+    attributes:
+      label: Django Ledger version
+      description: e.g. 0.8.5 — from `pip show django-ledger` or your `pyproject.toml` / `requirements.txt`.
+      placeholder: 0.8.5
+    validations:
+      required: true
+
+  - type: input
+    id: django-version
+    attributes:
+      label: Django version
+      placeholder: 5.1.x
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Django Ledger requires Python 3.11+.
+      placeholder: 3.12.x
+    validations:
+      required: true
+
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database backend
+      options:
+        - SQLite
+        - PostgreSQL
+        - MySQL / MariaDB
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: OS, deployment notes, custom settings (e.g. DJANGO_LEDGER_* flags), or anything else that might matter.
+      placeholder: macOS 15, local runserver, default settings...
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I can reproduce this on a clean Entity / minimal example (or explained why not).
+          required: false
+        - label: This is not a security vulnerability (those go to private advisories).
+          required: true
