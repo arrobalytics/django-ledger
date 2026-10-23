@@ -574,11 +574,11 @@ class Migration(migrations.Migration):
                 ('website', models.URLField(blank=True, null=True, verbose_name='Website')),
                 ('phone', models.CharField(blank=True, max_length=30, null=True, verbose_name='Phone Number')),
                 ('account_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
+                    django.core.validators.RegexValidator(re.compile('^\\d+\\Z'), code='invalid',
                                                           message='Only digits allowed')],
                                                     verbose_name='Account Number')),
                 ('routing_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
+                    django.core.validators.RegexValidator(re.compile('^\\d+\\Z'), code='invalid',
                                                           message='Only digits allowed')],
                                                     verbose_name='Routing Number')),
                 ('aba_number', models.CharField(blank=True, max_length=30, null=True, verbose_name='ABA Number')),
@@ -881,11 +881,11 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('updated', models.DateTimeField(auto_now=True, null=True)),
                 ('account_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
+                    django.core.validators.RegexValidator(re.compile('^\\d+\\Z'), code='invalid',
                                                           message='Only digits allowed')],
                                                     verbose_name='Account Number')),
                 ('routing_number', models.CharField(blank=True, max_length=30, null=True, validators=[
-                    django.core.validators.RegexValidator(re.compile('^\\d+(?:\\d+)*\\Z'), code='invalid',
+                    django.core.validators.RegexValidator(re.compile('^\\d+\\Z'), code='invalid',
                                                           message='Only digits allowed')],
                                                     verbose_name='Routing Number')),
                 ('aba_number', models.CharField(blank=True, max_length=30, null=True, verbose_name='ABA Number')),
