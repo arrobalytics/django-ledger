@@ -89,7 +89,7 @@ Notes:
 """
 
 from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from itertools import groupby
 from pathlib import Path
@@ -514,7 +514,7 @@ class IOResult:
     ce_to_date: Optional[date] = None
 
     # the final queryset to evaluate...
-    txs_queryset = None
+    txs_queryset: Optional[QuerySet] = field(default=None, repr=False, compare=False, kw_only=True)
 
     # the aggregated account balance...
     accounts_digest: Optional[List[Dict]] = None

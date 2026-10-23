@@ -876,7 +876,7 @@ class BillModelAbstract(
         bool
             True if BillModel can be marked as void, else False.
         """
-        return all([self.is_approved(), float(self.amount_paid) == 0.00])
+        return all([self.is_approved(), self.amount_paid == 0])
 
     def can_cancel(self) -> bool:
         """

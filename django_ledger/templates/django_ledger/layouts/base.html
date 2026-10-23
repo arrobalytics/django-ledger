@@ -1,9 +1,11 @@
 {% load static %}
 {% load django_ledger %}
 {% load cache %}
+{% load get_current_language from i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 
 <!DOCTYPE html>
-<html>
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,12 +32,14 @@
     </script>
 
     <!-- Bulma base, then Bulmaswatch theme, then our overrides -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css"
+          integrity="sha384-DCY3M8xLkMu6c9IKcKbe+jHKMjelnwC0p+SBaxfHxoBYZWdJF2X400UdBCgATtAB" crossorigin="anonymous">
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/jenil/bulmaswatch@gh-pages/{{ DJANGO_LEDGER_THEME }}/bulmaswatch.min.css">
     <link rel="stylesheet" href="{% static 'django_ledger/css/djl_styles.css' %}">
 
-    <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"
+            integrity="sha384-63H0EhkXL6M4HAjkA3bbnT+mkm0SbHKtxxj4Iv1hXtM6FDH+c6XqvuXgDKBJdJNG" crossorigin="anonymous"></script>
 
     <link rel="shortcut icon" type="image/jpg" href="{% static 'django_ledger/logo/favicon.png' %}">
 

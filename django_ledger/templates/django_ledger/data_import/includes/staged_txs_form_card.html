@@ -51,7 +51,7 @@
 
                         {% if txf.instance.is_transfer or txf.instance.is_debt_payment %}
                             <div class="field">
-                                <label class="label is-small">{% trans 'Match To' %}</label>
+                                <label class="label is-small" for="{{ txf.match_tx_model.id_for_label }}">{% trans 'Match To' %}</label>
                                 <div class="control is-flex is-align-items-center">
                                     {{ txf.match_tx_model }}
                                     <button type="button" class="button is-small is-text ml-2" data-clear-match>
@@ -68,12 +68,13 @@
                         {% endif %}
 
                         <div class="field">
-                            <label class="label is-small">{% trans 'Map To Account' %}</label>
+                            <label class="label is-small" for="{{ txf.account_model.id_for_label }}">{% trans 'Map To Account' %}</label>
                             <div class="control">
                                 <div class="field has-addons mb-2">
                                     <div class="control is-expanded">
                                         <input type="text" class="input is-small"
                                                placeholder="{% trans 'Search accounts by name…' %}"
+                                               aria-label="{% trans 'Search accounts by name' %}"
                                                data-account-search>
                                     </div>
                                     <div class="control">
@@ -144,7 +145,7 @@
                                                           title="{{ cform.instance.name }}">{{ cform.instance.name }}</span>
                                                 </div>
                                                 <div class="field mb-0">
-                                                    <label class="label is-small mb-1">{% trans 'Split Amount' %}</label>
+                                                    <label class="label is-small mb-1" for="{{ cform.amount_split.id_for_label }}">{% trans 'Split Amount' %}</label>
                                                     <div class="control">{{ cform.amount_split }}</div>
                                                 </div>
                                             </div>
@@ -179,24 +180,24 @@
                             <summary class="is-size-7 has-text-grey">{% trans 'More options' %}</summary>
                             <div class="columns is-multiline mt-2">
                                 <div class="column is-12-mobile is-6-tablet">
-                                    <label class="label is-small">{% trans 'Unit' %}</label>
+                                    <label class="label is-small" for="{{ txf.unit_model.id_for_label }}">{% trans 'Unit' %}</label>
                                     <div class="control">{{ txf.unit_model }}</div>
                                 </div>
                                 <div class="column is-12-mobile is-6-tablet">
-                                    <label class="label is-small">{% trans 'Receipt Type' %}</label>
+                                    <label class="label is-small" for="{{ txf.receipt_type.id_for_label }}">{% trans 'Receipt Type' %}</label>
                                     <div class="control">{{ txf.receipt_type }}</div>
                                 </div>
                                 <div class="column is-12-mobile is-6-tablet">
-                                    <label class="label is-small">{% trans 'Customer' %}</label>
+                                    <label class="label is-small" for="{{ txf.customer_model.id_for_label }}">{% trans 'Customer' %}</label>
                                     <div class="control">{{ txf.customer_model }}</div>
                                 </div>
                                 <div class="column is-12-mobile is-6-tablet">
-                                    <label class="label is-small">{% trans 'Vendor' %}</label>
+                                    <label class="label is-small" for="{{ txf.vendor_model.id_for_label }}">{% trans 'Vendor' %}</label>
                                     <div class="control">{{ txf.vendor_model }}</div>
                                 </div>
                                 {% if txf.instance.can_have_amount_split %}
                                     <div class="column is-12-mobile is-6-tablet">
-                                        <label class="label is-small">{% trans 'Split Amount' %}</label>
+                                        <label class="label is-small" for="{{ txf.amount_split.id_for_label }}">{% trans 'Split Amount' %}</label>
                                         <div class="control">{{ txf.amount_split }}</div>
                                     </div>
                                 {% endif %}
