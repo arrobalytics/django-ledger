@@ -13,9 +13,7 @@
         <div class="card-content">
             <div class="content">
                 {% if notes_html %}
-                    {% autoescape off %}
-                        {{ notes_html | safe }}
-                    {% endautoescape %}
+                    {{ notes_html }}
                 {% else %}
                     <p>{% trans 'No available notes to display...' %}</p>
                 {% endif %}
