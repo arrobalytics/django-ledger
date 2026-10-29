@@ -1,3 +1,8 @@
+from django.urls import reverse
+
+from dev_env.settings import LOGIN_URL
+
+
 from datetime import date, timedelta, datetime, time
 from decimal import Decimal
 from itertools import cycle
@@ -7,7 +12,6 @@ from typing import Optional, Literal
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.test import TestCase
 from django.test.client import Client
@@ -16,8 +20,6 @@ from django.utils.timezone import get_default_timezone
 from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models import JournalEntryModel, LedgerModel, TransactionModel, AccountModel, AccountModelQuerySet
 from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
-
-UserModel = get_user_model()
 
 
 class DjangoLedgerBaseTest(TestCase):
@@ -72,37 +74,22 @@ class DjangoLedgerBaseTest(TestCase):
 
     @classmethod
     def get_random_date(cls, as_datetime: bool = False) -> date:
-        dt = date(
-            year=choice(range(1990, 2020)),
-            month=choice(range(1, 13)),
-            day=choice(range(1, 28))
-        )
+        dt = date(year=choice(range(1990, 2020)), month=choice(range(1, 13)), day=choice(range(1, 28)))
         if as_datetime:
             if not settings.USE_TZ:
                 return datetime.combine(
                     dt,
-                    time(
-                        hour=randint(1, 23),
-                        minute=randint(1, 59)
-                    ),
+                    time(hour=randint(1, 23), minute=randint(1, 59)),
                 )
             return datetime.combine(
-                dt,
-                time(
-                    hour=randint(1, 23),
-                    minute=randint(1, 59)
-                ),
-                tzinfo=ZoneInfo(settings.TIME_ZONE)
+                dt, time(hour=randint(1, 23), minute=randint(1, 59)), tzinfo=ZoneInfo(settings.TIME_ZONE)
             )
         return dt
 
     @classmethod
     def login_client(cls):
         # cls.logger.info('Logging in client...')
-        cls.CLIENT.login(
-            username=cls.USERNAME,
-            password=cls.PASSWORD
-        )
+        cls.CLIENT.login(username=cls.USERNAME, password=cls.PASSWORD)
 
     @classmethod
     def logout_client(cls):
@@ -129,7 +116,7 @@ class DjangoLedgerBaseTest(TestCase):
             'website': 'http://www.mytestingco.com',
             'fy_start_month': choice(cls.FY_STARTS),
             'admin': cls.user_model,
-            'accrual_method': next(cls.accrual_cycle)
+            'accrual_method': next(cls.accrual_cycle),
         }
 
     def get_random_entity_model(self) -> EntityModel:
@@ -156,7 +143,7 @@ class DjangoLedgerBaseTest(TestCase):
             name='Testing Inc-{randint(100000, 999999)',
             use_accrual_method=use_accrual_method,
             fy_start_month=fy_start_month,
-            admin=self.user_model
+            admin=self.user_model,
         )
 
     @classmethod
@@ -179,7 +166,7 @@ class DjangoLedgerBaseTest(TestCase):
                 start_dttm=cls.START_DATE,
                 capital_contribution=cls.CAPITAL_CONTRIBUTION,
                 days_forward=cls.DAYS_FORWARD,
-                tx_quantity=cls.TX_QUANTITY
+                tx_quantity=cls.TX_QUANTITY,
             )
             cls.logger.info(f'Populating Entity {entity_model.name}...')
             data_generator.populate_entity()
@@ -188,11 +175,13 @@ class DjangoLedgerBaseTest(TestCase):
     def get_random_draft_date(self):
         return self.START_DATE + timedelta(days=randint(0, 365))
 
-    def get_random_account(self,
-                           entity_model: EntityModel,
-                           balance_type: Literal['credit', 'debit', None] = None,
-                           active: bool = True,
-                           locked: bool = False) -> AccountModel:
+    def get_random_account(
+        self,
+        entity_model: EntityModel,
+        balance_type: Literal['credit', 'debit', None] = None,
+        active: bool = True,
+        locked: bool = False,
+    ) -> AccountModel:
         """
         Returns 1 random AccountModel with the specified balance_type.
         """
@@ -200,17 +189,11 @@ class DjangoLedgerBaseTest(TestCase):
         account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
         return choice(account_qs)
 
-    def get_random_ledger(self,
-                          entity_model: EntityModel,
-                          qs_limit: int = 100,
-                          posted: bool = True) -> LedgerModel:
+    def get_random_ledger(self, entity_model: EntityModel, qs_limit: int = 100, posted: bool = True) -> LedgerModel:
         """
         Returns 1 random LedgerModel object.
         """
-        ledger_model_qs = entity_model.get_ledgers(
-            posted=posted).filter(
-            journal_entries__count__gt=0
-        )
+        ledger_model_qs = entity_model.get_ledgers(posted=posted).filter(journal_entries__count__gt=0)
 
         # no need to check because data generator will always populate an entity with sample data.
         # if not ledger_model.exists():
@@ -224,12 +207,13 @@ class DjangoLedgerBaseTest(TestCase):
         # limits the queryset in case of large querysets...
         return choice(ledger_model_qs[:qs_limit])
 
-    def get_random_je(self,
-                      entity_model: EntityModel,
-                      ledger_model: Optional[LedgerModel] = None,
-                      posted: bool = True,
-                      qs_limit: int = 100
-                      ) -> JournalEntryModel:
+    def get_random_je(
+        self,
+        entity_model: EntityModel,
+        ledger_model: Optional[LedgerModel] = None,
+        posted: bool = True,
+        qs_limit: int = 100,
+    ) -> JournalEntryModel:
         """.
         Returns 1 random JournalEntryModel object.
         """
@@ -263,11 +247,13 @@ class DjangoLedgerBaseTest(TestCase):
         # limits the queryset in case of large querysets...
         return choice(journal_entry_qs[:qs_limit])
 
-    def get_random_transaction(self,
-                               entity_model: EntityModel,
-                               je_model: Optional[JournalEntryModel] = None,
-                               posted: bool = True,
-                               qs_limit: int = 100) -> TransactionModel:
+    def get_random_transaction(
+        self,
+        entity_model: EntityModel,
+        je_model: Optional[JournalEntryModel] = None,
+        posted: bool = True,
+        qs_limit: int = 100,
+    ) -> TransactionModel:
         """
         Returns all TransactionModel related to a random or specified JournalEntryModel.
         """
@@ -280,17 +266,86 @@ class DjangoLedgerBaseTest(TestCase):
         return choice(txs_model_qs[:qs_limit])
 
     def resolve_url_patterns(self, url_patterns):
-        self.URL_PATTERNS = {
-            p.name: set(p.pattern.converters.keys()) for p in url_patterns
-        }
+        self.URL_PATTERNS = {p.name: set(p.pattern.converters.keys()) for p in url_patterns}
 
     def resolve_url_kwars(self):
         url_patterns = getattr(self, 'URL_PATTERNS', None)
         if not url_patterns:
-            raise ValidationError(
-                message='Must call resolve_url_patterns before calling resolve_url_kwars.'
-            )
+            raise ValidationError(message='Must call resolve_url_patterns before calling resolve_url_kwars.')
 
-        return set.union(*[
-            set(v) for v in self.URL_PATTERNS.values()
-        ])
+        return set.union(*[set(v) for v in self.URL_PATTERNS.values()])
+
+
+class AuthTest(DjangoLedgerBaseTest):
+    TEST_URLS = [
+        reverse('django_ledger:home'),
+        reverse('django_ledger:entity-dashboard', kwargs={'entity_slug': 'fake-123'}),
+    ]
+
+    def test_user_is_redirected(self):
+        for test_url in self.TEST_URLS:
+            response = self.client.get(test_url, follow=False)
+            login_url = LOGIN_URL + f'?next={test_url}'
+            self.assertRedirects(response, expected_url=login_url)
+
+    def test_login_form(self):
+        response = self.client.get(LOGIN_URL)
+        self.assertContains(response, text='id="djl-el-login-form"', status_code=200, count=1)
+        self.assertContains(response, text='id="djl-el-login-form-username-field"', status_code=200, count=1)
+        self.assertContains(response, text='id="djl-el-login-form-password-field"', status_code=200, count=1)
+
+    def test_user_with_wrong_credentials(self):
+        response = self.client.post(
+            LOGIN_URL,
+            data={
+                'username': self.USERNAME,
+                'password': self.PASSWORD + '1',
+            },
+            follow=False,
+        )
+        self.assertContains(response, text='Login', status_code=200)
+        self.assertFormError(
+            field=None,
+            form=response.context_data['form'],
+            errors=['Please enter a correct username and password. Note that both fields may be case-sensitive.'],
+        )
+
+        response = self.client.post(
+            LOGIN_URL,
+            data={
+                'username': self.USERNAME + 'abc',
+                'password': self.PASSWORD,
+            },
+            follow=False,
+        )
+        self.assertContains(response, text='Login', status_code=200)
+        self.assertFormError(
+            field=None,
+            form=response.context_data['form'],
+            errors=['Please enter a correct username and password. Note that both fields may be case-sensitive.'],
+        )
+
+    def test_user_login(self):
+        response = self.client.post(
+            LOGIN_URL,
+            data={
+                'username': self.USERNAME,
+                'password': self.PASSWORD,
+            },
+            follow=False,
+        )
+        expeced_url = reverse('django_ledger:home')
+        self.assertRedirects(response, expected_url=expeced_url)
+
+    def test_user_can_logout(self):
+        home_url = reverse('django_ledger:home')
+        login_url = reverse('django_ledger:login')
+        logout_url = reverse('django_ledger:logout')
+        self.client.login(username=self.USERNAME, password=self.PASSWORD)
+        response = self.client.get(home_url)
+
+        # logout button is present...
+        self.assertContains(response, text='id="djl-el=logout-button-nav"')
+
+        response = self.client.post(logout_url)
+        self.assertRedirects(response, expected_url=login_url)
