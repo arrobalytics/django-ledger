@@ -56,8 +56,7 @@ from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F, UniqueConstraint
-from django.db.models.signals import pre_save
+from django.db.models import Q, F, UniqueConstraint, Model
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
@@ -96,16 +95,11 @@ from django_ledger.settings import (
     DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
 )
 
-
 class AccountModelValidationError(ValidationError):
     pass
 
 
 class AccountModelQuerySet(MP_NodeQuerySet):
-    """
-    Custom QuerySet for AccountModel inheriting from MP_NodeQuerySet.
-    """
-
     def active(self) -> 'AccountModelQuerySet':
         """
         Filters the queryset to include only active items.
@@ -261,7 +255,6 @@ class AccountModelQuerySet(MP_NodeQuerySet):
             Filtered queryset with `role_default` set to True and excluding 'coa_root' entries.
         """
         return self.not_coa_root().filter(role_default=True)
-
     def can_transact(self) -> 'AccountModelQuerySet':
         """
         Filter the queryset to include only accounts that can accept new transactions.
@@ -325,11 +318,6 @@ class AccountModelQuerySet(MP_NodeQuerySet):
 
 
 class AccountModelManager(MP_NodeManager):
-    """
-    AccountModelManager class provides methods to manage and retrieve AccountModel objects.
-    It inherits from MP_NodeManager for tree-like model implementation.
-    """
-
     def get_queryset(self) -> AccountModelQuerySet:
         """
         Retrieve and return the default AccountModel QuerySet.
@@ -360,44 +348,7 @@ class AccountModelManager(MP_NodeManager):
         coa_model: Optional['ChartOfAccountModel | str | UUID'] = None,
         **kwargs,
     ) -> AccountModelQuerySet:
-        """
-        Filters the queryset for an entity and, optionally, a chart of account (COA) model.
 
-        The method refines the queryset based on the provided `entity_model` and, optionally,
-        the `coa_model`. If a deprecated `user_model` is specified in keyword arguments,
-        a warning is issued. The method supports `EntityModel`, `str`, and `UUID` types
-        for both `entity_model` and `coa_model`. A validation error is raised for unsupported types.
-
-        Parameters
-        ----------
-        entity_model : Union['EntityModel', str, UUID]
-            The entity model used for filtering the queryset. Could be an instance of
-            `EntityModel`, a string (slug), or a UUID.
-        coa_model : Optional[Union['ChartOfAccountModel', str, UUID]], optional
-            The COA model used for filtering the queryset. Can be an instance of
-            `ChartOfAccountModel`, a string (slug), or a UUID. If None, default Entity ChartOfAccounts is used.
-            Defaults to None.
-        **kwargs : dict
-            Additional keyword arguments. A deprecated argument `user_model` can be passed
-            for backward compatibility.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A queryset filtered by the input entity model and, optionally, the chart of
-            account model.
-
-        Raises
-        ------
-        AccountModelValidationError
-            If an invalid type is passed for either `entity_model` or `coa_model`.
-
-        Warns
-        -----
-        DeprecationWarning
-            If the `user_model` parameter is passed in the keyword arguments and the
-            application relies on deprecated behavior.
-        """
         EntityModel = lazy_loader.get_entity_model()
         ChartOfAccountModel = lazy_loader.get_coa_model()
 
@@ -445,7 +396,15 @@ def account_code_validator(value: str):
         raise AccountModelValidationError(_('Account code must be alpha numeric, got {%s}') % value)
 
 
-class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
+class AccountModelRoleMixIn(Model):
+    role = models.CharField(max_length=30, choices=ACCOUNT_ROLE_CHOICES, verbose_name=_('Account Role'))
+    role_default = models.BooleanField(null=True, blank=True, verbose_name=_('Coa Role Default Account'))
+
+    class Meta:
+        abstract = True
+
+
+class AccountModelAbstract(MP_Node, AccountModelRoleMixIn, CreateUpdateMixIn):
     """
     Abstract class representing an Account Model.
 
@@ -459,10 +418,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         Code representing the account, constrained by length and specific validation rules.
     name : CharField
         Name of the account, constrained by length.
-    role : CharField
-        Role associated with the account, with specific predefined choices.
-    role_default : BooleanField
-        Flag indicating if this account is the default for its role.
+
     balance_type : CharField
         Type of balance the account holds, must be either 'debit' or 'credit'.
     locked : BooleanField
@@ -478,8 +434,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     code = models.CharField(max_length=10, verbose_name=_('Account Code'), validators=[account_code_validator])
     name = models.CharField(max_length=100, verbose_name=_('Account Name'))
-    role = models.CharField(max_length=30, choices=ACCOUNT_ROLE_CHOICES, verbose_name=_('Account Role'))
-    role_default = models.BooleanField(null=True, blank=True, verbose_name=_('Coa Role Default Account'))
+
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     active = models.BooleanField(default=False, verbose_name=_('Active'))
@@ -1083,30 +1038,27 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             viewname='django_ledger:account-list', kwargs={'entity_slug': self.entity_slug, 'coa_slug': self.coa_slug}
         )
 
+    def get_use_prefix_setting(self) -> bool:
+        return DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
+
     def clean(self):
         if not self.code and DJANGO_LEDGER_ACCOUNT_CODE_GENERATE:
             self.code = self.generate_random_code()
 
-        if DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX:
+        if self.get_use_prefix_setting():
             pf = self.get_code_prefix()
             if self.code[0] != pf:
                 raise AccountModelValidationError(
                     f'Account {self.get_role_display()} code {self.code} must start with {pf} for CoA consistency'
                 )
 
+        if self.role_default is False:
+            self.role_default = None
+
 
 class AccountModel(AccountModelAbstract):
     """
     Base Account Model from Account Model Abstract Class
     """
-
     class Meta(AccountModelAbstract.Meta):
         abstract = False
-
-
-def accountmodel_presave(instance: AccountModel, **kwargs):
-    if instance.role_default is False:
-        instance.role_default = None
-
-
-pre_save.connect(receiver=accountmodel_presave, sender=AccountModel)
