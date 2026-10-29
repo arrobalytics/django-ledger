@@ -16,9 +16,6 @@ if DEBUG:
     logger.setLevel(logging.DEBUG)
     logger.warning('DEBUG MODE ON. Do NOT use this Development Environment!')
 
-ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
-CSRF_TRUSTED_ORIGINS = ['https://*.preview.app.github.dev']
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,6 +34,11 @@ if DEBUG:
     INTERNAL_IPS = [
         '127.0.0.1',
     ]
+
+ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
+CSRF_TRUSTED_ORIGINS = ['https://*.preview.app.github.dev']
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
