@@ -119,9 +119,7 @@ USE_L10N = True
 
 STATIC_URL = '/static/'
 LOGIN_URL = '/auth/login/'
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -131,6 +129,10 @@ CACHES = {
         'LOCATION': 'redis://127.0.0.1:6379',
     }
 }
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # DJANGO_LEDGER_THEME = 'minty'
