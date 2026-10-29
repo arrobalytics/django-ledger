@@ -1,0 +1,6 @@
+{% load django_ledger %}
+{% if is_accrued %}
+    <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+{% else %}
+    <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+{% endif %}
