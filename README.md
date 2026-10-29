@@ -198,10 +198,35 @@ Clone the repository and navigate into it.
    ```
 4. Open `http://127.0.0.1:8000/ledger` in your browser.
 ---
+## 📜 Licensing & Dual-Licensing Plan
+
+Django Ledger is currently licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+- **0.9.0 is a transition series:** The 0.9.x releases are a transitional series in which Django Ledger prepares to
+  offer dual licensing: GPL-3.0 for open-source use, and a commercial license. Starting with 1.0, Django Ledger will
+  be a dual-licensed project.
+- **Review of existing contributions:** To enable this, existing third-party contributions will be reviewed and, where
+  necessary, reimplemented by the project owner, so that the 1.0 release is fully controlled by the project owner or
+  covered by the updated Contributor License Agreement (CLA).
+- **Earlier versions:** Previously released versions remain available under GPL-3.0.
+- **New contributions:** Contributions accepted from 0.9.0 onward are subject to the updated CLA, which permits dual
+  licensing starting with 1.0.
+
+We sincerely appreciate everyone who has contributed to Django Ledger. See [Contribute.md](Contribute.md) for the full
+CLA text.
+
+---
+
 ## 🤝 Getting Involved & Contributing
-Contributions are welcome. Please read [Contribute.md](Contribute.md) before opening a pull request.
-A signed Contributor License Agreement is required for all contributions, including code, tests, documentation, and 
-other project materials. Pull requests should target the `dev` branch.
+
+> **⚠️ CLA REQUIRED:** By submitting a contribution (pull request, patch, documentation, tests, or other material), you
+> agree to the updated Contributor License Agreement in [Contribute.md](Contribute.md). The CLA permits the project
+> owner to license your contribution under GPL-3.0 **and** under commercial or proprietary terms. You retain your
+> copyright. Please read it **before** opening a pull request.
+
+Contributions are welcome. Please read [Contribute.md](Contribute.md) before opening a pull request. The CLA applies to
+all contributions, including code, tests, documentation, and other project materials. Pull requests should target the
+`dev` branch.
 - **Feature Requests & Bug Reports**: Open an issue on GitHub.
 - **Questions and implementation help**: Contact [Miguel Sanda](https://www.miguelsanda.com/work-with-me/) or email `msanda@arrobalytics.com`.
 - **Contribution Guidelines**: See [Contribute.md](Contribute.md).

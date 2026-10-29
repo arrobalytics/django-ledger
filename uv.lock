@@ -549,7 +549,7 @@ wheels = [
 
 [[package]]
 name = "django-ledger"
-version = "0.8.5"
+version = "0.9.0"
 source = { virtual = "." }
 dependencies = [
     { name = "django", version = "5.2.18", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
