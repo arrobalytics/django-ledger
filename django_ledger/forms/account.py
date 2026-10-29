@@ -14,9 +14,9 @@ from django.forms import (
     ModelForm,
     ChoiceField,
     ModelChoiceField,
-    CheckboxInput,
     HiddenInput,
 )
+from django import forms
 from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
@@ -28,11 +28,12 @@ FORM_META_FIELDS = [
     'code',
     'name',
     'role',
-    'role_default',
     'balance_type',
     'active',
     'coa_model',
 ]
+FORM_META_FIELDS.insert(3, 'role_default')
+
 FORM_META_WIDGETS = {
     'code': TextInput(
         attrs={
@@ -47,12 +48,14 @@ FORM_META_WIDGETS = {
         }
     ),
     'role': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-    'role_default': CheckboxInput(),
+    'role_default': forms.CheckboxInput(),
     'balance_type': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
     'coa_model': HiddenInput(),
     'parent': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-    'position': HiddenInput()
+    'position': HiddenInput(),
 }
+
+
 class AccountModelCreateForm(ModelForm):
     FORM_ID_SEP = '___'
 
