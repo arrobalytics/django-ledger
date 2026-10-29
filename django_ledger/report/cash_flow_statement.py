@@ -47,7 +47,7 @@ class CashFlowStatementReport(BaseReportSupport):
             h=5,
             markdown=True,
             align='R',
-            txt=f'**{self.CURRENCY_SYMBOL}{currency_format(amt)}**'
+            text=f'**{self.CURRENCY_SYMBOL}{currency_format(amt)}**'
         )
         self.set_default_font()
 
