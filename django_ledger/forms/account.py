@@ -7,14 +7,13 @@ Contributions to this module:
 """
 
 from random import randint
-from typing import Optional
 
 from django.forms import (
     TextInput,
     Select,
     ModelForm,
     ChoiceField,
-    ValidationError,
+    ModelChoiceField,
     CheckboxInput,
     HiddenInput,
 )
@@ -22,21 +21,39 @@ from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
 from django_ledger.io import ACCOUNT_CHOICES_NO_ROOT
-from django_ledger.models import ChartOfAccountModel
-from django_ledger.models.accounts import AccountModel
+from django_ledger.models import ChartOfAccountModel, AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
-
+FORM_META_FIELDS = [
+    'code',
+    'name',
+    'role',
+    'role_default',
+    'balance_type',
+    'active',
+    'coa_model',
+]
+FORM_META_WIDGETS = {
+    'code': TextInput(
+        attrs={
+            'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+            'placeholder': _('Alpha Numeric (auto generated if not provided)...'),
+        }
+    ),
+    'name': TextInput(
+        attrs={
+            'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+            'placeholder': _('Account Name...'),
+        }
+    ),
+    'role': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+    'role_default': CheckboxInput(),
+    'balance_type': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+    'coa_model': HiddenInput(),
+    'parent': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+    'position': HiddenInput()
+}
 class AccountModelCreateForm(ModelForm):
-    """
-    A form for creating and managing account models within the system.
-
-    Attributes
-    ----------
-    COA_MODEL : Model
-        The Chart of Account Model being used in the form.
-    """
-
     FORM_ID_SEP = '___'
 
     def __init__(self, coa_model: ChartOfAccountModel, *args, **kwargs):
@@ -52,111 +69,71 @@ class AccountModelCreateForm(ModelForm):
     def get_form_id(self) -> str:
         return f'account-model-create-form-{self.COA_MODEL.slug}{self.FORM_ID_SEP}{randint(100000, 999999)}'
 
-    def clean_role_default(self):
-        role_default = self.cleaned_data['role_default']
-        if not role_default:
-            return None
-        return role_default
-
     def clean_coa_model(self):
         return self.COA_MODEL
 
     class Meta:
         model = AccountModel
-        fields = [
-            'code',
-            'name',
-            'role',
-            'role_default',
-            'balance_type',
-            'active',
-            'active',
-            'coa_model',
-        ]
-        widgets = {
-            'code': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _(
-                        'Alpha Numeric (auto generated if not provided)...'
-                    ),
-                }
-            ),
-            'name': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Account Name...'),
-                }
-            ),
-            'role': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'role_default': CheckboxInput(),
-            'balance_type': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'coa_model': HiddenInput(),
-        }
+        fields = FORM_META_FIELDS
+        widgets = FORM_META_WIDGETS
 
 
 class AccountModelUpdateForm(MoveNodeForm):
-    """
-    AccountModelUpdateForm
-
-    A form for updating the account model, inheriting from MoveNodeForm.
-
-    Attributes
-    ----------
-    _position : ChoiceField
-        A choice field for selecting the position.
-    _ref_node_id : ChoiceField
-        An optional choice field for selecting the relative node.
-    """
-
-    _position = ChoiceField(
+    # treebeard >= 7 names the move fields treebeard_position / treebeard_ref_node.
+    treebeard_position = ChoiceField(
         required=True,
         label=_('Position'),
-        widget=Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+        widget=HiddenInput(),
     )
-    _ref_node_id = ChoiceField(
-        required=False,
-        label=_('Relative to'),
-        widget=Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+    treebeard_ref_node = ModelChoiceField(
+        required=True,
+        label=_('Parent Account'),
+        queryset=AccountModel.objects.none(),
+        empty_label=_('-- Select parent --'),
+        widget=Select(),
     )
+
+    field_order = [
+        'code',
+        'name',
+        'role',
+        'balance_type',
+        'role_default',
+        'treebeard_ref_node',
+        'treebeard_position',
+        'active',
+        'coa_model',
+    ]
+
+    POSITION_CHOICES = [
+        ('first-child', _('First child')),
+        ('last-child', _('Last child')),
+    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['role'].disabled = True
         self.fields['coa_model'].disabled = True
-
-    @classmethod
-    def mk_dropdown_tree(cls, model, for_node: Optional[AccountModel] = None):
-        """Creates a tree-like list of choices"""
-
-        if not for_node:
-            raise ValidationError(message='Must provide for_node argument.')
-
-        qs = for_node.get_account_move_choice_queryset()
-
-        return [(i.uuid, f'{"-" * (i.depth - 1)} {i}') for i in qs]
+        for name in ('role', 'balance_type'):
+            self.fields[name].widget.attrs['class'] = ''
+        position_field = self.fields['treebeard_position']
+        position_field.choices = self.POSITION_CHOICES
+        # self.initial (set by MoveNodeForm) takes precedence over field.initial.
+        self.initial['treebeard_position'] = 'last-child'
+        ref_node_field = self.fields['treebeard_ref_node']
+        ref_node_field.label_from_instance = lambda obj: f'{"-" * (obj.depth - 1)} {obj.code} - {obj.name}'
+        if self.instance and self.instance.pk:
+            ref_node_field.queryset = self.instance.get_account_move_choice_queryset()
+            parent = self.instance.get_parent()
+            self.initial['treebeard_ref_node'] = parent.pk if parent else None
 
     def clean_role(self):
         return self.instance.role
 
-    def coa_model(self):
+    def clean_coa_model(self):
         return self.instance.coa_model
-
-    def clean_role_default(self):
-        role_default = self.cleaned_data['role_default']
-        if not role_default:
-            return None
-        return role_default
 
     class Meta:
         model = AccountModel
         exclude = ('depth', 'numchild', 'path')
-        widgets = {
-            'role': HiddenInput(),
-            'coa_model': HiddenInput(),
-            'parent': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'balance_type': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'code': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'name': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'role_default': CheckboxInput(),
-        }
+        widgets = FORM_META_WIDGETS

@@ -984,9 +984,16 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         QuerySet
             A filtered set of account models suitable for moving the current instance under.
         """
-        return self.coa_model.accountmodel_set.filter(
-            role__in=[self.role, self.get_root_role(), *VALID_PARENTS.get(self.role, [])],
-        ).exclude(uuid__exact=self.uuid)
+        if self.role in VALID_PARENTS:
+            # roles like accumulated depreciation can only be children of their asset account.
+            valid_roles = list(VALID_PARENTS[self.role])
+        else:
+            valid_roles = [self.role, self.get_root_role()]
+        qs = self.coa_model.accountmodel_set.filter(role__in=valid_roles).exclude(uuid__exact=self.uuid)
+        if self.pk:
+            # a node can't be moved under its own descendants.
+            qs = qs.exclude(path__startswith=self.path)
+        return qs.order_by('path')
 
     def get_bs_bucket(self) -> str:
         return BS_BUCKETS[self.get_code_prefix()]
