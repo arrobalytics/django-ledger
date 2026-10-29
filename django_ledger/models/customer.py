@@ -350,8 +350,11 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         return self.customer_number
 
     def validate_for_entity(self, entity_model: 'EntityModel'):  # noqa: F821
+        EntityModel = lazy_loader.get_entity_model()
+        if not isinstance(entity_model, EntityModel):
+            raise CustomerModelValidationError('Must pass EntityModel')
         if entity_model.uuid != self.entity_model_id:
-            raise CustomerModelValidationError('EntityModel does not belong to this Vendor')
+            raise CustomerModelValidationError('EntityModel does not belong to this Customer')
 
     def get_detail_url(self) -> str:
         return reverse('django_ledger:customer-detail',
@@ -369,6 +372,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         Custom defined clean method that fetches the next customer number if not yet fetched.
         Additional validation may be provided.
         """
+        super().clean()
         if self.can_generate_customer_number():
             self.generate_customer_number(commit=False)
 

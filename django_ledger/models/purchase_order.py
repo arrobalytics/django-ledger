@@ -332,11 +332,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
             self.date_draft = get_localdate() if not draft_date else draft_date
             self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
+            self.entity = entity_model
 
             if estimate_model:
                 self.action_bind_estimate(estimate_model=estimate_model, commit=False)
-
-            self.entity = entity_model
 
             if self.can_generate_po_number():
                 self.generate_po_number(commit=commit)
@@ -423,7 +422,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 total_items=Count('uuid')
             )
         return queryset, {
-            'po_total_amount__sum': sum(i.total_amount for i in queryset),
+            'po_total_amount__sum': sum(i.po_total_amount or 0 for i in queryset),
             'bill_amount_paid__sum': sum(i.bill_model.amount_paid for i in queryset if i.bill_model_id),
             'total_items': len(queryset)
         } if not lazy_agg else None
@@ -719,6 +718,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if commit:
             self.save(update_fields=[
                 'po_status',
+                'date_draft',
                 'updated'
             ])
         po_status_draft.send_robust(sender=self.__class__,
@@ -995,6 +995,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         if not po_items:
             po_items, po_items_agg = self.get_itemtxs_data(queryset=po_items)
+        else:
+            self.validate_item_transaction_qs(po_items)
 
         self.date_fulfilled = get_localdate() if not date_fulfilled else date_fulfilled
         self.po_amount_received = self.po_amount
@@ -1012,16 +1014,20 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not all_items_received:
             raise PurchaseOrderModelValidationError('All items must be received before PO is fulfilled.')
 
-        self.date_fulfilled = date_fulfilled
         self.po_status = self.PO_STATUS_FULFILLED
         self.clean()
 
         if commit:
-            # todo: what if PO items is list???...
-            po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
+            if isinstance(po_items, list):
+                ItemTransactionModel.objects.filter(
+                    uuid__in=[i.uuid for i in po_items]
+                ).update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
+            else:
+                po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
             self.save(update_fields=[
                 'date_fulfilled',
                 'po_status',
+                'po_amount_received',
                 'updated'
             ])
         po_status_fulfilled.send_robust(sender=self.__class__,
@@ -1087,7 +1093,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         # all bills associated with this PO...
         bill_model_qs = self.get_po_bill_queryset()
-        bill_model_qs = bill_model_qs.only('bill_status')
 
         if not all(b.is_void() for b in bill_model_qs):
             raise PurchaseOrderModelValidationError('Must void all PO bills before PO can be voided.')
@@ -1098,7 +1103,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         if commit:
             self.save(update_fields=[
-                'void_date',
+                'date_void',
                 'po_status',
                 'updated'
             ])
@@ -1152,7 +1157,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         -------
         BillModelQuerySet
         """
-        return BillModel.objects.filter(bill_items__purchaseordermodel__uuid__exact=self.uuid)
+        return BillModel.objects.filter(itemtransactionmodel__po_model__uuid__exact=self.uuid)
 
     def get_status_action_date(self):
         """

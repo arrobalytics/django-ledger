@@ -302,3 +302,7 @@ class EstimateActionMarkAsCompletedView(BaseEstimateActionView):
 
 class EstimateActionMarkAsCanceledView(BaseEstimateActionView):
     action_name = 'mark_as_canceled'
+
+
+class EstimateActionMarkAsVoidView(BaseEstimateActionView):
+    action_name = 'mark_as_void'
