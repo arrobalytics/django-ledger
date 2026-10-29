@@ -29,10 +29,12 @@ FORM_META_FIELDS = [
     'name',
     'role',
     'balance_type',
+    'role',
+    'role_default',
     'active',
     'coa_model',
 ]
-FORM_META_FIELDS.insert(3, 'role_default')
+
 
 FORM_META_WIDGETS = {
     'code': TextInput(
@@ -74,7 +76,6 @@ class AccountModelCreateForm(ModelForm):
 
     def clean_coa_model(self):
         return self.COA_MODEL
-
     class Meta:
         model = AccountModel
         fields = FORM_META_FIELDS
