@@ -76,6 +76,7 @@ class AccountModelCreateForm(ModelForm):
 
     def clean_coa_model(self):
         return self.COA_MODEL
+
     class Meta:
         model = AccountModel
         fields = FORM_META_FIELDS
