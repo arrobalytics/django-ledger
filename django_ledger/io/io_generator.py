@@ -16,6 +16,7 @@ details page.
 
 All data generated is random and fake, not related to any other entity data.
 """
+
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 from itertools import groupby
@@ -27,14 +28,36 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localtime, get_localdate
-from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS_REGULAR, ASSET_CA_CASH, ASSET_CA_PREPAID,
-                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_OPERATIONAL, EQUITY_CAPITAL,
-                                    ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
-from django_ledger.models import (EntityModel, TransactionModel, VendorModel, CustomerModel,
-                                  EntityUnitModel, BankAccountModel, UnitOfMeasureModel, ItemModel,
-                                  BillModel, ItemTransactionModel, InvoiceModel,
-                                  EstimateModel, LoggingMixIn, InvoiceModelValidationError, ChartOfAccountModel)
-from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
+from django_ledger.io.roles import (
+    INCOME_OPERATIONAL,
+    ASSET_CA_INVENTORY,
+    COGS_REGULAR,
+    ASSET_CA_CASH,
+    ASSET_CA_PREPAID,
+    LIABILITY_CL_DEFERRED_REVENUE,
+    EXPENSE_OPERATIONAL,
+    EQUITY_CAPITAL,
+    ASSET_CA_RECEIVABLES,
+    LIABILITY_CL_ACC_PAYABLE,
+)
+from django_ledger.models import (
+    EntityModel,
+    TransactionModel,
+    VendorModel,
+    CustomerModel,
+    EntityUnitModel,
+    BankAccountModel,
+    UnitOfMeasureModel,
+    ItemModel,
+    BillModel,
+    ItemTransactionModel,
+    InvoiceModel,
+    EstimateModel,
+    LoggingMixIn,
+    InvoiceModelValidationError,
+    ChartOfAccountModel,
+)
+from django_ledger.utils import generate_random_sku, generate_random_upc, generate_random_item_id
 
 try:
     from faker import Faker
@@ -68,13 +91,15 @@ class EntityDataGenerator(LoggingMixIn):
 
     """
 
-    def __init__(self,
-                 user_model,
-                 entity_model: Union[EntityModel, str],
-                 start_dttm: datetime,
-                 capital_contribution: Decimal,
-                 days_forward: int,
-                 tx_quantity: int = 25):
+    def __init__(
+        self,
+        user_model,
+        entity_model: Union[EntityModel, str],
+        start_dttm: datetime,
+        capital_contribution: Decimal,
+        days_forward: int,
+        tx_quantity: int = 25,
+    ):
 
         assert isinstance(entity_model, (EntityModel, str)), 'Must pass an instance of EntityModel or str'
         assert capital_contribution > 0, 'Capital contribution must be greater than 0'
@@ -134,12 +159,14 @@ class EntityDataGenerator(LoggingMixIn):
     def get_logger_name(self):
         return self.entity_model.slug
 
-    def populate_entity(self, create_closing_entry: bool = False, force_populate: bool = False):
+    def populate_entity(
+            self,
+            create_closing_entry: bool = False,
+            force_populate: bool = False
+    ):
 
         self.logger.info('Checking for existing transactions...')
-        txs_qs = TransactionModel.objects.for_entity(
-            entity_model=self.entity_model
-        )
+        txs_qs = TransactionModel.objects.for_entity(entity_model=self.entity_model)
 
         if txs_qs.count() > 0 and not force_populate:
             raise EntityModelValidationError(
@@ -182,11 +209,7 @@ class EntityDataGenerator(LoggingMixIn):
         if not prev_timestamp:
             prev_timestamp = self.start_date
 
-        next_timestamp = prev_timestamp + timedelta(
-            days=randint(
-                self.MIN_DAYS_FORWARD,
-                self.MAX_DAYS_FORWARD
-            ))
+        next_timestamp = prev_timestamp + timedelta(days=randint(self.MIN_DAYS_FORWARD, self.MAX_DAYS_FORWARD))
 
         if next_timestamp > self.localtime:
             next_timestamp = self.localtime
@@ -212,10 +235,9 @@ class EntityDataGenerator(LoggingMixIn):
 
         entity_unit_models = [
             EntityUnitModel(
-                name=f'Unit {u}',
-                entity=self.entity_model,
-                document_prefix=''.join(choices(ascii_uppercase, k=3))
-            ) for u in range(nb_units)
+                name=f'Unit {u}', entity=self.entity_model, document_prefix=''.join(choices(ascii_uppercase, k=3))
+            )
+            for u in range(nb_units)
         ]
 
         for unit in entity_unit_models:
@@ -230,9 +252,9 @@ class EntityDataGenerator(LoggingMixIn):
         vendor_models = [
             self.entity_model.create_vendor(
                 vendor_model_kwargs={
-                    'vendor_name': self.fk.name() if random() > .7 else self.fk.company(),
+                    'vendor_name': self.fk.name() if random() > 0.7 else self.fk.company(),
                     'address_1': self.fk.street_address(),
-                    'address_2': self.fk.building_number() if random() < .2 else None,
+                    'address_2': self.fk.building_number() if random() < 0.2 else None,
                     'city': self.fk.city(),
                     'state': self.fk.state_abbr(),
                     'zip_code': self.fk.postcode(),
@@ -242,8 +264,11 @@ class EntityDataGenerator(LoggingMixIn):
                     'website': self.fk.url(),
                     'active': True,
                     'hidden': False,
-                    'description': 'A cool vendor description.'
-                }, commit=False) for _ in range(vendor_count)
+                    'description': 'A cool vendor description.',
+                },
+                commit=False,
+            )
+            for _ in range(vendor_count)
         ]
 
         for vendor in vendor_models:
@@ -257,9 +282,9 @@ class EntityDataGenerator(LoggingMixIn):
         customer_models = [
             self.entity_model.create_customer(
                 customer_model_kwargs={
-                    'customer_name': self.fk.name() if random() > .2 else self.fk.company(),
+                    'customer_name': self.fk.name() if random() > 0.2 else self.fk.company(),
                     'address_1': self.fk.street_address() + self.fk.street_suffix(),
-                    'address_2': self.fk.building_number() if random() > .2 else None,
+                    'address_2': self.fk.building_number() if random() > 0.2 else None,
                     'city': self.fk.city(),
                     'state': self.fk.state_abbr(),
                     'zip_code': self.fk.postcode(),
@@ -269,8 +294,10 @@ class EntityDataGenerator(LoggingMixIn):
                     'website': self.fk.url(),
                     'active': True,
                     'hidden': False,
-                    'description': f'A cool customer description. We love customers!'
-                }) for _ in range(customer_count)
+                    'description': f'A cool customer description. We love customers!',
+                }
+            )
+            for _ in range(customer_count)
         ]
 
         for customer in customer_models:
@@ -281,7 +308,6 @@ class EntityDataGenerator(LoggingMixIn):
     def create_bank_accounts(self):
         self.logger.info(f'Creating entity accounts...')
         bank_account_models = [
-
             # creates a bank cash checking account...
             self.entity_model.create_bank_account(
                 name=f'{self.entity_model.name} Checking Account',
@@ -291,11 +317,10 @@ class EntityDataGenerator(LoggingMixIn):
                 bank_account_model_kwargs={
                     'aba_number': self.fk.swift(),
                     'routing_number': str(randint(0, 9999999)).zfill(9),
-                    'account_number': str(randint(0, 9999999)).zfill(9)
+                    'account_number': str(randint(0, 9999999)).zfill(9),
                 },
-                commit=False
+                commit=False,
             ),
-
             # creates a bank cash savings account...
             self.entity_model.create_bank_account(
                 name=f'{self.entity_model.name} Savings Account',
@@ -305,10 +330,10 @@ class EntityDataGenerator(LoggingMixIn):
                 bank_account_model_kwargs={
                     'aba_number': self.fk.swift(),
                     'routing_number': str(randint(0, 9999999)).zfill(9),
-                    'account_number': str(randint(0, 9999999)).zfill(9)
+                    'account_number': str(randint(0, 9999999)).zfill(9),
                 },
-                commit=False
-            )
+                commit=False,
+            ),
         ]
         for ba in bank_account_models:
             ba.full_clean()
@@ -324,15 +349,11 @@ class EntityDataGenerator(LoggingMixIn):
             'sq-ft': 'Square Fee t',
             'lb': 'Pound',
             'pallet': 'Pallet',
-            'man-hour': 'Man Hour'
+            'man-hour': 'Man Hour',
         }
 
         uom_models = [
-            self.entity_model.create_uom(
-                unit_abbr=abbr,
-                name=name,
-                commit=False
-            ) for abbr, name in UOMs.items()
+            self.entity_model.create_uom(unit_abbr=abbr, name=name, commit=False) for abbr, name in UOMs.items()
         ]
 
         for uom in uom_models:
@@ -346,21 +367,23 @@ class EntityDataGenerator(LoggingMixIn):
         product_models = list()
         for i in range(product_count):
             # is Product....
-            product_models.append(ItemModel(
-                name=f'Product #{randint(1000, 9999)}',
-                uom=choice(self.uom_models),
-                item_role=ItemModel.ITEM_ROLE_PRODUCT,
-                sku=generate_random_sku(),
-                upc=generate_random_upc(),
-                item_id=generate_random_item_id(),
-                entity=self.entity_model,
-                for_inventory=True,
-                is_product_or_service=True,
-                inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
-                earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
-                cogs_account=choice(self.accounts_by_role[COGS_REGULAR]),
-                additional_info=dict()
-            ))
+            product_models.append(
+                ItemModel(
+                    name=f'Product #{randint(1000, 9999)}',
+                    uom=choice(self.uom_models),
+                    item_role=ItemModel.ITEM_ROLE_PRODUCT,
+                    sku=generate_random_sku(),
+                    upc=generate_random_upc(),
+                    item_id=generate_random_item_id(),
+                    entity=self.entity_model,
+                    for_inventory=True,
+                    is_product_or_service=True,
+                    inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
+                    earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
+                    cogs_account=choice(self.accounts_by_role[COGS_REGULAR]),
+                    additional_info=dict(),
+                )
+            )
 
         for product in product_models:
             product.full_clean()
@@ -373,20 +396,22 @@ class EntityDataGenerator(LoggingMixIn):
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         service_item_models = list()
         for i in range(product_count):
-            service_item_models.append(ItemModel(
-                name=f'Service #{randint(1000, 9999)}',
-                uom=choice(self.uom_models),
-                item_role=ItemModel.ITEM_ROLE_SERVICE,
-                sku=generate_random_sku(),
-                upc=generate_random_upc(),
-                item_id=generate_random_item_id(),
-                entity=self.entity_model,
-                for_inventory=False,
-                is_product_or_service=True,
-                earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
-                cogs_account=choice(self.accounts_by_role[COGS_REGULAR]),
-                additional_info=dict()
-            ))
+            service_item_models.append(
+                ItemModel(
+                    name=f'Service #{randint(1000, 9999)}',
+                    uom=choice(self.uom_models),
+                    item_role=ItemModel.ITEM_ROLE_SERVICE,
+                    sku=generate_random_sku(),
+                    upc=generate_random_upc(),
+                    item_id=generate_random_item_id(),
+                    entity=self.entity_model,
+                    for_inventory=False,
+                    is_product_or_service=True,
+                    earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
+                    cogs_account=choice(self.accounts_by_role[COGS_REGULAR]),
+                    additional_info=dict(),
+                )
+            )
 
         for service in service_item_models:
             service.full_clean()
@@ -410,7 +435,8 @@ class EntityDataGenerator(LoggingMixIn):
                 is_product_or_service=False,
                 for_inventory=False,
                 expense_account=choice(self.accounts_by_role[EXPENSE_OPERATIONAL]),
-            ) for _ in range(expense_count)
+            )
+            for _ in range(expense_count)
         ]
 
         for exp in expense_models:
@@ -437,7 +463,8 @@ class EntityDataGenerator(LoggingMixIn):
                 earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                 cogs_account=choice(self.accounts_by_role[COGS_REGULAR]),
                 inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
-            ) for _ in range(inv_count)
+            )
+            for _ in range(inv_count)
         ]
 
         for inv in inventory_models:
@@ -467,7 +494,7 @@ class EntityDataGenerator(LoggingMixIn):
             date_draft=date_draft,
             customer_model=choice(self.customer_models),
             contract_terms=choice(EstimateModel.CONTRACT_TERMS_CHOICES_VALID),
-            commit=True
+            commit=True,
         )
         self.logger.info(f'Creating entity estimate {estimate_model.estimate_number}...')
 
@@ -478,8 +505,9 @@ class EntityDataGenerator(LoggingMixIn):
                 ce_quantity=round(random() * randint(5, 15), 2),
                 ce_unit_cost_estimate=round(random() * randint(50, 100), 2),
                 ce_unit_revenue_estimate=round(random() * randint(80, 120) * (1 + 0.2 * random()), 2),
-                entity_unit=choice(self.entity_unit_models) if random() > .75 else None
-            ) for _ in range(randint(1, 10))
+                entity_unit=choice(self.entity_unit_models) if random() > 0.75 else None,
+            )
+            for _ in range(randint(1, 10))
         ]
 
         for i in estimate_items:
@@ -516,7 +544,7 @@ class EntityDataGenerator(LoggingMixIn):
             terms=choice(BillModel.TERM_CHOICES_VALID),
             date_draft=date_draft,
             additional_info=dict(),
-            commit=True
+            commit=True,
         )
 
         self.logger.info(f'Creating entity bill {bill_model.bill_number}...')
@@ -527,8 +555,9 @@ class EntityDataGenerator(LoggingMixIn):
                 item_model=choice(self.expense_models),
                 quantity=round(random() * randint(5, 15), 2),
                 unit_cost=round(random() * randint(50, 100), 2),
-                entity_unit=choice(self.entity_unit_models) if random() > .75 else None
-            ) for _ in range(randint(1, 10))
+                entity_unit=choice(self.entity_unit_models) if random() > 0.75 else None,
+            )
+            for _ in range(randint(1, 10))
         ]
 
         for bi in bill_items:
@@ -549,24 +578,18 @@ class EntityDataGenerator(LoggingMixIn):
                     commit=True,
                     entity_slug=self.entity_model.slug,
                     user_model=self.user_model,
-                    date_approved=date_approved
+                    date_approved=date_approved,
                 )
 
                 if random() > 0.25:
                     paid_date = self.get_next_timestamp(date_approved)
                     bill_model.mark_as_paid(
-                        user_model=self.user_model,
-                        entity_slug=self.entity_model.slug,
-                        date_paid=paid_date,
-                        commit=True
+                        user_model=self.user_model, entity_slug=self.entity_model.slug, date_paid=paid_date, commit=True
                     )
                 elif random() > 0.8:
                     void_date = self.get_next_timestamp(date_approved)
                     bill_model.mark_as_void(
-                        user_model=self.user_model,
-                        entity_slug=self.entity_model.slug,
-                        date_void=void_date,
-                        commit=True
+                        user_model=self.user_model, entity_slug=self.entity_model.slug, date_void=void_date, commit=True
                     )
             elif random() > 0.8:
                 canceled_date = self.get_next_timestamp(date_in_review)
@@ -582,8 +605,9 @@ class EntityDataGenerator(LoggingMixIn):
                 item_model=choice(self.product_models),
                 po_quantity=round(random() * randint(3, 10) + 3, 2),
                 po_unit_cost=round(random() * randint(100, 800), 2),
-                entity_unit=choice(self.entity_unit_models) if random() > .75 else None
-            ) for _ in range(randint(1, 10))
+                entity_unit=choice(self.entity_unit_models) if random() > 0.75 else None,
+            )
+            for _ in range(randint(1, 10))
         ]
 
         for poi in po_items:
@@ -614,7 +638,7 @@ class EntityDataGenerator(LoggingMixIn):
                         cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
                         prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
                         payable_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
-                        commit=True
+                        commit=True,
                     )
 
                     for po_i in po_items:
@@ -641,45 +665,45 @@ class EntityDataGenerator(LoggingMixIn):
                             'po_unit_cost',
                             'unit_cost',
                             'bill_model',
-                            'po_item_status'
-                        ])
+                            'po_item_status',
+                        ],
+                    )
 
                     if random() > 0.25:
                         date_bill_review = self.get_next_timestamp(date_bill_draft)
                         bill_model.mark_as_review(commit=True, date_in_review=date_bill_review)
                         if random() > 0.50:
                             bill_approve_date = self.get_next_timestamp(date_bill_review)
-                            bill_model.mark_as_approved(commit=True,
-                                                        entity_slug=self.entity_model.slug,
-                                                        user_model=self.user_model,
-                                                        date_approved=bill_approve_date)
+                            bill_model.mark_as_approved(
+                                commit=True,
+                                entity_slug=self.entity_model.slug,
+                                user_model=self.user_model,
+                                date_approved=bill_approve_date,
+                            )
                             if random() > 0.25:
                                 bill_paid_date = self.get_next_timestamp(bill_approve_date)
                                 bill_model.mark_as_paid(
                                     user_model=self.user_model,
                                     entity_slug=self.entity_model.slug,
                                     commit=True,
-                                    date_paid=bill_paid_date)
+                                    date_paid=bill_paid_date,
+                                )
 
                                 if random() > 0.20:
                                     for po_i in po_items:
                                         po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
-                                        po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                                         po_i.full_clean()
 
                                     # todo: can pass po items??..
-                                    po_model.itemtransactionmodel_set.bulk_update(po_items,
-                                                                                  fields=[
-                                                                                      'po_item_status',
-                                                                                      'updated'
-                                                                                  ])
-                                    po_model.mark_as_fulfilled(
-                                        date_fulfilled=date_fulfilled,
-                                        commit=True)
+                                    po_model.itemtransactionmodel_set.bulk_update(
+                                        po_items, fields=['po_item_status', 'updated']
+                                    )
+                                    po_model.mark_as_fulfilled(date_fulfilled=date_fulfilled, commit=True)
 
                                     self.entity_model.update_inventory(
                                         # user_model=self.user_model,
-                                        commit=True)
+                                        commit=True
+                                    )
 
                                     self.update_products()
                                     self.update_inventory()
@@ -693,7 +717,7 @@ class EntityDataGenerator(LoggingMixIn):
             payable_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date_draft=date_draft,
             additional_info=dict(),
-            commit=True
+            commit=True,
         )
         self.logger.info(f'Creating entity invoice {invoice_model.invoice_number}...')
 
@@ -702,7 +726,7 @@ class EntityDataGenerator(LoggingMixIn):
         for i in range(randint(1, 10)):
             item_model: ItemModel = choice(self.product_models)
             quantity = Decimal.from_float(round(random() * randint(1, 2), 2))
-            entity_unit = choice(self.entity_unit_models) if random() > .75 else None
+            entity_unit = choice(self.entity_unit_models) if random() > 0.75 else None
             margin = Decimal(random() + 3.5)
             avg_cost = item_model.get_average_cost()
             if item_model.is_product():
@@ -718,16 +742,13 @@ class EntityDataGenerator(LoggingMixIn):
                     quantity = 0.0
                     unit_cost = 0.0
 
-                if all([
-                    quantity > 0.00,
-                    unit_cost > 0.00
-                ]):
+                if all([quantity > 0.00, unit_cost > 0.00]):
                     itm = ItemTransactionModel(
                         invoice_model=invoice_model,
                         item_model=item_model,
                         quantity=quantity,
                         unit_cost=unit_cost,
-                        entity_unit=entity_unit
+                        entity_unit=entity_unit,
                     )
                     itm.full_clean()
                     invoice_items.append(itm)
@@ -737,7 +758,7 @@ class EntityDataGenerator(LoggingMixIn):
         invoice_model.full_clean()
         invoice_model.save()
 
-        if random() > 0.25 and invoice_model.amount_due:
+        if random() > 0.20 and invoice_model.amount_due:
             date_review = self.get_next_timestamp(date_draft)
 
             try:
@@ -748,17 +769,16 @@ class EntityDataGenerator(LoggingMixIn):
 
             if random() > 0.50:
                 date_approved = self.get_next_timestamp(date_review)
-                invoice_model.mark_as_approved(entity_slug=self.entity_model.slug,
-                                               user_model=self.user_model,
-                                               commit=True,
-                                               date_approved=date_approved)
+                invoice_model.mark_as_approved(
+                    entity_slug=self.entity_model.slug,
+                    user_model=self.user_model,
+                    commit=True,
+                    date_approved=date_approved,
+                )
                 if random() > 0.25:
                     date_paid = self.get_next_timestamp(date_approved)
                     invoice_model.mark_as_paid(
-                        entity_slug=self.entity_model.slug,
-                        user_model=self.user_model,
-                        date_paid=date_paid,
-                        commit=True
+                        entity_slug=self.entity_model.slug, user_model=self.user_model, date_paid=date_paid, commit=True
                     )
                     self.entity_model.update_inventory(
                         # user_model=self.user_model,
@@ -769,10 +789,7 @@ class EntityDataGenerator(LoggingMixIn):
                 elif random() > 0.8:
                     date_void = self.get_next_timestamp(date_approved)
                     invoice_model.mark_as_void(
-                        entity_slug=self.entity_model.slug,
-                        user_model=self.user_model,
-                        date_void=date_void,
-                        commit=True
+                        entity_slug=self.entity_model.slug, user_model=self.user_model, date_void=date_void, commit=True
                     )
             elif random() > 0.8:
                 date_canceled = self.get_next_timestamp(date_review)
@@ -797,9 +814,7 @@ class EntityDataGenerator(LoggingMixIn):
     def create_closing_entry(self):
         closing_date = self.start_date + timedelta(days=int(self.DAYS_FORWARD / 2))
         ce_model, ce_txs = self.entity_model.close_books_for_month(
-            year=closing_date.year,
-            month=closing_date.month,
-            post_closing_entry=True
+            year=closing_date.year, month=closing_date.month, post_closing_entry=True
         )
 
     def recount_inventory(self):
