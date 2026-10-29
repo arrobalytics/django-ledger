@@ -58,8 +58,14 @@
                 </div>
                 <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}"
                    class="button is-primary">{% trans 'Recount Inventory' %}</a>
-                <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}?confirm=1"
-                   class="button is-warning">{% trans 'Update Inventory' %}</a>
+                <form method="post"
+                      action="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}"
+                      class="is-inline mb-0">
+                    {% csrf_token %}
+                    <button type="submit" class="button is-warning">
+                        {% trans 'Update Inventory' %}
+                    </button>
+                </form>
             </div>
         </div>
     </div>

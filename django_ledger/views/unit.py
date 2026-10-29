@@ -7,6 +7,8 @@ Contributions to this module:
 """
 
 
+from typing import Optional
+
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -16,14 +18,17 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, R
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityUnitModel, EntityModel
+from django_ledger.models.unit import EntityUnitModelQuerySet
 from django_ledger.views.financial_statement import FiscalYearIncomeStatementView
 from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyReportMixIn, MonthlyReportMixIn,
                                         DateReportMixIn, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn,
                                         PDFReportMixIn)
 
-
 class EntityUnitModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared business-unit queryset scoped to the authorized business.
+    """
+    queryset: Optional[EntityUnitModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -34,6 +39,9 @@ class EntityUnitModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class EntityUnitModelListView(EntityUnitModelModelBaseView, ListView):
+    """
+    Lists departments or locations used to segment the books.
+    """
     template_name = 'django_ledger/unit/unit_list.html'
     PAGE_TITLE = _('Entity Unit List')
     extra_context = {
@@ -44,19 +52,10 @@ class EntityUnitModelListView(EntityUnitModelModelBaseView, ListView):
     context_object_name = 'unit_list'
 
 
-class EntityUnitModelDetailView(EntityUnitModelModelBaseView, DetailView):
-    template_name = 'django_ledger/unit/unit_detail.html'
-    PAGE_TITLE = _('Entity Unit Detail')
-    slug_url_kwarg = 'unit_slug'
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        # 'header_subtitle_icon': 'dashicons:businesswoman'
-    }
-    context_object_name = 'unit'
-
-
 class EntityUnitModelCreateView(EntityUnitModelModelBaseView, CreateView):
+    """
+    Creates a business unit such as a store, department, or project.
+    """
     template_name = 'django_ledger/unit/unit_create.html'
     PAGE_TITLE = _('Entity Unit Create')
     extra_context = {
@@ -80,14 +79,31 @@ class EntityUnitModelCreateView(EntityUnitModelModelBaseView, CreateView):
 
     def form_valid(self, form):
         entity_unit_model: EntityUnitModel = form.save(commit=False)
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-        entity_model = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         entity_unit_model.entity = entity_model
         EntityUnitModel.add_root(instance=entity_unit_model)
         return HttpResponseRedirect(self.get_success_url())
 
 
+class EntityUnitModelDetailView(EntityUnitModelModelBaseView, DetailView):
+    """
+    Shows details for a business unit.
+    """
+    template_name = 'django_ledger/unit/unit_detail.html'
+    PAGE_TITLE = _('Entity Unit Detail')
+    slug_url_kwarg = 'unit_slug'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        # 'header_subtitle_icon': 'dashicons:businesswoman'
+    }
+    context_object_name = 'unit'
+
+
 class EntityUnitUpdateView(EntityUnitModelModelBaseView, UpdateView):
+    """
+    Updates a business unit name and settings.
+    """
     template_name = 'django_ledger/unit/unit_update.html'
     PAGE_TITLE = _('Entity Unit Update')
     slug_url_kwarg = 'unit_slug'
@@ -118,11 +134,13 @@ class EntityUnitUpdateView(EntityUnitModelModelBaseView, UpdateView):
         return super().form_valid(form=form)
 
 
-# Financial Statements...
-
-
-# BALANCE SHEET.....
 class BaseEntityUnitModelBalanceSheetView(EntityUnitModelModelBaseView, RedirectView):
+
+    """
+
+    Opens the current-year balance sheet for a business unit.
+
+    """
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -157,24 +175,29 @@ class FiscalYearEntityUnitModelBalanceSheetView(EntityUnitModelModelBaseView,
 
 class QuarterlyEntityUnitModelBalanceSheetView(FiscalYearEntityUnitModelBalanceSheetView, QuarterlyReportMixIn):
     """
-    Entity Unit Fiscal Quarter Balance Sheet View Class.
+    Balance sheet for a business unit over a fiscal quarter.
     """
 
 
 class MonthlyEntityUnitModelBalanceSheetView(FiscalYearEntityUnitModelBalanceSheetView, MonthlyReportMixIn):
     """
-    Entity Unit Fiscal Month Balance Sheet View Class.
+    Balance sheet for a business unit over a month.
     """
 
 
 class DateEntityUnitModelBalanceSheetView(MonthlyEntityUnitModelBalanceSheetView, DateReportMixIn):
     """
-    Entity Unit Date Balance Sheet View Class.
+    Balance sheet for a business unit as of a specific date.
     """
 
 
-# INCOME STATEMENT....
 class BaseEntityUnitModelIncomeStatementView(EntityUnitModelModelBaseView, RedirectView):
+
+    """
+
+    Opens the current-year income statement for a business unit.
+
+    """
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -205,24 +228,29 @@ class FiscalYearEntityUnitModelIncomeStatementView(EntityUnitModelModelBaseView,
 
 class QuarterlyIncomeStatementView(FiscalYearIncomeStatementView, QuarterlyReportMixIn):
     """
-    Entity Unit Fiscal Quarter Income Statement View Class
+    Income statement for a business unit over a fiscal quarter.
     """
 
 
 class MonthlyIncomeStatementView(FiscalYearIncomeStatementView, MonthlyReportMixIn):
     """
-    Entity Unit Fiscal Month Income Statement View Class
+    Income statement for a business unit over a month.
     """
 
 
 class DateIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixIn):
     """
-    Entity Unit Date Income Statement View Class
+    Income statement for a business unit as of a specific date.
     """
 
 
-# CASHFLOW STATEMENT
 class BaseEntityUnitModelCashFlowStatementView(EntityUnitModelModelBaseView, RedirectView):
+
+    """
+
+    Opens the current-year cash flow statement for a business unit.
+
+    """
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year

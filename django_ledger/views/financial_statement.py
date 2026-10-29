@@ -6,22 +6,26 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from typing import Optional
+
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, RedirectView
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel, EntityUnitModel
+from django_ledger.models import EntityModel, EntityModelQuerySet, EntityUnitModel
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
     BaseDateNavigationUrlMixIn, PDFReportMixIn
 )
 
-
-class EntityModelModelViewQuerySetMixIn:
-    queryset = None
+class EntityModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+    """
+    Shared business queryset used by financial statement views.
+    """
+    queryset: Optional[EntityModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -30,8 +34,13 @@ class EntityModelModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-# BALANCE SHEET -----------
 class BaseBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+
+    """
+
+    Opens the current-year balance sheet for the business.
+
+    """
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -42,8 +51,7 @@ class BaseBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
                        })
 
 
-class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
-                                 EntityModelModelViewQuerySetMixIn,
+class FiscalYearBalanceSheetView(EntityModelModelViewQuerySetMixIn,
                                  BaseDateNavigationUrlMixIn,
                                  EntityUnitMixIn,
                                  YearlyReportMixIn,
@@ -68,24 +76,26 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
 
 class QuarterlyBalanceSheetView(FiscalYearBalanceSheetView, QuarterlyReportMixIn):
     """
-    Quarter Balance Sheet View.
+    Shows assets, liabilities, and equity for a fiscal quarter.
     """
 
 
 class MonthlyBalanceSheetView(FiscalYearBalanceSheetView, MonthlyReportMixIn):
     """
-    Monthly Balance Sheet View.
+    Shows assets, liabilities, and equity for a month.
     """
 
 
 class DateBalanceSheetView(FiscalYearBalanceSheetView, DateReportMixIn):
     """
-    Date Balance Sheet View.
+    Shows assets, liabilities, and equity as of a specific date.
     """
 
 
-# INCOME STATEMENT ------------
 class BaseIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+    """
+    Opens the current-year income statement for the business.
+    """
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse('django_ledger:entity-ic-year',
@@ -95,8 +105,7 @@ class BaseIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
                        })
 
 
-class FiscalYearIncomeStatementView(DjangoLedgerSecurityMixIn,
-                                    EntityModelModelViewQuerySetMixIn,
+class FiscalYearIncomeStatementView(EntityModelModelViewQuerySetMixIn,
                                     BaseDateNavigationUrlMixIn,
                                     EntityUnitMixIn,
                                     YearlyReportMixIn,
@@ -123,24 +132,29 @@ class FiscalYearIncomeStatementView(DjangoLedgerSecurityMixIn,
 
 class QuarterlyIncomeStatementView(FiscalYearIncomeStatementView, QuarterlyReportMixIn):
     """
-    Quarter Income Statement View.
+    Shows revenue and expenses for a fiscal quarter.
     """
 
 
 class MonthlyIncomeStatementView(FiscalYearIncomeStatementView, MonthlyReportMixIn):
     """
-    Monthly Income Statement View.
+    Shows revenue and expenses for a month.
     """
 
 
 class DateModelIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixIn):
     """
-    Date Income Statement View.
+    Shows revenue and expenses as of a specific date.
     """
 
 
-# CASH FLOW STATEMENT ----
 class BaseCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+
+    """
+
+    Opens the current-year cash flow statement for the business.
+
+    """
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -151,8 +165,7 @@ class BaseCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView)
                        })
 
 
-class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
-                                      EntityModelModelViewQuerySetMixIn,
+class FiscalYearCashFlowStatementView(EntityModelModelViewQuerySetMixIn,
                                       BaseDateNavigationUrlMixIn,
                                       EntityUnitMixIn,
                                       YearlyReportMixIn,
@@ -183,17 +196,17 @@ class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
 
 class QuarterlyCashFlowStatementView(FiscalYearCashFlowStatementView, QuarterlyReportMixIn):
     """
-    Quarter Cash Flow Statement View.
+    Shows cash inflows and outflows for a fiscal quarter.
     """
 
 
 class MonthlyCashFlowStatementView(FiscalYearCashFlowStatementView, MonthlyReportMixIn):
     """
-    Monthly Cash Flow Statement View.
+    Shows cash inflows and outflows for a month.
     """
 
 
 class DateCashFlowStatementView(FiscalYearCashFlowStatementView, DateReportMixIn):
     """
-    Date Cash Flow Statement View.
+    Shows cash inflows and outflows as of a specific date.
     """

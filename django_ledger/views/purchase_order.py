@@ -5,14 +5,16 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
+from typing import Optional
+
 from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView,
-                                  UpdateView, DeleteView, RedirectView)
+                                  UpdateView, DeleteView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, BasePurchaseOrderModelUpdateForm,
@@ -20,21 +22,28 @@ from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, Ba
                                                 ApprovedPurchaseOrderModelUpdateForm,
                                                 get_po_itemtxs_formset_class)
 from django_ledger.models import PurchaseOrderModel, ItemTransactionModel, EstimateModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
-
+from django_ledger.models.purchase_order import PurchaseOrderModelQuerySet
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionViewMixIn
 
 class PurchaseOrderModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared purchase-order queryset scoped to the authorized business.
+    """
+    queryset: Optional[PurchaseOrderModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = PurchaseOrderModel.objects.for_entity(
-                entity_model=self.AUTHORIZED_ENTITY_MODEL,
+                entity_model=self.get_authorized_entity_instance(),
             ).select_related('entity', 'ce_model')
         return super().get_queryset()
 
 
 class PurchaseOrderModelListView(PurchaseOrderModelModelViewQuerySetMixIn, ArchiveIndexView):
+    """
+    Lists purchase orders so you can track open buys,
+    approvals, and fulfilled orders.
+    """
     template_name = 'django_ledger/purchase_order/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
@@ -74,6 +83,9 @@ class PurchaseOrderModelMonthListView(MonthArchiveView,
 
 
 class PurchaseOrderModelCreateView(PurchaseOrderModelModelViewQuerySetMixIn, CreateView):
+    """
+    Creates a new purchase order, optionally from a customer estimate.
+    """
     template_name = 'django_ledger/purchase_order/po_create.html'
     PAGE_TITLE = _('Create Purchase Order')
     extra_context = {
@@ -157,7 +169,41 @@ class PurchaseOrderModelCreateView(PurchaseOrderModelModelViewQuerySetMixIn, Cre
                        })
 
 
+class PurchaseOrderModelDetailView(PurchaseOrderModelModelViewQuerySetMixIn, DetailView):
+    """
+    Shows a purchase order, its line items, and fulfillment status.
+    """
+    slug_url_kwarg = 'po_pk'
+    slug_field = 'uuid'
+    context_object_name = 'po_model'
+    template_name = 'django_ledger/purchase_order/po_detail.html'
+    extra_context = {
+        'header_subtitle_icon': 'uil:bill',
+        'hide_menu': True
+    }
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        po_model: PurchaseOrderModel = self.object
+        title = f'Purchase Order {po_model.po_number}'
+        context['page_title'] = title
+        context['header_title'] = title
+
+        po_model: PurchaseOrderModel = self.object
+        po_items_qs, item_data = po_model.get_itemtxs_data(
+            queryset=po_model.itemtransactionmodel_set.all().select_related('item_model', 'bill_model')
+        )
+        context['po_items'] = po_items_qs
+        context['po_total_amount'] = sum(
+            i['po_total_amount'] for i in po_items_qs.values(
+                'po_total_amount', 'po_item_status') if i['po_item_status'] != 'cancelled')
+        return context
+
+
 class PurchaseOrderModelUpdateView(PurchaseOrderModelModelViewQuerySetMixIn, UpdateView):
+    """
+    Updates purchase-order details and line items while still editable.
+    """
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -315,7 +361,7 @@ class PurchaseOrderModelUpdateView(PurchaseOrderModelModelViewQuerySetMixIn, Upd
 
         if form.has_changed():
             po_items_qs = ItemTransactionModel.objects.for_po(
-                entity_model=self.kwargs['entity_slug'],
+                entity_model=self.get_authorized_entity_instance(),
                 po_pk=po_model.uuid,
             ).select_related('bill_model')
 
@@ -352,35 +398,10 @@ class PurchaseOrderModelUpdateView(PurchaseOrderModelModelViewQuerySetMixIn, Upd
         return super().form_valid(form)
 
 
-class PurchaseOrderModelDetailView(PurchaseOrderModelModelViewQuerySetMixIn, DetailView):
-    slug_url_kwarg = 'po_pk'
-    slug_field = 'uuid'
-    context_object_name = 'po_model'
-    template_name = 'django_ledger/purchase_order/po_detail.html'
-    extra_context = {
-        'header_subtitle_icon': 'uil:bill',
-        'hide_menu': True
-    }
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(object_list=object_list, **kwargs)
-        po_model: PurchaseOrderModel = self.object
-        title = f'Purchase Order {po_model.po_number}'
-        context['page_title'] = title
-        context['header_title'] = title
-
-        po_model: PurchaseOrderModel = self.object
-        po_items_qs, item_data = po_model.get_itemtxs_data(
-            queryset=po_model.itemtransactionmodel_set.all().select_related('item_model', 'bill_model')
-        )
-        context['po_items'] = po_items_qs
-        context['po_total_amount'] = sum(
-            i['po_total_amount'] for i in po_items_qs.values(
-                'po_total_amount', 'po_item_status') if i['po_item_status'] != 'cancelled')
-        return context
-
-
 class PurchaseOrderModelDeleteView(PurchaseOrderModelModelViewQuerySetMixIn, DeleteView):
+    """
+    Deletes a purchase order when it is no longer needed.
+    """
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -423,60 +444,66 @@ class PurchaseOrderModelDeleteView(PurchaseOrderModelModelViewQuerySetMixIn, Del
         return HttpResponseRedirect(success_url)
 
 
-# ACTIONS...
 class BasePurchaseOrderActionActionView(
     PurchaseOrderModelModelViewQuerySetMixIn,
-    RedirectView,
-    SingleObjectMixin
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
 ):
-    http_method_names = ['get']
+    """
+    Applies purchase-order workflow actions such as approve or fulfill.
+    """
     pk_url_kwarg = 'po_pk'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, entity_slug, po_pk, *args, **kwargs):
-        return reverse('django_ledger:po-update',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'po_pk': po_pk
-                       })
-
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BasePurchaseOrderActionActionView, self).get(request, *args, **kwargs)
-        po_model: PurchaseOrderModel = self.get_object()
-
-        try:
-            getattr(po_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+    def get_redirect_url(self) -> str:
+        return reverse(
+            'django_ledger:po-update',
+            kwargs={
+                'entity_slug': self.kwargs['entity_slug'],
+                'po_pk': self.kwargs['po_pk'],
+            },
+        )
 
 
 class PurchaseOrderMarkAsDraftView(BasePurchaseOrderActionActionView):
+    """
+    Returns a purchase order to draft status.
+    """
     action_name = 'mark_as_draft'
 
 
 class PurchaseOrderMarkAsReviewView(BasePurchaseOrderActionActionView):
+    """
+    Marks a purchase order as in review.
+    """
     action_name = 'mark_as_review'
 
 
 class PurchaseOrderMarkAsApprovedView(BasePurchaseOrderActionActionView):
+    """
+    Approves a purchase order for purchasing.
+    """
     action_name = 'mark_as_approved'
 
 
 class PurchaseOrderMarkAsFulfilledView(BasePurchaseOrderActionActionView):
+    """
+    Marks a purchase order as fulfilled.
+    """
     action_name = 'mark_as_fulfilled'
 
 
 class PurchaseOrderMarkAsCanceledView(BasePurchaseOrderActionActionView):
+    """
+    Cancels a purchase order.
+    """
     action_name = 'mark_as_canceled'
 
 
 class PurchaseOrderMarkAsVoidView(BasePurchaseOrderActionActionView):
+    """
+    Voids a purchase order.
+    """
     action_name = 'mark_as_void'

@@ -60,21 +60,36 @@
     </footer>
     <footer class="card-footer">
         {% if coa_model.can_mark_as_default %}
-            <a href="{{ coa_model.mark_as_default_url }}"
-               class="card-footer-item has-text-danger has-text-weight-bold">
-                {% trans 'Mark as Default' %}
-            </a>
+            <form method="post"
+                  action="{{ coa_model.mark_as_default_url }}"
+                  class="card-footer-item mb-0 p-0">
+                {% csrf_token %}
+                <button type="submit"
+                        class="button is-ghost has-text-danger has-text-weight-bold is-fullwidth">
+                    {% trans 'Mark as Default' %}
+                </button>
+            </form>
         {% endif %}
         {% if coa_model.can_deactivate %}
-            <a href="{{ coa_model.mark_as_inactive_url }}"
-               class="card-footer-item has-text-warning has-text-weight-bold">
-                {% trans 'Mark as Inactive' %}
-            </a>
+            <form method="post"
+                  action="{{ coa_model.mark_as_inactive_url }}"
+                  class="card-footer-item mb-0 p-0">
+                {% csrf_token %}
+                <button type="submit"
+                        class="button is-ghost has-text-warning has-text-weight-bold is-fullwidth">
+                    {% trans 'Mark as Inactive' %}
+                </button>
+            </form>
         {% elif coa_model.can_activate %}
-            <a href="{{ coa_model.mark_as_active_url }}"
-               class="card-footer-item has-text-success has-text-weight-bold">
-                {% trans 'Mark as Active' %}
-            </a>
+            <form method="post"
+                  action="{{ coa_model.mark_as_active_url }}"
+                  class="card-footer-item mb-0 p-0">
+                {% csrf_token %}
+                <button type="submit"
+                        class="button is-ghost has-text-success has-text-weight-bold is-fullwidth">
+                    {% trans 'Mark as Active' %}
+                </button>
+            </form>
         {% endif %}
     </footer>
 </div>

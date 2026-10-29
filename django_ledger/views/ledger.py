@@ -6,11 +6,12 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from typing import Optional
+
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import (
     ArchiveIndexView,
     CreateView,
@@ -26,10 +27,11 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
-from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.ledger import LedgerModel, LedgerModelQuerySet
 from django_ledger.views.mixins import (
     BaseDateNavigationUrlMixIn,
     DateReportMixIn,
+    DjangoLedgerActionViewMixIn,
     DjangoLedgerSecurityMixIn,
     EntityUnitMixIn,
     MonthlyReportMixIn,
@@ -38,9 +40,11 @@ from django_ledger.views.mixins import (
     YearlyReportMixIn,
 )
 
-
 class LedgerModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared ledger queryset scoped to the authorized business.
+    """
+    queryset: Optional[LedgerModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -50,6 +54,9 @@ class LedgerModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
+    """
+    Lists ledgers so you can open books used by bills, invoices, and journals.
+    """
     allow_empty = True
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
@@ -98,12 +105,18 @@ class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
 
 
 class LedgerModelYearListView(YearArchiveView, LedgerModelListView):
+    """
+    Lists ledgers created in a selected year.
+    """
     make_object_list = True
     year_format = '%Y'
     paginate_by = 30
 
 
 class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
+    """
+    Lists ledgers created in a selected month.
+    """
     make_object_list = True
     year_format = '%Y'
     month_format = '%m'
@@ -111,6 +124,9 @@ class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
 
 
 class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
+    """
+    Creates a new ledger book for the business.
+    """
     template_name = 'django_ledger/ledger/ledger_create.html'
     PAGE_TITLE = _('Create Ledger')
     extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
@@ -130,6 +146,9 @@ class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
 
 
 class LedgerModelDetailView(LedgerModelModelBaseView, RedirectView):
+    """
+    Opens ledger detail or redirects into its journal activity.
+    """
     def get_redirect_url(self, *args, **kwargs):
         return reverse(
             'django_ledger:je-list',
@@ -138,6 +157,9 @@ class LedgerModelDetailView(LedgerModelModelBaseView, RedirectView):
 
 
 class LedgerModelUpdateView(LedgerModelModelBaseView, UpdateView):
+    """
+    Updates a ledger name and settings.
+    """
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/ledger/ledger_update.html'
@@ -158,6 +180,9 @@ class LedgerModelUpdateView(LedgerModelModelBaseView, UpdateView):
 
 
 class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
+    """
+    Deletes a ledger when it is no longer needed.
+    """
     template_name = 'django_ledger/ledger/ledger_delete.html'
     pk_url_kwarg = 'ledger_pk'
     context_object_name = 'ledger_model'
@@ -166,38 +191,28 @@ class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
         return reverse(viewname='django_ledger:ledger-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
-# ACTIONS....
-
-
-class LedgerModelModelActionView(LedgerModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
+class LedgerModelModelActionView(
+    LedgerModelModelBaseView,
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
+):
+    """
+    Applies ledger actions such as post, lock, or unlock.
+    """
     pk_url_kwarg = 'ledger_pk'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, *args, **kwargs):
-        next_url = self.request.GET.get('next', None)
-        if next_url:
-            return next_url
-        ledger_model: LedgerModel = self.object
+    def get_redirect_url(self) -> str:
+        ledger_model: LedgerModel = self.get_object()
         return ledger_model.get_journal_entry_list_url()
 
-    def get(self, request, *args, **kwargs):
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        ledger_model: LedgerModel = self.get_object()
-        self.object = ledger_model
 
-        try:
-            getattr(ledger_model, self.action_name)(commit=self.commit, user_model=self.request.user, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request, message=e.message, level=messages.ERROR, extra_tags='is-danger')
-
-        return super().get(request, **kwargs)
-
-
-# Ledger Balance Sheet Views...
 class BaseLedgerModelBalanceSheetView(LedgerModelModelBaseView, RedirectView):
+    """
+    Redirects to the current-year balance sheet for a ledger.
+    """
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse(
@@ -223,24 +238,26 @@ class FiscalYearLedgerModelBalanceSheetView(
 
 class QuarterlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, QuarterlyReportMixIn):
     """
-    Quarter Balance Sheet View.
+    Balance sheet for a ledger over a fiscal quarter.
     """
 
 
 class MonthlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, MonthlyReportMixIn):
     """
-    Monthly Balance Sheet View.
+    Balance sheet for a ledger over a month.
     """
 
 
 class DateLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, DateReportMixIn):
     """
-    Date Balance Sheet View.
+    Balance sheet for a ledger as of a specific date.
     """
 
 
-# Ledger Income Statement Views...
 class BaseLedgerIncomeStatementView(LedgerModelModelBaseView, RedirectView):
+    """
+    Redirects to the current-year income statement for a ledger.
+    """
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse(
@@ -265,24 +282,26 @@ class FiscalYearLedgerIncomeStatementView(
 
 class QuarterlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, QuarterlyReportMixIn):
     """
-    Quarterly Income Statement Quarter Report.
+    Income statement for a ledger over a fiscal quarter.
     """
 
 
 class MonthlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, MonthlyReportMixIn):
     """
-    Monthly Income Statement Monthly Report.
+    Income statement for a ledger over a month.
     """
 
 
 class DateLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, DateReportMixIn):
     """
-    Date Income Statement Monthly Report.
+    Income statement for a ledger as of a specific date.
     """
 
 
-# CASH FLOW STATEMENT ----
 class BaseLedgerModelCashFlowStatementRedirectView(LedgerModelModelBaseView, RedirectView):
+    """
+    Redirects to the current-year cash flow statement for a ledger.
+    """
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
         return reverse(
@@ -312,17 +331,17 @@ class FiscalYearLedgerModelCashFlowStatementView(
 
 class QuarterlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, QuarterlyReportMixIn):
     """
-    Quarter Cash Flow Statement View.
+    Cash flow statement for a ledger over a fiscal quarter.
     """
 
 
 class MonthlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, MonthlyReportMixIn):
     """
-    Monthly Cash Flow Statement View.
+    Cash flow statement for a ledger over a month.
     """
 
 
 class DateLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, DateReportMixIn):
     """
-    Date Cash Flow Statement View.
+    Cash flow statement for a ledger as of a specific date.
     """

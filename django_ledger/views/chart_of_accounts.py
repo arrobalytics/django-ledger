@@ -4,19 +4,21 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 """
 from typing import Optional
 
-from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import UpdateView, ListView, RedirectView, CreateView
+from django.views import View
+from django.views.generic import UpdateView, ListView, CreateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.chart_of_accounts import ChartOfAccountsModelUpdateForm, ChartOfAccountsModelCreateForm
 from django_ledger.models import EntityModel, ChartOfAccountModelQuerySet
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionViewMixIn
 
 
 class ChartOfAccountModelModelBaseViewMixIn(DjangoLedgerSecurityMixIn):
+    """
+    Shared chart-of-accounts queryset scoped to the authorized business.
+    """
     queryset: Optional[ChartOfAccountModelQuerySet] = None
 
     def get_queryset(self):
@@ -27,6 +29,10 @@ class ChartOfAccountModelModelBaseViewMixIn(DjangoLedgerSecurityMixIn):
 
 
 class ChartOfAccountModelListView(ChartOfAccountModelModelBaseViewMixIn, ListView):
+    """
+    Lists chart-of-accounts books for the business so you can open, review,
+    or switch between active and inactive account structures.
+    """
     template_name = 'django_ledger/chart_of_accounts/coa_list.html'
     context_object_name = 'coa_list'
     inactive = False
@@ -48,6 +54,9 @@ class ChartOfAccountModelListView(ChartOfAccountModelModelBaseViewMixIn, ListVie
 
 
 class ChartOfAccountModelCreateView(ChartOfAccountModelModelBaseViewMixIn, CreateView):
+    """
+    Creates a new chart of accounts for the business.
+    """
     template_name = 'django_ledger/chart_of_accounts/coa_create.html'
     extra_context = {
         'header_title': _('Create Chart of Accounts'),
@@ -77,6 +86,9 @@ class ChartOfAccountModelCreateView(ChartOfAccountModelModelBaseViewMixIn, Creat
 
 
 class ChartOfAccountModelUpdateView(ChartOfAccountModelModelBaseViewMixIn, UpdateView):
+    """
+    Updates the name and settings of an existing chart of accounts.
+    """
     context_object_name = 'coa_model'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/chart_of_accounts/coa_update.html'
@@ -94,35 +106,33 @@ class ChartOfAccountModelUpdateView(ChartOfAccountModelModelBaseViewMixIn, Updat
         return chart_of_accounts_model.get_coa_list_url()
 
 
-# todo: centralize this functionality into a separate class for ALL Action views...
-class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
-                                   RedirectView,
-                                   SingleObjectMixin):
-    http_method_names = ['get']
+class ChartOfAccountModelActionView(
+    ChartOfAccountModelModelBaseViewMixIn,
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
+):
+    """
+    Applies chart-of-accounts actions such as setting the default book.
+    """
     slug_url_kwarg = 'coa_slug'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, *args, **kwargs):
+    def get_redirect_url(self) -> str:
         chart_of_accounts_model: ChartOfAccountModel = self.get_object()
         return chart_of_accounts_model.get_coa_list_url()
 
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(CharOfAccountModelActionView, self).get(request, *args, **kwargs)
-        coa_model: ChartOfAccountModel = self.get_object()
+    def get_action_success_message(self) -> Optional[str]:
+        if self.action_name != 'mark_as_default':
+            return super().get_action_success_message()
+        coa_model: ChartOfAccountModel = self.object
+        return _(
+            'Successfully updated {} Default Chart of Account to {}'.format(
+                self.AUTHORIZED_ENTITY_MODEL.name,
+                coa_model.name,
+            )
+        )
 
-        try:
-            getattr(coa_model, self.action_name)(commit=self.commit, **kwargs)
-            messages.add_message(request, level=messages.SUCCESS, extra_tags='is-success',
-                                 message=_('Successfully updated {} Default Chart of Account to '.format(
-                                     self.AUTHORIZED_ENTITY_MODEL.name) +
-                                           '{}'.format(coa_model.name)))
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+
+CharOfAccountModelActionView = ChartOfAccountModelActionView

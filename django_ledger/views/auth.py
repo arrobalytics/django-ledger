@@ -14,6 +14,9 @@ from django_ledger.forms.auth import LogInForm
 
 
 class DjangoLedgerLoginView(LoginView):
+    """
+    Signs a user into Django Ledger.
+    """
     form_class = LogInForm
     template_name = 'django_ledger/auth/login.html'
     extra_context = {
@@ -25,4 +28,7 @@ class DjangoLedgerLoginView(LoginView):
 
 
 class DjangoLedgerLogoutView(LogoutView):
+    """
+    Signs the current user out and returns to the login page.
+    """
     next_page = reverse_lazy('django_ledger:login')

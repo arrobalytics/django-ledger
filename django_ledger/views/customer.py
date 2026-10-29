@@ -27,17 +27,25 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class CustomerModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+    """
+    Shared customer queryset scoped to the authorized business.
+    """
     queryset: Optional[CustomerModelQueryset] = None
 
     def get_queryset(self):
         if self.queryset is None:
+            entity_model: EntityModel = self.get_authorized_entity_instance()
             self.queryset = CustomerModel.objects.for_entity(
-                entity_model=self.kwargs['entity_slug'],
+                entity_model=entity_model,
             ).order_by('-updated')
         return self.queryset
 
 
 class CustomerModelListView(CustomerModelModelViewQuerySetMixIn, ListView):
+    """
+    Lists customers for the business so you can find who you sell to
+    and open their invoices and receipts.
+    """
     template_name = 'django_ledger/customer/customer_list.html'
     PAGE_TITLE = _('Customer List')
     extra_context = {
@@ -49,6 +57,9 @@ class CustomerModelListView(CustomerModelModelViewQuerySetMixIn, ListView):
 
 
 class CustomerModelCreateView(CustomerModelModelViewQuerySetMixIn, CreateView):
+    """
+    Adds a new customer record for sales, invoices, and receipts.
+    """
     template_name = 'django_ledger/customer/customer_create.html'
     PAGE_TITLE = _('Create New Customer')
     form_class = CustomerModelForm
@@ -67,47 +78,16 @@ class CustomerModelCreateView(CustomerModelModelViewQuerySetMixIn, CreateView):
 
     def form_valid(self, form):
         customer_model: CustomerModel = form.save(commit=False)
-        entity_model = EntityModel.objects.for_user(user_model=self.request.user).get(
-            slug__exact=self.kwargs['entity_slug']
-        )
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         customer_model.entity_model = entity_model
         customer_model.save()
         return super().form_valid(form)
 
 
-class CustomerModelUpdateView(CustomerModelModelViewQuerySetMixIn, UpdateView):
-    template_name = 'django_ledger/customer/customer_update.html'
-    PAGE_TITLE = _('Customer Update')
-    form_class = CustomerModelForm
-    context_object_name = 'customer'
-    slug_url_kwarg = 'customer_pk'
-    slug_field = 'uuid'
-
-    def get_context_data(self, **kwargs):
-        context = super(CustomerModelUpdateView, self).get_context_data(**kwargs)
-        customer_model: CustomerModel = self.object
-        context['page_title'] = self.PAGE_TITLE
-        context['header_title'] = self.PAGE_TITLE
-        context['header_subtitle'] = customer_model.customer_number
-        context['header_subtitle_icon'] = 'dashicons:businesswoman'
-        return context
-
-    def get_success_url(self):
-        return reverse(
-            'django_ledger:customer-list',
-            kwargs={'entity_slug': self.kwargs['entity_slug']},
-        )
-
-    def form_valid(self, form):
-        form.save()
-        return super().form_valid(form)
-
-
-class CustomerModelDeleteView(CustomerModelModelViewQuerySetMixIn, DeleteView):
-    pass
-
-
 class CustomerModelDetailView(CustomerModelModelViewQuerySetMixIn, DetailView):
+    """
+    Shows a customer's profile along with related invoices and receipts.
+    """
     template_name = 'django_ledger/customer/customer_detail.html'
     context_object_name = 'customer'
     PAGE_TITLE = _('Customer Details')
@@ -138,3 +118,41 @@ class CustomerModelDetailView(CustomerModelModelViewQuerySetMixIn, DetailView):
             }
         )
         return context
+
+
+class CustomerModelUpdateView(CustomerModelModelViewQuerySetMixIn, UpdateView):
+    """
+    Updates a customer's contact and billing details.
+    """
+    template_name = 'django_ledger/customer/customer_update.html'
+    PAGE_TITLE = _('Customer Update')
+    form_class = CustomerModelForm
+    context_object_name = 'customer'
+    slug_url_kwarg = 'customer_pk'
+    slug_field = 'uuid'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        customer_model: CustomerModel = self.object
+        context['page_title'] = self.PAGE_TITLE
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = customer_model.customer_number
+        context['header_subtitle_icon'] = 'dashicons:businesswoman'
+        return context
+
+    def get_success_url(self):
+        return reverse(
+            'django_ledger:customer-list',
+            kwargs={'entity_slug': self.kwargs['entity_slug']},
+        )
+
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
+
+
+class CustomerModelDeleteView(CustomerModelModelViewQuerySetMixIn, DeleteView):
+    """
+    Removes a customer when the business no longer needs the record.
+    """
+    pass

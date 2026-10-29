@@ -6,34 +6,40 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from typing import Optional
+
 from django.contrib import messages
-from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.http import HttpResponseRedirect, HttpResponseForbidden
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView, RedirectView
+from django.views import View
+from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
                                           CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
                                           DraftEstimateModelUpdateForm)
 from django_ledger.models import EntityModel
-from django_ledger.models.estimate import EstimateModel
-from django_ledger.views import DjangoLedgerSecurityMixIn
+from django_ledger.models.estimate import EstimateModel, EstimateModelQuerySet
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionViewMixIn
 
-
-class EstimateModelModelViewQuerySetMixIn:
-    queryset = None
+class EstimateModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+    """
+    Shared customer-estimate queryset scoped to the authorized business.
+    """
+    queryset: Optional[EstimateModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
-            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            entity_model: EntityModel = self.get_authorized_entity_instance()
             self.queryset = entity_model.estimatemodel_set.select_related('customer', 'entity')
         return super().get_queryset()
 
 
-class EstimateModelListView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, ArchiveIndexView):
+class EstimateModelListView(EstimateModelModelViewQuerySetMixIn, ArchiveIndexView):
+    """
+    Lists customer estimates and job quotes for the business.
+    """
     template_name = 'django_ledger/estimate/estimate_list.html'
     context_object_name = 'estimate_list'
     PAGE_TITLE = _('Customer Estimates')
@@ -48,7 +54,10 @@ class EstimateModelListView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQue
     }
 
 
-class EstimateModelCreateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, CreateView):
+class EstimateModelCreateView(EstimateModelModelViewQuerySetMixIn, CreateView):
+    """
+    Creates a new customer estimate or job quote.
+    """
     PAGE_TITLE = _('Create Customer Estimate')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -80,7 +89,10 @@ class EstimateModelCreateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
         return super(EstimateModelCreateView, self).form_valid(form)
 
 
-class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, DetailView):
+class EstimateModelDetailView(EstimateModelModelViewQuerySetMixIn, DetailView):
+    """
+    Shows an estimate, its line items, and linked bills, invoices, and POs.
+    """
     pk_url_kwarg = 'ce_pk'
     template_name = 'django_ledger/estimate/estimate_detail.html'
     PAGE_TITLE = _('Customer Estimate Detail')
@@ -101,17 +113,17 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
 
         # PO Model Queryset...
         po_qs = ce_model.purchaseordermodel_set.for_entity(
-            entity_model=self.kwargs['entity_slug']
+            entity_model=self.get_authorized_entity_instance()
         ) if ce_model.is_approved() else ce_model.purchaseordermodel_set.none()
         context['estimate_po_model_queryset'] = po_qs
 
         invoice_qs = ce_model.invoicemodel_set.for_entity(
-            entity_model=self.kwargs['entity_slug']
+            entity_model=self.get_authorized_entity_instance()
         ) if ce_model.is_approved() else ce_model.invoicemodel_set.none()
         context['estimate_invoice_model_queryset'] = invoice_qs
 
         bill_qs = ce_model.billmodel_set.for_entity(
-            entity_model=self.kwargs['entity_slug']
+            entity_model=self.get_authorized_entity_instance()
         ) if ce_model.is_approved() else ce_model.billmodel_set.none()
         context['estimate_bill_model_queryset'] = bill_qs
 
@@ -129,7 +141,10 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
         return qs.prefetch_related('itemtransactionmodel_set')
 
 
-class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, UpdateView):
+class EstimateModelUpdateView(EstimateModelModelViewQuerySetMixIn, UpdateView):
+    """
+    Updates estimate details and line-item cost and revenue estimates.
+    """
     template_name = 'django_ledger/estimate/estimate_update.html'
     pk_url_kwarg = 'ce_pk'
     context_object_name = 'estimate'
@@ -220,8 +235,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
             if itemtxs_formset.has_changed():
                 if itemtxs_formset.is_valid():
                     itemtxs_list = itemtxs_formset.save(commit=False)
-                    entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
-                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                    entity_model: EntityModel = self.get_authorized_entity_instance()
 
                     for itemtxs in itemtxs_list:
                         itemtxs.ce_model_id = ce_model.uuid
@@ -251,54 +265,59 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
         return super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
 
 
-# ---- ACTION VIEWS ----
-class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
-                             EstimateModelModelViewQuerySetMixIn,
-                             RedirectView,
-                             SingleObjectMixin):
-    http_method_names = ['get']
+class BaseEstimateActionView(
+    EstimateModelModelViewQuerySetMixIn,
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
+):
+    """
+    Applies estimate workflow actions such as approve or complete.
+    """
     pk_url_kwarg = 'ce_pk'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, entity_slug, ce_pk, *args, **kwargs):
-        return reverse('django_ledger:customer-estimate-update',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'ce_pk': ce_pk
-                       })
-
-    def get(self, request, *args, **kwargs):
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseEstimateActionView, self).get(request, *args, **kwargs)
-        ce_model: EstimateModel = self.get_object()
-
-        try:
-            getattr(ce_model, self.action_name)(commit=self.commit)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+    def get_redirect_url(self) -> str:
+        return reverse(
+            'django_ledger:customer-estimate-update',
+            kwargs={
+                'entity_slug': self.kwargs['entity_slug'],
+                'ce_pk': self.kwargs['ce_pk'],
+            },
+        )
 
 
 class EstimateActionMarkAsDraftView(BaseEstimateActionView):
+    """
+    Returns an estimate to draft status.
+    """
     action_name = 'mark_as_draft'
 
 
 class EstimateActionMarkAsReviewView(BaseEstimateActionView):
+    """
+    Marks an estimate as in review.
+    """
     action_name = 'mark_as_review'
 
 
 class EstimateActionMarkAsApprovedView(BaseEstimateActionView):
+    """
+    Approves an estimate so work and documents can be bound.
+    """
     action_name = 'mark_as_approved'
 
 
 class EstimateActionMarkAsCompletedView(BaseEstimateActionView):
+    """
+    Marks an estimate as completed.
+    """
     action_name = 'mark_as_completed'
 
 
 class EstimateActionMarkAsCanceledView(BaseEstimateActionView):
+    """
+    Cancels an estimate.
+    """
     action_name = 'mark_as_canceled'

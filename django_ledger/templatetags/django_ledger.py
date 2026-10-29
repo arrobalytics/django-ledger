@@ -468,7 +468,8 @@ def modal_action_v2(
         action_url: str,
         message: str,
         html_id: str,
-        http_method: str = 'get',
+        http_method: str = 'post',
+        next_url: str = None,
 ):
     return {
         'object': model,
@@ -476,6 +477,31 @@ def modal_action_v2(
         'http_method': http_method,
         'message': message,
         'html_id': html_id,
+        'next_url': next_url,
+    }
+
+
+@register.inclusion_tag('django_ledger/components/action_form.html')
+def action_form(
+        action_url: str,
+        label: str,
+        button_class: str = 'button is-small',
+        form_class: str = 'is-inline',
+        next_url: str = None,
+        title: str = None,
+        icon: str = None,
+):
+    """
+    Renders a CSRF-protected POST control for accounting workflow actions.
+    """
+    return {
+        'action_url': action_url,
+        'label': label,
+        'button_class': button_class,
+        'form_class': form_class,
+        'next_url': next_url,
+        'title': title,
+        'icon': icon,
     }
 
 

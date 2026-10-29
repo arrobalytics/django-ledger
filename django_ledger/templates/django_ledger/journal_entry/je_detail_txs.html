@@ -1,6 +1,7 @@
 {% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
+{% load django_ledger %}
 
 {% block view_content %}
     <div class="columns is-centered is-multiline">
@@ -61,33 +62,56 @@
                                href="{{ journal_entry.get_journal_entry_list_url }}?next={{ request.path }}">
                                 {% trans 'Done' %}
                             </a>
-                            {% if journal_entry.can_lock %}
-                                <a class="button is-dark is-danger"
-                                   href="{{ journal_entry.get_action_lock_url }}?next={{ request.path }}">
-                                    {% trans 'Lock' %}
-                                </a>
-                            {% endif %}
-                            {% if journal_entry.can_unlock %}
-                                <a class="button is-dark is-warning"
-                                   href="{{ journal_entry.get_action_unlock_url }}?next={{ request.path }}">
-                                    {% trans 'UnLock' %}
-                                </a>
-                            {% endif %}
-                            {% if journal_entry.can_post %}
-                                <a class="button is-dark is-danger"
-                                   href="{{ journal_entry.get_action_post_url }}?next={{ request.path }}">
-                                    {% trans 'Post' %}
-                                </a>
-                            {% endif %}
-                            {% if journal_entry.can_unpost %}
-                                <a class="button is-warning"
-                                   href="{{ journal_entry.get_action_unpost_url }}?next={{ request.path }}">
-                                    {% trans 'UnPost' %}
-                                </a>
-                            {% endif %}
                         </div>
                     </div>
                 </form>
+
+                <div class="has-text-centered mt-3 buttons is-centered">
+                    {% if journal_entry.can_lock %}
+                        <form method="post"
+                              action="{{ journal_entry.get_action_lock_url }}"
+                              class="mb-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="button is-dark is-danger">
+                                {% trans 'Lock' %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if journal_entry.can_unlock %}
+                        <form method="post"
+                              action="{{ journal_entry.get_action_unlock_url }}"
+                              class="mb-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="button is-dark is-warning">
+                                {% trans 'UnLock' %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if journal_entry.can_post %}
+                        <form method="post"
+                              action="{{ journal_entry.get_action_post_url }}"
+                              class="mb-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="button is-dark is-danger">
+                                {% trans 'Post' %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if journal_entry.can_unpost %}
+                        <form method="post"
+                              action="{{ journal_entry.get_action_unpost_url }}"
+                              class="mb-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="button is-warning">
+                                {% trans 'UnPost' %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
 
             </div>
         </div>

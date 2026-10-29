@@ -5,21 +5,25 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
-from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from typing import Optional
+
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView, RedirectView
+from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models import EntityModel
-from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
+from django_ledger.models.bank_account import BankAccountModel, BankAccountModelQuerySet
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionViewMixIn
 
 
 class BankAccountModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared bank-account queryset scoped to the authorized business.
+    """
+    queryset: Optional[BankAccountModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -29,6 +33,10 @@ class BankAccountModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class BankAccountModelListView(BankAccountModelModelBaseView, ListView):
+    """
+    Lists bank accounts linked to the business so you can see cash accounts
+    and which ones are active for imports and payments.
+    """
     template_name = 'django_ledger/bank_account/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
     context_object_name = 'bank_accounts'
@@ -40,6 +48,9 @@ class BankAccountModelListView(BankAccountModelModelBaseView, ListView):
 
 
 class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
+    """
+    Creates a bank account and links it to a cash ledger account.
+    """
     template_name = 'django_ledger/bank_account/bank_account_create.html'
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
@@ -63,14 +74,18 @@ class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
 
     def form_valid(self, form):
         bank_account_model: BankAccountModel = form.save(commit=False)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         bank_account_model.configure(
-            entity_slug=self.kwargs['entity_slug'],
+            entity_slug=entity_model,
             user_model=self.request.user,
             commit=False)
-        return super(BankAccountModelCreateView, self).form_valid(form)
+        return super().form_valid(form)
 
 
 class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
+    """
+    Updates bank account details and the linked cash account.
+    """
     template_name = 'django_ledger/bank_account/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
@@ -95,41 +110,35 @@ class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
         )
 
 
-# ACTION VIEWS...
-class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
-                                     RedirectView,
-                                     SingleObjectMixin):
-    http_method_names = ['get']
+class BaseBankAccountModelActionView(
+    BankAccountModelModelBaseView,
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
+):
+    """
+    Applies bank-account actions such as marking an account active or inactive.
+    """
     pk_url_kwarg = 'bank_account_pk'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:bank-account-list',
-                       kwargs={
-                           'entity_slug': kwargs['entity_slug']
-                       })
-
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseBankAccountModelActionView, self).get(request, *args, **kwargs)
-        ba_model: BankAccountModel = self.get_object()
-
-        try:
-            getattr(ba_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+    def get_redirect_url(self) -> str:
+        return reverse(
+            'django_ledger:bank-account-list',
+            kwargs={'entity_slug': self.kwargs['entity_slug']},
+        )
 
 
 class BankAccountModelActionMarkAsActiveView(BaseBankAccountModelActionView):
+    """
+    Marks a bank account as active.
+    """
     action_name = 'mark_as_active'
 
 
 class BankAccountModelActionMarkAsInactiveView(BaseBankAccountModelActionView):
+    """
+    Marks a bank account as inactive.
+    """
     action_name = 'mark_as_inactive'

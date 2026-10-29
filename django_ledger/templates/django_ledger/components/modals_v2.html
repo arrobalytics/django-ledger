@@ -7,8 +7,22 @@
             <div class="card-footer">
                 <a onclick="djLedger.toggleModal('{{ html_id }}')"
                    class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
-                <a href="{{ action_url }}"
-                   class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+                {% if http_method == 'post' %}
+                    <form name="{{ html_id }}-form"
+                          method="post"
+                          action="{{ action_url }}"
+                          class="is-flex-grow-1 m-0">
+                        {% csrf_token %}
+                        {% if next_url %}
+                            <input type="hidden" name="next" value="{{ next_url }}">
+                        {% endif %}
+                    </form>
+                    <a onclick="djLedger.submitForm('{{ html_id }}-form', '{{ html_id }}')"
+                       class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+                {% else %}
+                    <a href="{{ action_url }}"
+                       class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -18,5 +32,3 @@
             onclick="djLedger.toggleModal('{{ html_id }}')">
     </button>
 </div>
-
-

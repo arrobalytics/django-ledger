@@ -6,16 +6,19 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from typing import Optional
+
 from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import (
     UpdateView, CreateView, ArchiveIndexView, MonthArchiveView, YearArchiveView,
-    DetailView, RedirectView
+    DetailView
 )
 from django.views.generic.detail import SingleObjectMixin
 
@@ -33,11 +36,14 @@ from django_ledger.forms.bill import (
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, PurchaseOrderModel, EstimateModel, BillModelQuerySet
 from django_ledger.models.bill import BillModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionViewMixIn
 
 
 class BillModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared vendor-bill queryset scoped to the authorized business.
+    """
+    queryset: Optional[BillModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -47,7 +53,49 @@ class BillModelModelBaseView(DjangoLedgerSecurityMixIn):
         return super().get_queryset()
 
 
+class BillModelListView(BillModelModelBaseView, ArchiveIndexView):
+    """
+    Lists vendor bills so you can see what is owed,
+    what still needs review, and what has already been paid.
+    """
+    template_name = 'django_ledger/bills/bill_list.html'
+    context_object_name = 'bills'
+    PAGE_TITLE = _('Bill List')
+
+    # todo: can this be status date?...
+    date_field = 'date_draft'
+    paginate_by = 20
+    paginate_orphans = 2
+    allow_empty = True
+    ordering = '-updated'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'uil:bill'
+    }
+
+
+class BillModelYearListView(YearArchiveView, BillModelListView):
+    """
+    Lists vendor bills created in a selected year.
+    """
+    paginate_by = 20
+    make_object_list = True
+
+
+class BillModelMonthListView(MonthArchiveView, BillModelListView):
+    """
+    Lists vendor bills created in a selected month.
+    """
+    paginate_by = 20
+    month_format = '%m'
+    date_list_period = 'year'
+
+
 class BillModelCreateView(BillModelModelBaseView, CreateView):
+    """
+    Creates a new vendor bill, optionally from a purchase order or estimate.
+    """
     template_name = 'django_ledger/bills/bill_create.html'
     PAGE_TITLE = _('Create Bill')
     extra_context = {
@@ -86,7 +134,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                 return HttpResponseBadRequest()
 
             po_qs = PurchaseOrderModel.objects.for_entity(
-                entity_model=self.kwargs['entity_slug'],
+                entity_model=self.get_authorized_entity_instance(),
             ).prefetch_related('itemtransactionmodel_set')
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
             po_itemtxs_qs = po_model.itemtransactionmodel_set.filter(
@@ -142,7 +190,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
-                entity_model=self.kwargs['entity_slug']
+                entity_model=self.get_authorized_entity_instance()
             )
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
@@ -155,7 +203,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                 return HttpResponseBadRequest()
             item_uuids = item_uuids.split(',')
             po_qs = PurchaseOrderModel.objects.for_entity(
-                entity_model=self.kwargs['entity_slug'],
+                entity_model=self.get_authorized_entity_instance(),
             )
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
 
@@ -205,36 +253,10 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                        })
 
 
-class BillModelListView(BillModelModelBaseView, ArchiveIndexView):
-    template_name = 'django_ledger/bills/bill_list.html'
-    context_object_name = 'bills'
-    PAGE_TITLE = _('Bill List')
-
-    # todo: can this be status date?...
-    date_field = 'date_draft'
-    paginate_by = 20
-    paginate_orphans = 2
-    allow_empty = True
-    ordering = '-updated'
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'uil:bill'
-    }
-
-
-class BillModelYearListView(YearArchiveView, BillModelListView):
-    paginate_by = 20
-    make_object_list = True
-
-
-class BillModelMonthListView(MonthArchiveView, BillModelListView):
-    paginate_by = 20
-    month_format = '%m'
-    date_list_period = 'year'
-
-
 class BillModelDetailView(BillModelModelBaseView, DetailView):
+    """
+    Shows a vendor bill, its line items, and payment status.
+    """
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
@@ -285,6 +307,9 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
 
 
 class BillModelUpdateView(BillModelModelBaseView, UpdateView):
+    """
+    Updates bill details and line items while the bill is still editable.
+    """
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill_model'
@@ -494,79 +519,91 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
         return super(BillModelUpdateView, self).post(request, **kwargs)
 
 
-# ACTION VIEWS...
-class BaseBillActionView(BillModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
+class BaseBillActionView(
+    BillModelModelBaseView,
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
+):
     pk_url_kwarg = 'bill_pk'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:bill-update',
-                       kwargs={
-                           'entity_slug': kwargs['entity_slug'],
-                           'bill_pk': kwargs['bill_pk']
-                       })
-
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseBillActionView, self).get(request, *args, **kwargs)
-        bill_model: BillModel = self.get_object()
-
-        try:
-            getattr(bill_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+    def get_redirect_url(self) -> str:
+        return reverse(
+            'django_ledger:bill-update',
+            kwargs={
+                'entity_slug': self.kwargs['entity_slug'],
+                'bill_pk': self.kwargs['bill_pk'],
+            },
+        )
 
 
 class BillModelActionMarkAsDraftView(BaseBillActionView):
+    """
+    Returns a bill to draft status.
+    """
     action_name = 'mark_as_draft'
 
 
 class BillModelActionMarkAsInReviewView(BaseBillActionView):
+    """
+    Marks a bill as in review.
+    """
     action_name = 'mark_as_review'
 
 
 class BillModelActionMarkAsApprovedView(BaseBillActionView):
+    """
+    Approves a bill for payment and posting.
+    """
     action_name = 'mark_as_approved'
 
 
 class BillModelActionMarkAsPaidView(BaseBillActionView):
+    """
+    Marks a bill as paid.
+    """
     action_name = 'mark_as_paid'
 
 
 class BillModelActionDeleteView(BaseBillActionView):
+    """
+    Marks a bill as deleted.
+    """
     action_name = 'mark_as_delete'
 
 
 class BillModelActionVoidView(BaseBillActionView):
+    """
+    Voids a bill.
+    """
     action_name = 'mark_as_void'
 
 
 class BillModelActionCanceledView(BaseBillActionView):
+    """
+    Cancels a bill.
+    """
     action_name = 'mark_as_canceled'
 
 
 class BillModelActionLockLedgerView(BaseBillActionView):
+    """
+    Locks the bill ledger so amounts cannot change.
+    """
     action_name = 'lock_ledger'
 
 
 class BillModelActionUnlockLedgerView(BaseBillActionView):
+    """
+    Unlocks the bill ledger for further edits.
+    """
     action_name = 'unlock_ledger'
 
 
 class BillModelActionForceMigrateView(BaseBillActionView):
+    """
+    Re-migrates bill amounts into the ledger.
+    """
     action_name = 'migrate_state'
-
-    def get_redirect_url(self, entity_slug, bill_pk, *args, **kwargs):
-        return reverse('django_ledger:bill-update',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': bill_pk
-                       })

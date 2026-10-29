@@ -6,6 +6,8 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from typing import Optional
+
 from django.contrib.messages import add_message, ERROR
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
@@ -22,14 +24,19 @@ from django_ledger.forms.item import (
     ServiceCreateForm, ServiceUpdateForm
 )
 from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel, UnitOfMeasureModelQuerySet
+from django_ledger.models.items import ItemModelQuerySet
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 # todo: Create delete views...
 
 # UNIT OF MEASURE VIEWS...
+
 class UnitOfMeasureModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset: UnitOfMeasureModelQuerySet = None
+    """
+    Shared unit-of-measure queryset scoped to the authorized business.
+    """
+    queryset: Optional[UnitOfMeasureModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -39,6 +46,9 @@ class UnitOfMeasureModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class UnitOfMeasureModelListView(UnitOfMeasureModelModelBaseView, ListView):
+    """
+    Lists units of measure used on products, services, and inventory.
+    """
     template_name = 'django_ledger/uom/uom_list.html'
     PAGE_TITLE = _('Unit of Measures')
     context_object_name = 'uom_list'
@@ -50,6 +60,9 @@ class UnitOfMeasureModelListView(UnitOfMeasureModelModelBaseView, ListView):
 
 
 class UnitOfMeasureModelCreateView(UnitOfMeasureModelModelBaseView, CreateView):
+    """
+    Creates a unit of measure such as each, hour, or pound.
+    """
     template_name = 'django_ledger/uom/uom_create.html'
     PAGE_TITLE = _('Create Unit of Measure')
     extra_context = {
@@ -97,6 +110,9 @@ class UnitOfMeasureModelCreateView(UnitOfMeasureModelModelBaseView, CreateView):
 
 
 class UnitOfMeasureModelUpdateView(UnitOfMeasureModelModelBaseView, UpdateView):
+    """
+    Updates a unit of measure name or abbreviation.
+    """
     template_name = 'django_ledger/uom/uom_update.html'
     PAGE_TITLE = _('Update Unit of Measure')
     context_object_name = 'uom'
@@ -123,6 +139,9 @@ class UnitOfMeasureModelUpdateView(UnitOfMeasureModelModelBaseView, UpdateView):
 
 
 class UnitOfMeasureModelDeleteView(UnitOfMeasureModelModelBaseView, DeleteView):
+    """
+    Deletes a unit of measure that is not in use.
+    """
     pk_url_kwarg = 'uom_pk'
     template_name = 'django_ledger/uom/uom_delete.html'
     context_object_name = 'uom_model'
@@ -153,9 +172,11 @@ class UnitOfMeasureModelDeleteView(UnitOfMeasureModelModelBaseView, DeleteView):
                        })
 
 
-# PRODUCTS VIEWS...
 class ProductItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared product-item queryset scoped to the authorized business.
+    """
+    queryset: Optional[ItemModelQuerySet] = None
 
     def get_queryset(self):
         if not self.queryset:
@@ -169,6 +190,9 @@ class ProductItemModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class ProductListView(ProductItemModelModelBaseView, ListView):
+    """
+    Lists sellable products and their inventory or COGS accounts.
+    """
     template_name = 'django_ledger/product/product_list.html'
     PAGE_TITLE = _('Products')
     context_object_name = 'product_list'
@@ -180,6 +204,9 @@ class ProductListView(ProductItemModelModelBaseView, ListView):
 
 
 class ProductCreateView(ProductItemModelModelBaseView, CreateView):
+    """
+    Creates a product item for sales and inventory tracking.
+    """
     template_name = 'django_ledger/product/product_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Product')
@@ -203,9 +230,7 @@ class ProductCreateView(ProductItemModelModelBaseView, CreateView):
         )
 
     def form_valid(self, form):
-        entity_slug = self.kwargs['entity_slug']
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         item_model: ItemModel = form.save(commit=False)
         item_model.entity = entity_model
         item_model.item_role = ItemModel.ITEM_ROLE_PRODUCT
@@ -213,6 +238,9 @@ class ProductCreateView(ProductItemModelModelBaseView, CreateView):
 
 
 class ProductUpdateView(ProductItemModelModelBaseView, UpdateView):
+    """
+    Updates a product item and its linked accounts.
+    """
     template_name = 'django_ledger/product/product_update.html'
     PAGE_TITLE = _('Update Product')
     context_object_name = 'item'
@@ -243,6 +271,9 @@ class ProductUpdateView(ProductItemModelModelBaseView, UpdateView):
 
 
 class ProductDeleteView(ProductItemModelModelBaseView, DeleteView):
+    """
+    Deletes a product item that is not in use.
+    """
     template_name = 'django_ledger/product/product_delete.html'
     pk_url_kwarg = 'item_pk'
     context_object_name = 'item_model'
@@ -274,9 +305,11 @@ class ProductDeleteView(ProductItemModelModelBaseView, DeleteView):
                        })
 
 
-# SERVICES VIEWS...
 class ServiceItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared service-item queryset scoped to the authorized business.
+    """
+    queryset: Optional[ItemModelQuerySet] = None
 
     def get_queryset(self):
         if not self.queryset:
@@ -290,6 +323,9 @@ class ServiceItemModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class ServiceListView(ServiceItemModelModelBaseView, ListView):
+    """
+    Lists services you sell to customers.
+    """
     template_name = 'django_ledger/service/service_list.html'
     PAGE_TITLE = _('Services')
     context_object_name = 'service_list'
@@ -301,6 +337,9 @@ class ServiceListView(ServiceItemModelModelBaseView, ListView):
 
 
 class ServiceCreateView(ServiceItemModelModelBaseView, CreateView):
+    """
+    Creates a service item for estimates and invoices.
+    """
     template_name = 'django_ledger/service/service_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Service')
@@ -324,15 +363,16 @@ class ServiceCreateView(ServiceItemModelModelBaseView, CreateView):
         )
 
     def form_valid(self, form):
-        entity_slug = self.kwargs['entity_slug']
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         item_model: ItemModel = form.save(commit=False)
         item_model.entity = entity_model
         return super().form_valid(form=form)
 
 
 class ServiceUpdateView(ServiceItemModelModelBaseView, UpdateView):
+    """
+    Updates a service item and its linked accounts.
+    """
     template_name = 'django_ledger/service/service_update.html'
     PAGE_TITLE = _('Update Service')
     context_object_name = 'item'
@@ -345,7 +385,7 @@ class ServiceUpdateView(ServiceItemModelModelBaseView, UpdateView):
 
     def get_queryset(self):
         return ItemModel.objects.for_entity(
-            entity_model=self.kwargs['entity_slug']
+            entity_model=self.get_authorized_entity_instance()
         ).services()
 
     def get_form(self, form_class=None):
@@ -363,6 +403,9 @@ class ServiceUpdateView(ServiceItemModelModelBaseView, UpdateView):
 
 
 class ServiceDeleteView(ServiceItemModelModelBaseView, DeleteView):
+    """
+    Deletes a service item that is not in use.
+    """
     template_name = 'django_ledger/service/service_delete.html'
     pk_url_kwarg = 'item_pk'
     context_object_name = 'item_model'
@@ -394,9 +437,11 @@ class ServiceDeleteView(ServiceItemModelModelBaseView, DeleteView):
                        })
 
 
-# EXPENSE ITEMS VIEW...
 class ExpenseItemItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared expense-item queryset scoped to the authorized business.
+    """
+    queryset: Optional[ItemModelQuerySet] = None
 
     def get_queryset(self):
         if not self.queryset:
@@ -408,6 +453,9 @@ class ExpenseItemItemModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class ExpenseItemModelListView(ExpenseItemItemModelModelBaseView, ListView):
+    """
+    Lists expense items used on bills and purchase orders.
+    """
     template_name = 'django_ledger/expense/expense_list.html'
     PAGE_TITLE = _('Expense Items')
     context_object_name = 'expense_list'
@@ -419,6 +467,9 @@ class ExpenseItemModelListView(ExpenseItemItemModelModelBaseView, ListView):
 
 
 class ExpenseItemCreateView(ExpenseItemItemModelModelBaseView, CreateView):
+    """
+    Creates an expense item linked to an expense account.
+    """
     template_name = 'django_ledger/expense/expense_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Expense Item')
@@ -442,9 +493,7 @@ class ExpenseItemCreateView(ExpenseItemItemModelModelBaseView, CreateView):
         )
 
     def form_valid(self, form):
-        entity_slug = self.kwargs['entity_slug']
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         item_model: ItemModel = form.save(commit=False)
         item_model.entity = entity_model
         item_model.item_role = ItemModel.ITEM_ROLE_EXPENSE
@@ -452,6 +501,9 @@ class ExpenseItemCreateView(ExpenseItemItemModelModelBaseView, CreateView):
 
 
 class ExpenseItemUpdateView(ExpenseItemItemModelModelBaseView, UpdateView):
+    """
+    Updates an expense item and its linked account.
+    """
     template_name = 'django_ledger/expense/expense_update.html'
     PAGE_TITLE = _('Update Expense Item')
     context_object_name = 'item'
@@ -477,9 +529,11 @@ class ExpenseItemUpdateView(ExpenseItemItemModelModelBaseView, UpdateView):
                        })
 
 
-# INVENTORY VIEWS...
 class InventoryItemItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared inventory-item queryset scoped to the authorized business.
+    """
+    queryset: Optional[ItemModelQuerySet] = None
 
     def get_queryset(self):
         if not self.queryset:
@@ -493,6 +547,9 @@ class InventoryItemItemModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class InventoryItemModelListView(InventoryItemItemModelModelBaseView, ListView):
+    """
+    Lists inventory items tracked for stock on hand.
+    """
     template_name = 'django_ledger/inventory/inventory_item_list.html'
     PAGE_TITLE = _('Inventory Items')
     context_object_name = 'inventory_item_list'
@@ -504,6 +561,9 @@ class InventoryItemModelListView(InventoryItemItemModelModelBaseView, ListView):
 
 
 class InventoryItemCreateView(InventoryItemItemModelModelBaseView, CreateView):
+    """
+    Creates an inventory item linked to inventory accounts.
+    """
     template_name = 'django_ledger/inventory/inventory_item_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Inventory Item')
@@ -531,9 +591,7 @@ class InventoryItemCreateView(InventoryItemItemModelModelBaseView, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
     def form_valid(self, form):
-        entity_slug = self.kwargs['entity_slug']
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         item_model: ItemModel = form.save(commit=False)
         item_model.entity = entity_model
         item_model.item_role = ItemModel.ITEM_ROLE_INVENTORY
@@ -541,6 +599,9 @@ class InventoryItemCreateView(InventoryItemItemModelModelBaseView, CreateView):
 
 
 class InventoryItemUpdateView(InventoryItemItemModelModelBaseView, UpdateView):
+    """
+    Updates an inventory item and its linked accounts.
+    """
     template_name = 'django_ledger/inventory/inventory_item_update.html'
     PAGE_TITLE = _('Update Inventory Item')
     context_object_name = 'item'

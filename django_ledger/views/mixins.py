@@ -8,8 +8,9 @@ Contributions to this module:
 
 from calendar import monthrange
 from datetime import timedelta, date
-from typing import Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
+from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
 from django.core.exceptions import (
     ValidationError,
@@ -17,9 +18,10 @@ from django.core.exceptions import (
     ImproperlyConfigured,
 )
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.dateparse import parse_date
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
@@ -304,15 +306,111 @@ class FromToDatesParseMixIn:
         return param_date
 
 
-class SuccessUrlNextMixIn:
+class DjangoLedgerSafeRedirectMixIn:
+    """
+    Resolves optional next URLs only when they stay on this site.
+    """
+
+    NEXT_URL_PARAM = 'next'
+
+    def get_next_url(self) -> Optional[str]:
+        candidate = self.request.POST.get(self.NEXT_URL_PARAM) or self.request.GET.get(
+            self.NEXT_URL_PARAM
+        )
+        if not candidate:
+            return None
+        if url_has_allowed_host_and_scheme(
+            url=candidate,
+            allowed_hosts={self.request.get_host()},
+            require_https=self.request.is_secure(),
+        ):
+            return candidate
+        return None
+
+    def get_safe_redirect_url(self, fallback: str) -> str:
+        return self.get_next_url() or fallback
+
+
+class SuccessUrlNextMixIn(DjangoLedgerSafeRedirectMixIn):
     def has_next_url(self):
-        return self.request.GET.get('next') is not None
+        return self.get_next_url() is not None
 
     def get_success_url(self):
-        next = self.request.GET.get('next')
-        if next:
-            return next
-        return reverse('django_ledger:home')
+        return self.get_safe_redirect_url(reverse('django_ledger:home'))
+
+
+class DjangoLedgerActionViewMixIn(DjangoLedgerSafeRedirectMixIn):
+    """
+    Shared POST-only behavior for status changes on accounting documents
+    (approve, void, lock, post, activate, and similar workflow steps).
+
+    GET is rejected with HTTP 405 so these changes cannot be triggered by
+    links, prefetch, or cross-site GET requests.
+    """
+
+    http_method_names = ['post']
+    action_name: Optional[str] = None
+    commit: bool = True
+    action_success_message: Optional[str] = None
+
+    METHOD_NOT_ALLOWED_MESSAGE = _(
+        'This accounting action must be submitted with POST. '
+        'GET requests are not allowed.'
+    )
+
+    def http_method_not_allowed(self, request, *args, **kwargs):
+        return HttpResponseNotAllowed(
+            permitted_methods=['POST'],
+            content=str(self.METHOD_NOT_ALLOWED_MESSAGE),
+        )
+
+    def get_action_kwargs(self) -> Dict[str, Any]:
+        action_kwargs = dict(self.kwargs)
+        action_kwargs['commit'] = self.commit
+        action_kwargs['user_model'] = self.request.user
+        return action_kwargs
+
+    def get_action_success_message(self) -> Optional[str]:
+        return self.action_success_message
+
+    def get_redirect_url(self) -> str:
+        raise ImproperlyConfigured(
+            f'{self.__class__.__name__} must implement get_redirect_url().'
+        )
+
+    def run_action(self):
+        if not self.action_name:
+            raise ImproperlyConfigured(
+                f'{self.__class__.__name__} requires action_name.'
+            )
+        self.object = self.get_object()
+        action = getattr(self.object, self.action_name)
+        return action(**self.get_action_kwargs())
+
+    def post(self, request, *args, **kwargs):
+        try:
+            self.run_action()
+            success_message = self.get_action_success_message()
+            if success_message:
+                messages.add_message(
+                    request,
+                    level=messages.SUCCESS,
+                    message=success_message,
+                    extra_tags='is-success',
+                )
+        except ValidationError as e:
+            error_message = getattr(e, 'message', None)
+            if error_message is None and getattr(e, 'messages', None):
+                error_message = e.messages[0]
+            messages.add_message(
+                request,
+                message=error_message or str(e),
+                level=messages.ERROR,
+                extra_tags='is-danger',
+            )
+        return HttpResponseRedirect(
+            redirect_to=self.get_safe_redirect_url(self.get_redirect_url())
+        )
 
 
 class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):

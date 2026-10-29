@@ -10,11 +10,14 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import RedirectView, ListView
 
-
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class RootUrlView(RedirectView):
+    """
+    Sends visitors to login or their business dashboard.
+    """
+
     def get_redirect_url(self, *args, **kwargs):
         if not self.request.user.is_authenticated:
             return reverse('django_ledger:login')
@@ -22,6 +25,9 @@ class RootUrlView(RedirectView):
 
 
 class DashboardView(DjangoLedgerSecurityMixIn, ListView):
+    """
+    Shows the businesses you can access from the home dashboard.
+    """
     template_name = 'django_ledger/entity/home.html'
     PAGE_TITLE = _('My Dashboard')
     context_object_name = 'entities'

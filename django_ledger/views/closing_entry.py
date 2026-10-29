@@ -7,15 +7,14 @@ Contributions to this module:
 """
 from typing import Optional
 
-from django.contrib import messages
-from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import (
     ArchiveIndexView, YearArchiveView,
     MonthArchiveView, DetailView,
-    RedirectView, CreateView,
+    CreateView,
     DeleteView, UpdateView
 )
 from django.views.generic.detail import SingleObjectMixin
@@ -25,10 +24,13 @@ from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EstimateModel, ClosingEntryModelQuerySet
 from django_ledger.models.closing_entry import ClosingEntryModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.views import DjangoLedgerSecurityMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionViewMixIn
 
 
 class ClosingEntryModelBaseView(DjangoLedgerSecurityMixIn):
+    """
+    Shared closing-entry queryset scoped to the authorized business.
+    """
     queryset: Optional[ClosingEntryModelQuerySet] = None
 
     def get_queryset(self):
@@ -43,6 +45,10 @@ class ClosingEntryModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 class ClosingEntryModelListView(ClosingEntryModelBaseView, ArchiveIndexView):
+    """
+    Lists year-end and period closing entries so you can see which periods
+    have been closed.
+    """
     template_name = 'django_ledger/closing_entry/closing_entry_list.html'
     date_field = 'closing_date'
     allow_future = False
@@ -59,17 +65,26 @@ class ClosingEntryModelListView(ClosingEntryModelBaseView, ArchiveIndexView):
 
 
 class ClosingEntryModelYearListView(ClosingEntryModelListView, YearArchiveView):
+    """
+    Lists closing entries for a selected year.
+    """
     paginate_by = 10
     make_object_list = True
 
 
 class ClosingEntryModelMonthListView(ClosingEntryModelListView, MonthArchiveView):
+    """
+    Lists closing entries for a selected month.
+    """
     paginate_by = 10
     month_format = '%m'
     date_list_period = 'year'
 
 
 class ClosingEntryModelCreateView(ClosingEntryModelBaseView, CreateView):
+    """
+    Closes the books as of a selected date and creates the closing entry.
+    """
     template_name = 'django_ledger/closing_entry/closing_entry_create.html'
     PAGE_TITLE = _('Create Closing Entry')
     extra_context = {
@@ -118,6 +133,9 @@ class ClosingEntryModelCreateView(ClosingEntryModelBaseView, CreateView):
 
 
 class ClosingEntryModelDetailView(ClosingEntryModelBaseView, DetailView):
+    """
+    Shows a closing entry and the account balances locked for that date.
+    """
     template_name = 'django_ledger/closing_entry/closing_entry_detail.html'
     pk_url_kwarg = 'closing_entry_pk'
     context_object_name = 'closing_entry_model'
@@ -137,6 +155,9 @@ class ClosingEntryModelDetailView(ClosingEntryModelBaseView, DetailView):
 
 
 class ClosingEntryModelUpdateView(ClosingEntryModelBaseView, UpdateView):
+    """
+    Updates notes or settings on an existing closing entry.
+    """
     template_name = 'django_ledger/closing_entry/closing_entry_update.html'
     pk_url_kwarg = 'closing_entry_pk'
     form_class = ClosingEntryUpdateForm
@@ -166,6 +187,9 @@ class ClosingEntryModelUpdateView(ClosingEntryModelBaseView, UpdateView):
 
 
 class ClosingEntryDeleteView(ClosingEntryModelBaseView, DeleteView):
+    """
+    Deletes a closing entry when a period needs to be reopened.
+    """
     template_name = 'django_ledger/closing_entry/closing_entry_delete.html'
     pk_url_kwarg = 'closing_entry_pk'
     context_object_name = 'closing_entry'
@@ -189,33 +213,24 @@ class ClosingEntryDeleteView(ClosingEntryModelBaseView, DeleteView):
                        })
 
 
-class ClosingEntryModelActionView(ClosingEntryModelBaseView,
-                                  RedirectView,
-                                  SingleObjectMixin):
-    http_method_names = ['get']
+class ClosingEntryModelActionView(
+    ClosingEntryModelBaseView,
+    DjangoLedgerActionViewMixIn,
+    SingleObjectMixin,
+    View,
+):
+    """
+    Applies closing-entry actions such as posting or unposting the entry.
+    """
     pk_url_kwarg = 'closing_entry_pk'
     action_name = None
     commit = True
 
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:closing-entry-detail',
-                       kwargs={
-                           'entity_slug': kwargs['entity_slug'],
-                           'closing_entry_pk': kwargs['closing_entry_pk']
-                       })
-
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(ClosingEntryModelActionView, self).get(request, *args, **kwargs)
-        closing_entry_model: ClosingEntryModel = self.get_object()
-
-        try:
-            getattr(closing_entry_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+    def get_redirect_url(self) -> str:
+        return reverse(
+            'django_ledger:closing-entry-detail',
+            kwargs={
+                'entity_slug': self.kwargs['entity_slug'],
+                'closing_entry_pk': self.kwargs['closing_entry_pk'],
+            },
+        )

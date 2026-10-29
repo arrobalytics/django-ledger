@@ -10,6 +10,8 @@ from datetime import timedelta
 from decimal import Decimal
 from random import randint
 
+from typing import Optional
+
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -20,6 +22,7 @@ from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models import (
     EntityModel,
+    EntityModelQuerySet,
     ItemTransactionModel,
     TransactionModel
 )
@@ -29,9 +32,11 @@ from django_ledger.views.mixins import (
     DigestContextMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
 )
 
-
-class EntityModelModelViewQuerySetMixIn:
-    queryset = None
+class EntityModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+    """
+    Shared business-entity queryset limited to businesses you can access.
+    """
+    queryset: Optional[EntityModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -40,8 +45,10 @@ class EntityModelModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-# Entity CRUD Views ----
-class EntityModelListView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, ListView):
+class EntityModelListView(EntityModelModelViewQuerySetMixIn, ListView):
+    """
+    Lists the businesses you administer or work in.
+    """
     template_name = 'django_ledger/entity/entitiy_list.html'
     context_object_name = 'entities'
     PAGE_TITLE = _('My Entities')
@@ -51,7 +58,10 @@ class EntityModelListView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySe
     }
 
 
-class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, CreateView):
+class EntityModelCreateView(EntityModelModelViewQuerySetMixIn, CreateView):
+    """
+    Creates a new business entity and optional starter chart of accounts.
+    """
     template_name = 'django_ledger/entity/entity_create.html'
     form_class = EntityModelCreateForm
     PAGE_TITLE = _('Create Entity')
@@ -110,53 +120,6 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
         )
 
 
-class EntityModelUpdateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, UpdateView):
-    context_object_name = 'entity'
-    template_name = 'django_ledger/entity/entity_update.html'
-    form_class = EntityModelUpdateForm
-    slug_url_kwarg = 'entity_slug'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = self.object.name
-        return context
-
-    def get_success_url(self):
-        return reverse('django_ledger:entity-list')
-
-
-class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, DeleteView):
-    slug_url_kwarg = 'entity_slug'
-    context_object_name = 'entity'
-    template_name = 'django_ledger/entity/entity_delete.html'
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(object_list=object_list, **kwargs)
-        context['page_title'] = _('Delete Entity ') + self.object.name
-        context['header_title'] = context['page_title']
-        return context
-
-    def get_success_url(self):
-        return reverse('django_ledger:home')
-
-    def form_valid(self, form):
-        entity_model: EntityModel = self.get_object()
-        entity_model.default_coa = None
-        entity_model.save(update_fields=['default_coa'])
-
-        ItemTransactionModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        ).delete()
-
-        TransactionModel.objects.for_entity(
-            entity_model=self.kwargs['entity_slug']
-        ).delete()
-
-        return super().form_valid(form=form)
-
-
-# DASHBOARD VIEWS START ----
 class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
                                    EntityUnitMixIn,
                                    RedirectView):
@@ -179,8 +142,7 @@ class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
                        })
 
 
-class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
-                                EntityModelModelViewQuerySetMixIn,
+class EntityModelDetailBaseView(EntityModelModelViewQuerySetMixIn,
                                 BaseDateNavigationUrlMixIn,
                                 UnpaidElementsMixIn,
                                 EntityUnitMixIn,
@@ -227,23 +189,75 @@ class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
 
 class FiscalYearEntityModelDashboardView(EntityModelDetailBaseView):
     """
-    Entity Fiscal Year Dashboard View.
+    Business dashboard for a selected fiscal year.
     """
 
 
 class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):
     """
-    Entity Quarterly Dashboard View.
+    Business dashboard for a selected fiscal quarter.
     """
 
 
 class MonthlyEntityDashboardView(FiscalYearEntityModelDashboardView, MonthlyReportMixIn):
     """
-    Monthly Entity Dashboard View.
+    Business dashboard for a selected month.
     """
 
 
 class DateEntityDashboardView(FiscalYearEntityModelDashboardView, DateReportMixIn):
     """
-    Date-specific Entity Dashboard View.
+    Business dashboard for a specific date.
     """
+
+
+class EntityModelUpdateView(EntityModelModelViewQuerySetMixIn, UpdateView):
+    """
+    Updates business profile, address, and accounting settings.
+    """
+    context_object_name = 'entity'
+    template_name = 'django_ledger/entity/entity_update.html'
+    form_class = EntityModelUpdateForm
+    slug_url_kwarg = 'entity_slug'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = self.object.name
+        return context
+
+    def get_success_url(self):
+        return reverse('django_ledger:entity-list')
+
+
+class EntityDeleteView(EntityModelModelViewQuerySetMixIn, DeleteView):
+    """
+    Deletes a business and its related accounting data.
+    """
+    slug_url_kwarg = 'entity_slug'
+    context_object_name = 'entity'
+    template_name = 'django_ledger/entity/entity_delete.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['page_title'] = _('Delete Entity ') + self.object.name
+        context['header_title'] = context['page_title']
+        return context
+
+    def get_success_url(self):
+        return reverse('django_ledger:home')
+
+    def form_valid(self, form):
+        entity_model: EntityModel = self.get_object()
+        entity_model.default_coa = None
+        entity_model.save(update_fields=['default_coa'])
+
+        ItemTransactionModel.objects.for_entity(
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
+        ).delete()
+
+        TransactionModel.objects.for_entity(
+            entity_model=self.get_authorized_entity_instance()
+        ).delete()
+
+        return super().form_valid(form=form)

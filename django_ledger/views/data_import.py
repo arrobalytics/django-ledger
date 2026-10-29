@@ -27,13 +27,17 @@ from django_ledger.io.ofx import OFXFileManager
 from django_ledger.models import (
     StagedTransactionModelValidationError,
 )
-from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
+from django_ledger.models.data_import import ImportJobModel, ImportJobModelQuerySet, StagedTransactionModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 # Import Job Views....
+
 class ImportJobModelViewBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Shared bank-import job queryset scoped to the authorized business.
+    """
+    queryset: Optional[ImportJobModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -52,7 +56,20 @@ class ImportJobModelViewBaseView(DjangoLedgerSecurityMixIn):
         return self.queryset
 
 
+class ImportJobModelListView(ImportJobModelViewBaseView, ListView):
+    """
+    Lists bank data import jobs and their progress.
+    """
+    template_name = 'django_ledger/data_import/import_job_list.html'
+    PAGE_TITLE = _('Data Import Jobs')
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
+    context_object_name = 'import_job_list'
+
+
 class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
+    """
+    Uploads a bank OFX file and stages transactions for review.
+    """
     template_name = 'django_ledger/data_import/import_job_create.html'
     PAGE_TITLE = _('Create Import Job')
     extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
@@ -92,14 +109,10 @@ class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
         return super().form_valid(form=form)
 
 
-class ImportJobModelListView(ImportJobModelViewBaseView, ListView):
-    template_name = 'django_ledger/data_import/import_job_list.html'
-    PAGE_TITLE = _('Data Import Jobs')
-    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
-    context_object_name = 'import_job_list'
-
-
 class ImportJobDetailView(ImportJobModelViewBaseView, DetailView):
+    """
+    Shows staged bank transactions and import progress for a job.
+    """
     template_name = 'django_ledger/data_import/import_job_detail.html'
     PAGE_TITLE = _('Import Job Detail')
     context_object_name = 'import_job_model'
@@ -159,6 +172,9 @@ class ImportJobDetailView(ImportJobModelViewBaseView, DetailView):
 
 
 class ImportJobModelUpdateView(ImportJobModelViewBaseView, UpdateView):
+    """
+    Updates an import job description or settings.
+    """
     template_name = 'django_ledger/data_import/import_job_update.html'
     context_object_name = 'import_job_model'
     pk_url_kwarg = 'job_pk'
@@ -188,6 +204,9 @@ class ImportJobModelUpdateView(ImportJobModelViewBaseView, UpdateView):
 
 
 class ImportJobModelDeleteView(ImportJobModelViewBaseView, DeleteView):
+    """
+    Deletes an import job and its staged transactions.
+    """
     template_name = 'django_ledger/data_import/import_job_delete.html'
     context_object_name = 'import_job_model'
     pk_url_kwarg = 'job_pk'
@@ -206,6 +225,9 @@ class ImportJobModelDeleteView(ImportJobModelViewBaseView, DeleteView):
 
 
 class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
+    """
+    Clears matches and undoes imports so the job can be reworked.
+    """
     pk_url_kwarg = 'job_pk'
     http_method_names = ['post']
 
@@ -245,6 +267,9 @@ class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
 
 
 class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
+    """
+    Maps a staged bank transaction to accounts, vendors, or customers.
+    """
     template_name = 'django_ledger/data_import/staged_tx_update.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'staged_tx'
@@ -400,8 +425,10 @@ class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
         return self.render_to_response(context=context)
 
 
-# Actions....
 class StagedTransactionUndoView(ImportJobModelViewBaseView, View):
+    """
+    Undoes an imported staged transaction.
+    """
     http_method_names = ['post']
 
     def post(self, request, entity_slug, job_pk, staged_tx_pk, *args, **kwargs):
@@ -430,6 +457,9 @@ class StagedTransactionUndoView(ImportJobModelViewBaseView, View):
 
 
 class StagedTransactionUnmatchView(ImportJobModelViewBaseView, View):
+    """
+    Clears a match on a staged bank transaction.
+    """
     http_method_names = ['post']
 
     def post(self, request, entity_slug, job_pk, staged_tx_pk, *args, **kwargs):
@@ -459,6 +489,4 @@ class StagedTransactionUnmatchView(ImportJobModelViewBaseView, View):
                 kwargs={'entity_slug': import_job_model.entity_slug, 'job_pk': import_job_model.uuid},
             )
         )
-
-
 # Retired Views....

@@ -28,13 +28,15 @@ from django_ledger.views.mixins import (
     QuarterlyReportMixIn,
 )
 
-
 class BaseReceiptModelViewMixIn(DjangoLedgerSecurityMixIn):
+    """
+    Shared receipt queryset scoped to the authorized business.
+    """
     queryset: Optional[ReceiptModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
-            entity_model: EntityModel = self.AUTHORIZED_ENTITY_MODEL
+            entity_model: EntityModel = self.get_authorized_entity_instance()
             qs = entity_model.get_receipts()
             qs = qs.select_related(
                 'ledger_model', 'customer_model', 'vendor_model'
@@ -73,6 +75,9 @@ class BaseReceiptModelViewMixIn(DjangoLedgerSecurityMixIn):
 
 
 class ReceiptModelListView(BaseReceiptModelViewMixIn, ArchiveIndexView):
+    """
+    Lists cash receipts so you can review sales and expense cash activity.
+    """
     template_name = 'django_ledger/receipt/receipt_list.html'
     context_object_name = 'receipt_list'
     PAGE_TITLE = _('Receipts List')
@@ -116,6 +121,9 @@ class ReceiptModelListView(BaseReceiptModelViewMixIn, ArchiveIndexView):
 
 
 class ReceiptModelYearListView(ReceiptModelListView, YearArchiveView):
+    """
+    Lists receipts for a selected year.
+    """
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['year'] = self.get_year()
@@ -126,6 +134,9 @@ class ReceiptModelYearListView(ReceiptModelListView, YearArchiveView):
 
 
 class ReceiptModelQuarterListView(ReceiptModelYearListView, QuarterlyReportMixIn):
+    """
+    Lists receipts for a selected quarter.
+    """
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.for_dates(from_date=self.get_from_date(), to_date=self.get_to_date())
@@ -139,6 +150,9 @@ class ReceiptModelQuarterListView(ReceiptModelYearListView, QuarterlyReportMixIn
 
 
 class ReceiptModelMonthListView(ReceiptModelYearListView, MonthArchiveView):
+    """
+    Lists receipts for a selected month.
+    """
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         year = self.get_year()
@@ -151,6 +165,9 @@ class ReceiptModelMonthListView(ReceiptModelYearListView, MonthArchiveView):
 
 
 class ReceiptModelDetailView(BaseReceiptModelViewMixIn, DetailView):
+    """
+    Shows a receipt and the ledger transactions it created.
+    """
     template_name = 'django_ledger/receipt/receipt_detail.html'
     context_object_name = 'receipt'
     slug_field = 'uuid'
@@ -188,78 +205,10 @@ class ReceiptModelDetailView(BaseReceiptModelViewMixIn, DetailView):
         return context
 
 
-# VENDOR VIEWS......
-class VendorReceiptReportListView(ReceiptModelListView):
-    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        vendor_pk = self.kwargs['vendor_pk']
-        vendor_model_qs = VendorModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        )
-        vendor_model: VendorModel = get_object_or_404(
-            vendor_model_qs, uuid__exact=vendor_pk
-        )
-        context['vendor_model'] = vendor_model
-        context['page_title'] = _(f'Vendor Receipts {vendor_model.vendor_name}')
-        context['header_title'] = _('Vendor Receipts')
-        context['header_subtitle'] = vendor_model.vendor_name
-        context['header_subtitle_icon'] = 'mdi:receipt'
-        return context
-
-
-class VendorReceiptReportYearListView(ReceiptModelYearListView):
-    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
-
-
-class VendorReceiptReportQuarterListView(ReceiptModelQuarterListView):
-    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
-
-
-class VendorReceiptReportMonthListView(ReceiptModelMonthListView):
-    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
-
-
-# CUSTOMERS VIEWS......
-class CustomerReceiptReportListView(ReceiptModelListView):
-    template_name = 'django_ledger/receipt/customer_receipt_report.html'
-    allow_empty = True
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        customer_model_qs = CustomerModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        )
-        customer_pk = self.kwargs['customer_pk']
-        customer_model = get_object_or_404(
-            customer_model_qs,
-            uuid__exact=customer_pk,
-        )
-        context['vendor_model'] = customer_model
-        context['page_title'] = _(f'Customer Receipts {customer_model.name}')
-        context['header_title'] = _('Customer Receipts')
-        context['header_subtitle'] = customer_model.vendor_name
-        context['header_subtitle_icon'] = 'mdi:receipt'
-        return context
-
-
-class CustomerReceiptReportYearListView(CustomerReceiptReportListView):
-    template_name = 'django_ledger/receipt/customer_receipt_report.html'
-    make_object_list = True
-
-
-class CustomerReceiptReportQuarterListView(ReceiptModelQuarterListView):
-    template_name = 'django_ledger/receipt/customer_receipt_report.html'
-    make_object_list = True
-
-
-class CustomerReceiptReportMonthListView(ReceiptModelMonthListView):
-    template_name = 'django_ledger/receipt/customer_receipt_report.html'
-    month_format = '%m'
-
-
 class ReceiptModelDeleteView(BaseReceiptModelViewMixIn, DeleteView):
+    """
+    Deletes a receipt when the period is still open.
+    """
     template_name = 'django_ledger/receipt/receipt_delete.html'
     context_object_name = 'receipt'
     slug_field = 'uuid'
@@ -292,3 +241,96 @@ class ReceiptModelDeleteView(BaseReceiptModelViewMixIn, DeleteView):
     def get_success_url(self):
         receipt_model: ReceiptModel = self.object
         return receipt_model.get_list_url()
+
+
+class VendorReceiptReportListView(ReceiptModelListView):
+    """
+    Lists expense receipts for a selected vendor.
+    """
+    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        vendor_pk = self.kwargs['vendor_pk']
+        vendor_model_qs = VendorModel.objects.for_entity(
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
+        )
+        vendor_model: VendorModel = get_object_or_404(
+            vendor_model_qs, uuid__exact=vendor_pk
+        )
+        context['vendor_model'] = vendor_model
+        context['page_title'] = _(f'Vendor Receipts {vendor_model.vendor_name}')
+        context['header_title'] = _('Vendor Receipts')
+        context['header_subtitle'] = vendor_model.vendor_name
+        context['header_subtitle_icon'] = 'mdi:receipt'
+        return context
+
+
+class VendorReceiptReportYearListView(ReceiptModelYearListView):
+    """
+    Vendor receipt report for a selected year.
+    """
+    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
+
+
+class VendorReceiptReportQuarterListView(ReceiptModelQuarterListView):
+    """
+    Vendor receipt report for a selected quarter.
+    """
+    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
+
+
+class VendorReceiptReportMonthListView(ReceiptModelMonthListView):
+    """
+    Vendor receipt report for a selected month.
+    """
+    template_name = 'django_ledger/receipt/vendor_receipt_report.html'
+
+
+class CustomerReceiptReportListView(ReceiptModelListView):
+    """
+    Lists sales receipts for a selected customer.
+    """
+    template_name = 'django_ledger/receipt/customer_receipt_report.html'
+    allow_empty = True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        customer_model_qs = CustomerModel.objects.for_entity(
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
+        )
+        customer_pk = self.kwargs['customer_pk']
+        customer_model = get_object_or_404(
+            customer_model_qs,
+            uuid__exact=customer_pk,
+        )
+        context['vendor_model'] = customer_model
+        context['page_title'] = _(f'Customer Receipts {customer_model.name}')
+        context['header_title'] = _('Customer Receipts')
+        context['header_subtitle'] = customer_model.vendor_name
+        context['header_subtitle_icon'] = 'mdi:receipt'
+        return context
+
+
+class CustomerReceiptReportYearListView(CustomerReceiptReportListView):
+    """
+    Customer receipt report for a selected year.
+    """
+    template_name = 'django_ledger/receipt/customer_receipt_report.html'
+    make_object_list = True
+
+
+class CustomerReceiptReportQuarterListView(ReceiptModelQuarterListView):
+    """
+    Customer receipt report for a selected quarter.
+    """
+    template_name = 'django_ledger/receipt/customer_receipt_report.html'
+    make_object_list = True
+
+
+class CustomerReceiptReportMonthListView(ReceiptModelMonthListView):
+    """
+    Customer receipt report for a selected month.
+    """
+    template_name = 'django_ledger/receipt/customer_receipt_report.html'
+    month_format = '%m'

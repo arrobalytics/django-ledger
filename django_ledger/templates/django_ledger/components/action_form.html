@@ -1,0 +1,18 @@
+{% load i18n %}
+{% load django_ledger %}
+<form method="post"
+      action="{{ action_url }}"
+      class="{{ form_class }}">
+    {% csrf_token %}
+    {% if next_url %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+    {% endif %}
+    <button type="submit"
+            class="{{ button_class }}"
+            {% if title %}title="{{ title }}"{% endif %}>
+        {% if icon %}
+            <span class="icon is-small mr-2">{% icon icon 16 %}</span>
+        {% endif %}
+        {{ label }}
+    </button>
+</form>

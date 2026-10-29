@@ -17,6 +17,9 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, SuccessUrlNext
 class BugReportView(DjangoLedgerSecurityMixIn,
                     SuccessUrlNextMixIn,
                     FormView):
+    """
+    Sends a bug report from an authenticated user.
+    """
     http_method_names = ['post']
     form_class = BugReportForm
 
@@ -40,6 +43,9 @@ class BugReportView(DjangoLedgerSecurityMixIn,
 class RequestNewFeatureView(DjangoLedgerSecurityMixIn,
                             SuccessUrlNextMixIn,
                             FormView):
+    """
+    Sends a feature request from an authenticated user.
+    """
     http_method_names = ['post']
     form_class = RequestNewFeatureForm
 
