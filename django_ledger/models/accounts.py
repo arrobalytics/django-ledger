@@ -95,6 +95,7 @@ from django_ledger.settings import (
     DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR,
 )
 
+
 class AccountModelValidationError(ValidationError):
     pass
 
@@ -255,6 +256,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
             Filtered queryset with `role_default` set to True and excluding 'coa_root' entries.
         """
         return self.not_coa_root().filter(role_default=True)
+
     def can_transact(self) -> 'AccountModelQuerySet':
         """
         Filter the queryset to include only accounts that can accept new transactions.
@@ -1060,5 +1062,6 @@ class AccountModel(AccountModelAbstract):
     """
     Base Account Model from Account Model Abstract Class
     """
+
     class Meta(AccountModelAbstract.Meta):
         abstract = False
