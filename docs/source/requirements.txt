@@ -453,9 +453,9 @@ jupyter-server-terminals==0.5.3 \
     --hash=sha256:41ee0d7dc0ebf2809c668e0fc726dfaf258fcd3e769568996ca731b6194ae9aa \
     --hash=sha256:5ae0295167220e9ace0edcfdb212afd2b01ee8d179fe6f23c899590e9b8a5269
     # via jupyter-server
-jupyterlab==4.5.0 \
-    --hash=sha256:88e157c75c1afff64c7dc4b801ec471450b922a4eae4305211ddd40da8201c8a \
-    --hash=sha256:aec33d6d8f1225b495ee2cf20f0514f45e6df8e360bdd7ac9bace0b7ac5177ea
+jupyterlab==4.5.11 \
+    --hash=sha256:6534bb389d31f5ceb4357b15d2c002206063b51ef9c1911a079f537749215ddc \
+    --hash=sha256:e23e3d76b92ad172b529fb6faf91e3edd264ffdff65b543949eb85daf7f8b113
     # via notebook
 jupyterlab-pygments==0.3.0 \
     --hash=sha256:721aca4d9029252b11cfa9d185e5b5af4d54772bb8072f9b7036f4170054d35d \
