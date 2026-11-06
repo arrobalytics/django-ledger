@@ -4,6 +4,16 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Customer views grouped by CRUD.
+
+  * CREATE   — CustomerModelCreateView
+  * RETRIEVE — CustomerModelListView, CustomerModelDetailView
+  * UPDATE   — CustomerModelUpdateView
+  * DELETE   — CustomerModelDeleteView (stub)
+
+Querysets are entity-scoped via CustomerModelModelBaseView after
+DjangoLedgerSecurityMixIn authorizes the entity slug.
 """
 
 from typing import Optional
@@ -26,18 +36,27 @@ from django_ledger.models.receipt import ReceiptModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class CustomerModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+class CustomerModelModelBaseView(DjangoLedgerSecurityMixIn):
+    """Entity-scoped customer queryset shared by all customer CRUD views."""
+
     queryset: Optional[CustomerModelQueryset] = None
 
-    def get_queryset(self):
+    def get_queryset(self) -> CustomerModelQueryset:
         if self.queryset is None:
-            self.queryset = CustomerModel.objects.for_entity(
-                entity_model=self.kwargs['entity_slug'],
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            qs: CustomerModelQueryset = CustomerModel.objects.for_entity(
+                entity_model=entity_model,
             ).order_by('-updated')
+            self.queryset = qs
         return self.queryset
 
 
-class CustomerModelListView(CustomerModelModelViewQuerySetMixIn, ListView):
+# -----------------
+# RETRIEVE (List)
+# -----------------
+class CustomerModelListView(CustomerModelModelBaseView, ListView):
+    """Lists customers belonging to the authorized entity."""
+
     template_name = 'django_ledger/customer/customer_list.html'
     PAGE_TITLE = _('Customer List')
     extra_context = {
@@ -48,7 +67,12 @@ class CustomerModelListView(CustomerModelModelViewQuerySetMixIn, ListView):
     context_object_name = 'customer_list'
 
 
-class CustomerModelCreateView(CustomerModelModelViewQuerySetMixIn, CreateView):
+# -----------------
+# CREATE
+# -----------------
+class CustomerModelCreateView(CustomerModelModelBaseView, CreateView):
+    """Creates a customer bound to the authorized entity."""
+
     template_name = 'django_ledger/customer/customer_create.html'
     PAGE_TITLE = _('Create New Customer')
     form_class = CustomerModelForm
@@ -67,15 +91,18 @@ class CustomerModelCreateView(CustomerModelModelViewQuerySetMixIn, CreateView):
 
     def form_valid(self, form):
         customer_model: CustomerModel = form.save(commit=False)
-        entity_model = EntityModel.objects.for_user(user_model=self.request.user).get(
-            slug__exact=self.kwargs['entity_slug']
-        )
-        customer_model.entity_model = entity_model
+        # Reuse the already-authorized entity — do not re-query by slug alone.
+        customer_model.entity_model = self.get_authorized_entity_instance()
         customer_model.save()
         return super().form_valid(form)
 
 
-class CustomerModelUpdateView(CustomerModelModelViewQuerySetMixIn, UpdateView):
+# -----------------
+# UPDATE
+# -----------------
+class CustomerModelUpdateView(CustomerModelModelBaseView, UpdateView):
+    """Updates an existing customer within the authorized entity."""
+
     template_name = 'django_ledger/customer/customer_update.html'
     PAGE_TITLE = _('Customer Update')
     form_class = CustomerModelForm
@@ -103,11 +130,26 @@ class CustomerModelUpdateView(CustomerModelModelViewQuerySetMixIn, UpdateView):
         return super().form_valid(form)
 
 
-class CustomerModelDeleteView(CustomerModelModelViewQuerySetMixIn, DeleteView):
+# -----------------
+# DELETE
+# -----------------
+class CustomerModelDeleteView(CustomerModelModelBaseView, DeleteView):
+    """Placeholder delete view (template/behavior not yet implemented)."""
+
     pass
 
 
-class CustomerModelDetailView(CustomerModelModelViewQuerySetMixIn, DetailView):
+# -----------------
+# RETRIEVE (Detail)
+# -----------------
+class CustomerModelDetailView(CustomerModelModelBaseView, DetailView):
+    """
+    Customer profile with related receipts and invoices.
+
+    Related querysets are constrained to the authorized entity to prevent
+    cross-entity leakage of financial documents.
+    """
+
     template_name = 'django_ledger/customer/customer_detail.html'
     context_object_name = 'customer'
     PAGE_TITLE = _('Customer Details')

@@ -1,6 +1,7 @@
 {% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
+{% load django_ledger %}
 
 {% block view_content %}
     <div class="columns is-centered is-multiline">
@@ -62,28 +63,20 @@
                                 {% trans 'Done' %}
                             </a>
                             {% if journal_entry.can_lock %}
-                                <a class="button is-dark is-danger"
-                                   href="{{ journal_entry.get_action_lock_url }}?next={{ request.path }}">
-                                    {% trans 'Lock' %}
-                                </a>
+                                {% trans 'Lock' as je_txs_lock_label %}
+                                {% djl_action_button journal_entry.get_action_lock_url je_txs_lock_label 'button is-dark is-danger' '' 16 request.path %}
                             {% endif %}
                             {% if journal_entry.can_unlock %}
-                                <a class="button is-dark is-warning"
-                                   href="{{ journal_entry.get_action_unlock_url }}?next={{ request.path }}">
-                                    {% trans 'UnLock' %}
-                                </a>
+                                {% trans 'UnLock' as je_txs_unlock_label %}
+                                {% djl_action_button journal_entry.get_action_unlock_url je_txs_unlock_label 'button is-dark is-warning' '' 16 request.path %}
                             {% endif %}
                             {% if journal_entry.can_post %}
-                                <a class="button is-dark is-danger"
-                                   href="{{ journal_entry.get_action_post_url }}?next={{ request.path }}">
-                                    {% trans 'Post' %}
-                                </a>
+                                {% trans 'Post' as je_txs_post_label %}
+                                {% djl_action_button journal_entry.get_action_post_url je_txs_post_label 'button is-dark is-danger' '' 16 request.path %}
                             {% endif %}
                             {% if journal_entry.can_unpost %}
-                                <a class="button is-warning"
-                                   href="{{ journal_entry.get_action_unpost_url }}?next={{ request.path }}">
-                                    {% trans 'UnPost' %}
-                                </a>
+                                {% trans 'UnPost' as je_txs_unpost_label %}
+                                {% djl_action_button journal_entry.get_action_unpost_url je_txs_unpost_label 'button is-warning' '' 16 request.path %}
                             {% endif %}
                         </div>
                     </div>

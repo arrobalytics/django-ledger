@@ -74,30 +74,18 @@
                                     </a>
                                     <hr class="dropdown-divider">
                                     {% if journal_entry_model.can_post %}
-                                        <a class="dropdown-item has-text-info"
-                                           href="{{ journal_entry_model.get_action_post_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
-                                            {% trans 'Post' %}
-                                        </a>
+                                        {% trans 'Post' as je_post_label %}
+                                        {% djl_action_button journal_entry_model.get_action_post_url je_post_label 'dropdown-item has-text-info' 'bi:cloud-upload-fill' 16 next_url %}
                                     {% elif journal_entry_model.can_unpost %}
-                                        <a class="dropdown-item has-text-warning"
-                                           href="{{ journal_entry_model.get_action_unpost_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
-                                            {% trans 'UnPost' %}
-                                        </a>
+                                        {% trans 'UnPost' as je_unpost_label %}
+                                        {% djl_action_button journal_entry_model.get_action_unpost_url je_unpost_label 'dropdown-item has-text-warning' 'bi:cloud-download-fill' 16 next_url %}
                                     {% endif %}
                                     {% if journal_entry_model.can_lock %}
-                                        <a class="dropdown-item has-text-info"
-                                           href="{{ journal_entry_model.get_action_lock_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
-                                            {% trans 'Lock' %}
-                                        </a>
+                                        {% trans 'Lock' as je_lock_label %}
+                                        {% djl_action_button journal_entry_model.get_action_lock_url je_lock_label 'dropdown-item has-text-info' 'bi:lock-fill' 16 next_url %}
                                     {% elif journal_entry_model.can_unlock %}
-                                        <a class="dropdown-item has-text-warning"
-                                           href="{{ journal_entry_model.get_action_unlock_url }}?next={{ next_url }}">
-                                            <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
-                                            {% trans 'Unlock' %}
-                                        </a>
+                                        {% trans 'Unlock' as je_unlock_label %}
+                                        {% djl_action_button journal_entry_model.get_action_unlock_url je_unlock_label 'dropdown-item has-text-warning' 'bi:unlock-fill' 16 next_url %}
                                     {% endif %}
                                     {% if journal_entry_model.can_delete %}
                                         <hr class="dropdown-divider">

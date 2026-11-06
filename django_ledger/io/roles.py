@@ -706,7 +706,9 @@ def validate_roles(roles: Union[str, List[str]], raise_exception: bool = True) -
         A set of the valid roles.
     """
     if isinstance(roles, str):
-        roles = [roles]
+        roles = list()
+        roles.append(roles)
+
     for r in roles:
         if r not in VALID_ROLES:
             if raise_exception:

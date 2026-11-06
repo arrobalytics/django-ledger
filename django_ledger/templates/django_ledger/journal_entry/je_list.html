@@ -11,16 +11,10 @@
             <span>{% trans 'Create Entry' %}</span>
         </a>
     {% endif %}
-    <a class="button is-info  is-outlined"
-       href="{{ ledger_model.get_action_lock_journal_entries_url }}">
-        <span class="icon">{% icon 'bi:lock-fill' 16 %}</span>
-        <span>{% trans 'Lock All' %}</span>
-    </a>
-    <a class="button is-warning  is-outlined"
-       href="{{ ledger_model.get_action_post_journal_entries_url }}">
-        <span class="icon">{% icon 'bi:cloud-upload-fill' 16 %}</span>
-        <span>{% trans 'Post All' %}</span>
-    </a>
+    {% trans 'Lock All' as je_lock_all_label %}
+    {% djl_action_button ledger_model.get_action_lock_journal_entries_url je_lock_all_label 'button is-info is-outlined' 'bi:lock-fill' 16 %}
+    {% trans 'Post All' as je_post_all_label %}
+    {% djl_action_button ledger_model.get_action_post_journal_entries_url je_post_all_label 'button is-warning is-outlined' 'bi:cloud-upload-fill' 16 %}
     <a class="button is-dark  is-outlined"
        href="{{ ledger_model.get_list_url }}">
         <span class="icon">{% icon 'bi:arrow-left' 16 %}</span>

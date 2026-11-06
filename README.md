@@ -182,22 +182,6 @@ If you prefer using a database backend other than the default SQLite (such as Po
   Installs `mariadb`.
 You can also combine multiple dependency groups when syncing (e.g., `uv sync --group dev --group postgresql`).
 ---
-## 🐳 Setting Up Development Using Docker
-If you prefer containerized development:
-Clone the repository and navigate into it.
-1. Ensure `'0.0.0.0'` is included in `ALLOWED_HOSTS` in your Django settings.
-2. Build and start the containers using Docker Compose:
-   ```shell
-   docker compose up --build
-   ```
-3. In a separate terminal, create a superuser inside the container:
-   ```shell
-   docker ps
-   # Find your container ID or name
-   docker exec -it <container_id> python manage.py createsuperuser
-   ```
-4. Open `http://127.0.0.1:8000/ledger` in your browser.
----
 ## 📜 Licensing & Dual-Licensing Plan
 
 Django Ledger is currently licensed under the **GNU General Public License v3.0 (GPL-3.0)**.

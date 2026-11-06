@@ -17,7 +17,24 @@
             <div class="box">
                 <form method="post">
                     {% csrf_token %}
-                    {{ form.as_p }}
+                    {% for field in form.visible_fields %}
+                        <div class="field">
+                            <label class="label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            <div class="control">
+                                                            {% if field.field.widget.input_type == 'select' %}
+                                                                <div class="select is-fullwidth">{{ field }}</div>
+                                                            {% elif field.field.widget.input_type == 'checkbox' %}
+                                                                <label class="checkbox">{{ field }}</label>
+                                                            {% else %}
+                                                                {{ field }}
+                                                            {% endif %}
+                                                        </div>
+                            {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+                            {% for error in field.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endfor %}
+                    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+                    {{ form.non_field_errors }}
                     <hr>
                     <button type="submit" class="button is-primary is-fullwidth">
                         <span class="icon">{% icon 'bi:save' 16 %}</span>

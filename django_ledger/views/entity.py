@@ -4,11 +4,22 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Entity views grouped by CRUD + dashboard/reports.
+
+  * CREATE   — EntityModelCreateView
+  * RETRIEVE — EntityModelListView, EntityModelDetailView / digests
+  * UPDATE   — EntityModelUpdateView
+  * DELETE   — EntityModelDeleteView
+
+Entity querysets always use ``for_user`` so users only see entities they own
+or manage — the core tenancy boundary for the application.
 """
 
 from datetime import timedelta
 from decimal import Decimal
 from random import randint
+from typing import Optional
 
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -18,47 +29,61 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.io.io_generator import EntityDataGenerator
-from django_ledger.models import (
-    EntityModel,
-    ItemTransactionModel,
-    TransactionModel
-)
+from django_ledger.models import EntityModel, ItemTransactionModel, TransactionModel
+from django_ledger.models.entity import EntityModelQuerySet
 from django_ledger.views.mixins import (
-    QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
-    DigestContextMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
+    QuarterlyReportMixIn,
+    YearlyReportMixIn,
+    MonthlyReportMixIn,
+    DateReportMixIn,
+    DjangoLedgerSecurityMixIn,
+    EntityUnitMixIn,
+    DigestContextMixIn,
+    UnpaidElementsMixIn,
+    BaseDateNavigationUrlMixIn,
 )
 
 
-class EntityModelModelViewQuerySetMixIn:
-    queryset = None
+class EntityModelModelBaseView(DjangoLedgerSecurityMixIn):
+    """
+    User-scoped entity queryset shared by all entity CRUD/dashboard views.
 
-    def get_queryset(self):
+    Only returns entities the authenticated user administers or manages.
+    """
+
+    queryset: Optional[EntityModelQuerySet] = None
+
+    def get_queryset(self) -> EntityModelQuerySet:
         if self.queryset is None:
-            self.queryset = EntityModel.objects.for_user(
-                user_model=self.request.user).select_related('default_coa')
+            qs: EntityModelQuerySet = EntityModel.objects.for_user(user_model=self.request.user).select_related(
+                'default_coa'
+            )
+            self.queryset = qs
         return super().get_queryset()
 
 
-# Entity CRUD Views ----
-class EntityModelListView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, ListView):
+# -----------------
+# RETRIEVE (List)
+# -----------------
+class EntityModelListView(EntityModelModelBaseView, ListView):
+    """Lists entities the authenticated user is authorized to access."""
+
     template_name = 'django_ledger/entity/entitiy_list.html'
     context_object_name = 'entities'
     PAGE_TITLE = _('My Entities')
-    extra_context = {
-        'header_title': PAGE_TITLE,
-        'page_title': PAGE_TITLE
-    }
+    extra_context = {'header_title': PAGE_TITLE, 'page_title': PAGE_TITLE}
 
 
-class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, CreateView):
+# -----------------
+# CREATE
+# -----------------
+class EntityModelCreateView(EntityModelModelBaseView, CreateView):
+    """Creates a new entity with the current user as admin."""
+
     template_name = 'django_ledger/entity/entity_create.html'
     form_class = EntityModelCreateForm
     PAGE_TITLE = _('Create Entity')
-    extra_context = {
-        'header_title': PAGE_TITLE,
-        'page_title': PAGE_TITLE
-    }
+    extra_context = {'header_title': PAGE_TITLE, 'page_title': PAGE_TITLE}
 
     def get_success_url(self):
         return reverse('django_ledger:home')
@@ -66,7 +91,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
     def form_valid(self, form):
         cleaned_data = form.cleaned_data
         default_coa = cleaned_data.get('default_coa')
-        activate_accounts = cleaned_data.get('activate_all_accounts')
+        activate_accounts: bool = cleaned_data.get('activate_all_accounts', False)
         sample_data = form.cleaned_data.get('generate_sample_data')
 
         user_model = self.request.user
@@ -85,14 +110,13 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
             phone=cleaned_data['phone'],
             fy_start_month=cleaned_data['fy_start_month'],
             accrual_method=cleaned_data['accrual_method'],
-            admin=user_model
+            admin=user_model,
         )
         entity_model: EntityModel = EntityModel.add_root(instance=entity_model)
         default_coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
 
         if default_coa:
-            entity_model.populate_default_coa(activate_accounts=activate_accounts,
-                                              coa_model=default_coa_model)
+            entity_model.populate_default_coa(activate_accounts=activate_accounts, coa_model=default_coa_model)
 
         if sample_data:
             entity_generator = EntityDataGenerator(
@@ -101,16 +125,19 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
                 start_dttm=get_localtime() - timedelta(days=30 * 8),
                 capital_contribution=Decimal.from_float(50000),
                 days_forward=30 * 7,
-                tx_quantity=50
+                tx_quantity=50,
             )
             entity_generator.populate_entity()
 
-        return HttpResponseRedirect(
-            redirect_to=self.get_success_url()
-        )
+        return HttpResponseRedirect(redirect_to=self.get_success_url())
 
 
-class EntityModelUpdateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, UpdateView):
+# -----------------
+# UPDATE
+# -----------------
+class EntityModelUpdateView(EntityModelModelBaseView, UpdateView):
+    """Updates entity profile fields for an authorized entity."""
+
     context_object_name = 'entity'
     template_name = 'django_ledger/entity/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -126,7 +153,12 @@ class EntityModelUpdateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
         return reverse('django_ledger:entity-list')
 
 
-class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, DeleteView):
+# -----------------
+# DELETE
+# -----------------
+class EntityDeleteView(EntityModelModelBaseView, DeleteView):
+    """Deletes an authorized entity after confirmation."""
+
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity/entity_delete.html'
@@ -145,48 +177,48 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
         entity_model.default_coa = None
         entity_model.save(update_fields=['default_coa'])
 
-        ItemTransactionModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        ).delete()
+        ItemTransactionModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL).delete()
 
-        TransactionModel.objects.for_entity(
-            entity_model=self.kwargs['entity_slug']
-        ).delete()
+        TransactionModel.objects.for_entity(entity_model=self.kwargs['entity_slug']).delete()
 
         return super().form_valid(form=form)
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
-                                   EntityUnitMixIn,
-                                   RedirectView):
-
+# -----------------
+# RETRIEVE (Detail / Digests)
+# -----------------
+class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         loc_date = get_localdate()
         unit_slug = self.get_unit_slug()
         if unit_slug:
-            return reverse('django_ledger:unit-dashboard-month',
-                           kwargs={
-                               'entity_slug': self.kwargs['entity_slug'],
-                               'unit_slug': unit_slug,
-                               'year': loc_date.year,
-                               'month': loc_date.month,
-                           })
-        return reverse('django_ledger:entity-dashboard-year',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug'],
-                           'year': loc_date.year
-                       })
+            return reverse(
+                'django_ledger:unit-dashboard-month',
+                kwargs={
+                    'entity_slug': self.kwargs['entity_slug'],
+                    'unit_slug': unit_slug,
+                    'year': loc_date.year,
+                    'month': loc_date.month,
+                },
+            )
+        return reverse(
+            'django_ledger:entity-dashboard-year',
+            kwargs={'entity_slug': self.kwargs['entity_slug'], 'year': loc_date.year},
+        )
 
 
-class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
-                                EntityModelModelViewQuerySetMixIn,
-                                BaseDateNavigationUrlMixIn,
-                                UnpaidElementsMixIn,
-                                EntityUnitMixIn,
-                                DigestContextMixIn,
-                                YearlyReportMixIn,
-                                DetailView):
+class EntityModelDetailBaseView(
+    EntityModelModelBaseView,
+    BaseDateNavigationUrlMixIn,
+    UnpaidElementsMixIn,
+    EntityUnitMixIn,
+    DigestContextMixIn,
+    YearlyReportMixIn,
+    DetailView,
+):
+    """Entity dashboard detail view with digests and unpaid document widgets."""
+
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity/entity_dashboard.html'
@@ -219,8 +251,9 @@ class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
         context['payables_chart_id'] = f'djl-entity-payables-chart-{randint(10000, 99999)}'
         context['payables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-payables', kwargs=KWARGS)
         context['receivables_chart_id'] = f'djl-entity-receivables-chart-{randint(10000, 99999)}'
-        context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
-                                                        kwargs=KWARGS)
+        context['receivables_chart_endpoint'] = reverse(
+            f'django_ledger:{url_pointer}-json-net-receivables', kwargs=KWARGS
+        )
 
         return context
 

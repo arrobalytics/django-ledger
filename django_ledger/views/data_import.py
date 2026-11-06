@@ -4,6 +4,16 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Bank data-import views grouped by CRUD + staging actions.
+
+  * CREATE   — ImportJobModelCreateView
+  * RETRIEVE — ImportJobModelListView, ImportJobModelDetailView
+  * UPDATE   — ImportJobModelUpdateView / staged transaction formsets
+  * DELETE   — ImportJobModelDeleteView
+  * ACTIONS  — undo / commit staged transactions
+
+Import jobs are always filtered with for_entity(AUTHORIZED_ENTITY_MODEL).
 """
 
 from datetime import datetime, time
@@ -27,19 +37,27 @@ from django_ledger.io.ofx import OFXFileManager
 from django_ledger.models import (
     StagedTransactionModelValidationError,
 )
-from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
+from django_ledger.models.data_import import (
+    ImportJobModel,
+    ImportJobModelQuerySet,
+    StagedTransactionModel,
+)
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-# Import Job Views....
-class ImportJobModelViewBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+# =====================================================================
+# IMPORT JOB — CRUD base
+# =====================================================================
+class ImportJobModelModelBaseView(DjangoLedgerSecurityMixIn):
+    """Entity-scoped import-job queryset shared by all import-job CRUD/action views."""
 
-    def get_queryset(self):
+    queryset: Optional[ImportJobModelQuerySet] = None
+
+    def get_queryset(self) -> ImportJobModelQuerySet:
         if self.queryset is None:
-            self.queryset = (
+            qs: ImportJobModelQuerySet = (
                 ImportJobModel.objects.for_entity(
-                    entity_model=self.AUTHORIZED_ENTITY_MODEL,
+                    entity_model=self.get_authorized_entity_instance(),
                 )
                 .order_by('-created')
                 .select_related(
@@ -49,10 +67,14 @@ class ImportJobModelViewBaseView(DjangoLedgerSecurityMixIn):
                     'bank_account_model__account_model__coa_model',
                 )
             )
+            self.queryset = qs
         return self.queryset
 
 
-class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
+# -----------------
+# CREATE
+# -----------------
+class ImportJobModelCreateView(ImportJobModelModelBaseView, FormView):
     template_name = 'django_ledger/data_import/import_job_create.html'
     PAGE_TITLE = _('Create Import Job')
     extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
@@ -92,14 +114,17 @@ class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
         return super().form_valid(form=form)
 
 
-class ImportJobModelListView(ImportJobModelViewBaseView, ListView):
+# -----------------
+# RETRIEVE (List / Detail)
+# -----------------
+class ImportJobModelListView(ImportJobModelModelBaseView, ListView):
     template_name = 'django_ledger/data_import/import_job_list.html'
     PAGE_TITLE = _('Data Import Jobs')
     extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
     context_object_name = 'import_job_list'
 
 
-class ImportJobDetailView(ImportJobModelViewBaseView, DetailView):
+class ImportJobDetailView(ImportJobModelModelBaseView, DetailView):
     template_name = 'django_ledger/data_import/import_job_detail.html'
     PAGE_TITLE = _('Import Job Detail')
     context_object_name = 'import_job_model'
@@ -158,7 +183,10 @@ class ImportJobDetailView(ImportJobModelViewBaseView, DetailView):
         return context
 
 
-class ImportJobModelUpdateView(ImportJobModelViewBaseView, UpdateView):
+# -----------------
+# UPDATE
+# -----------------
+class ImportJobModelUpdateView(ImportJobModelModelBaseView, UpdateView):
     template_name = 'django_ledger/data_import/import_job_update.html'
     context_object_name = 'import_job_model'
     pk_url_kwarg = 'job_pk'
@@ -187,7 +215,10 @@ class ImportJobModelUpdateView(ImportJobModelViewBaseView, UpdateView):
         return super().form_valid(form=form)
 
 
-class ImportJobModelDeleteView(ImportJobModelViewBaseView, DeleteView):
+# -----------------
+# DELETE
+# -----------------
+class ImportJobModelDeleteView(ImportJobModelModelBaseView, DeleteView):
     template_name = 'django_ledger/data_import/import_job_delete.html'
     context_object_name = 'import_job_model'
     pk_url_kwarg = 'job_pk'
@@ -205,7 +236,10 @@ class ImportJobModelDeleteView(ImportJobModelViewBaseView, DeleteView):
         return import_job_model.get_list_url()
 
 
-class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
+# -----------------
+# ACTIONS (reset / stage / undo / unmatch)
+# -----------------
+class ImportJobModelResetView(ImportJobModelModelBaseView, DetailView):
     pk_url_kwarg = 'job_pk'
     http_method_names = ['post']
 
@@ -244,7 +278,7 @@ class ImportJobModelResetView(ImportJobModelViewBaseView, DetailView):
         )
 
 
-class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
+class StagedTransactionUpdateView(ImportJobModelModelBaseView, DetailView):
     template_name = 'django_ledger/data_import/staged_tx_update.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'staged_tx'
@@ -401,7 +435,7 @@ class StagedTransactionUpdateView(ImportJobModelViewBaseView, DetailView):
 
 
 # Actions....
-class StagedTransactionUndoView(ImportJobModelViewBaseView, View):
+class StagedTransactionUndoView(ImportJobModelModelBaseView, View):
     http_method_names = ['post']
 
     def post(self, request, entity_slug, job_pk, staged_tx_pk, *args, **kwargs):
@@ -429,7 +463,7 @@ class StagedTransactionUndoView(ImportJobModelViewBaseView, View):
         )
 
 
-class StagedTransactionUnmatchView(ImportJobModelViewBaseView, View):
+class StagedTransactionUnmatchView(ImportJobModelModelBaseView, View):
     http_method_names = ['post']
 
     def post(self, request, entity_slug, job_pk, staged_tx_pk, *args, **kwargs):

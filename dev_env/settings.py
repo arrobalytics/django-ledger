@@ -16,9 +16,6 @@ if DEBUG:
     logger.setLevel(logging.DEBUG)
     logger.warning('DEBUG MODE ON. Do NOT use this Development Environment!')
 
-ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
-CSRF_TRUSTED_ORIGINS = ['https://*.preview.app.github.dev']
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,6 +34,10 @@ if DEBUG:
     INTERNAL_IPS = [
         '127.0.0.1',
     ]
+
+ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
+CSRF_TRUSTED_ORIGINS = ['https://*.preview.app.github.dev']
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -119,12 +120,6 @@ USE_L10N = True
 STATIC_URL = '/static/'
 LOGIN_URL = '/auth/login/'
 
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
-
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CACHES = {
@@ -134,6 +129,11 @@ CACHES = {
     }
 }
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # DJANGO_LEDGER_THEME = 'minty'
 DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = False
 

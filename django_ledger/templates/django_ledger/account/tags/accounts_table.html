@@ -97,32 +97,20 @@
                                             </a>
                                             <hr class="dropdown-divider">
                                             {% if account.can_activate %}
-                                                <a href="{{ account.get_action_activate_url }}"
-                                                   class="dropdown-item has-text-success">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
-                                                    {% trans 'Activate' %}
-                                                </a>
+                                                {% trans 'Activate' as acc_activate_label %}
+                                                {% djl_action_button account.get_action_activate_url acc_activate_label 'dropdown-item has-text-success' 'bi:play-fill' 16 %}
                                             {% endif %}
                                             {% if account.can_deactivate %}
-                                                <a href="{{ account.get_action_deactivate_url }}"
-                                                   class="dropdown-item has-text-danger">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
-                                                    {% trans 'Deactivate' %}
-                                                </a>
+                                                {% trans 'Deactivate' as acc_deactivate_label %}
+                                                {% djl_action_button account.get_action_deactivate_url acc_deactivate_label 'dropdown-item has-text-danger' 'bi:stop-fill' 16 %}
                                             {% endif %}
                                             {% if account.can_lock %}
-                                                <a href="{{ account.get_action_lock_url }}"
-                                                   class="dropdown-item has-text-warning">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
-                                                    {% trans 'Lock' %}
-                                                </a>
+                                                {% trans 'Lock' as acc_lock_label %}
+                                                {% djl_action_button account.get_action_lock_url acc_lock_label 'dropdown-item has-text-warning' 'bi:lock-fill' 16 %}
                                             {% endif %}
                                             {% if account.can_unlock %}
-                                                <a href="{{ account.get_action_unlock_url }}"
-                                                   class="dropdown-item has-text-info">
-                                                    <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
-                                                    {% trans 'Unlock' %}
-                                                </a>
+                                                {% trans 'Unlock' as acc_unlock_label %}
+                                                {% djl_action_button account.get_action_unlock_url acc_unlock_label 'dropdown-item has-text-info' 'bi:unlock-fill' 16 %}
                                             {% endif %}
                                         </div>
                                     </div>

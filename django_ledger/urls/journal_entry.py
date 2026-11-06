@@ -30,15 +30,15 @@ urlpatterns = [
 
     # actions...
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-posted/',
-         views.BaseJournalEntryActionView.as_view(action_name='mark_as_posted'),
+         views.JournalEntryActionMarkAsPostedView.as_view(),
          name='je-mark-as-posted'),
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-unposted/',
-         views.BaseJournalEntryActionView.as_view(action_name='mark_as_unposted'),
+         views.JournalEntryActionMarkAsUnpostedView.as_view(),
          name='je-mark-as-unposted'),
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-locked/',
-         views.BaseJournalEntryActionView.as_view(action_name='mark_as_locked'),
+         views.JournalEntryActionMarkAsLockedView.as_view(),
          name='je-mark-as-locked'),
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-unlocked/',
-         views.BaseJournalEntryActionView.as_view(action_name='mark_as_unlocked'),
+         views.JournalEntryActionMarkAsUnlockedView.as_view(),
          name='je-mark-as-unlocked'),
 ]

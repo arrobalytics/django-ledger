@@ -4,30 +4,44 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Bank Account views grouped by CRUD + Actions.
+
+  * CREATE   — BankAccountModelCreateView
+  * RETRIEVE — BankAccountModelListView
+  * UPDATE   — BankAccountModelUpdateView
+  * ACTIONS  — activate / deactivate via BaseBankAccountModelActionView
 """
-from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from typing import Optional
+
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView, RedirectView
-from django.views.generic.detail import SingleObjectMixin
+from django.views.generic import ListView, CreateView, UpdateView
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models import EntityModel
-from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
+from django_ledger.models.bank_account import BankAccountModel, BankAccountModelQuerySet
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionView
 
 
 class BankAccountModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped bank account queryset shared by all bank-account CRUD/action views."""
 
-    def get_queryset(self):
+    queryset: Optional[BankAccountModelQuerySet] = None
+
+    def get_queryset(self) -> BankAccountModelQuerySet:
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.bankaccountmodel_set.select_related('account_model', 'entity_model')
+            qs: BankAccountModelQuerySet = entity_model.bankaccountmodel_set.select_related(
+                'account_model', 'entity_model'
+            )
+            self.queryset = qs
         return super().get_queryset()
 
 
+# -----------------
+# RETRIEVE (List)
+# -----------------
 class BankAccountModelListView(BankAccountModelModelBaseView, ListView):
     template_name = 'django_ledger/bank_account/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
@@ -39,6 +53,9 @@ class BankAccountModelListView(BankAccountModelModelBaseView, ListView):
     }
 
 
+# -----------------
+# CREATE
+# -----------------
 class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
     template_name = 'django_ledger/bank_account/bank_account_create.html'
     PAGE_TITLE = _('Create Bank Account')
@@ -70,6 +87,9 @@ class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
         return super(BankAccountModelCreateView, self).form_valid(form)
 
 
+# -----------------
+# UPDATE
+# -----------------
 class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
     template_name = 'django_ledger/bank_account/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
@@ -95,14 +115,18 @@ class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
         )
 
 
-# ACTION VIEWS...
-class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
-                                     RedirectView,
-                                     SingleObjectMixin):
-    http_method_names = ['get']
+# -----------------
+# ACTIONS (activate / deactivate)
+# -----------------
+class BaseBankAccountModelActionView(BankAccountModelModelBaseView, DjangoLedgerActionView):
+    """
+    Shared bank-account action endpoint (activate / deactivate).
+
+    Runs the configured BankAccountModel method and redirects to the bank
+    account list. Requires POST by default.
+    """
+
     pk_url_kwarg = 'bank_account_pk'
-    action_name = None
-    commit = True
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse('django_ledger:bank-account-list',
@@ -110,26 +134,14 @@ class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
                            'entity_slug': kwargs['entity_slug']
                        })
 
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseBankAccountModelActionView, self).get(request, *args, **kwargs)
-        ba_model: BankAccountModel = self.get_object()
-
-        try:
-            getattr(ba_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
-
 
 class BankAccountModelActionMarkAsActiveView(BaseBankAccountModelActionView):
+    """Activates a bank account so it can be used for payments and imports."""
+
     action_name = 'mark_as_active'
 
 
 class BankAccountModelActionMarkAsInactiveView(BaseBankAccountModelActionView):
+    """Deactivates a bank account without deleting its historical data."""
+
     action_name = 'mark_as_inactive'

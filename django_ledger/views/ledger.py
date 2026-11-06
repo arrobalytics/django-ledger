@@ -4,10 +4,19 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Ledger views grouped by CRUD + Actions + Statements.
+
+  * CREATE   — LedgerModelCreateView
+  * RETRIEVE — List / Year / Month; detail redirects to JE list
+  * UPDATE   — LedgerModelUpdateView
+  * DELETE   — LedgerModelDeleteView
+  * ACTIONS  — post / lock / hide via LedgerModelModelActionView
+  * REPORTS — Balance Sheet / Income Statement / Cash Flow
 """
 
-from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from typing import Optional
+
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -21,16 +30,16 @@ from django.views.generic import (
     UpdateView,
     YearArchiveView,
 )
-from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
-from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.ledger import LedgerModel, LedgerModelQuerySet
 from django_ledger.views.mixins import (
     BaseDateNavigationUrlMixIn,
     DateReportMixIn,
     DjangoLedgerSecurityMixIn,
+    DjangoLedgerActionView,
     EntityUnitMixIn,
     MonthlyReportMixIn,
     PDFReportMixIn,
@@ -40,15 +49,21 @@ from django_ledger.views.mixins import (
 
 
 class LedgerModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped ledger queryset shared by all ledger CRUD/action/report views."""
 
-    def get_queryset(self):
+    queryset: Optional[LedgerModelQuerySet] = None
+
+    def get_queryset(self) -> LedgerModelQuerySet:
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.get_ledgers()
+            qs: LedgerModelQuerySet = entity_model.get_ledgers()
+            self.queryset = qs
         return self.queryset
 
 
+# -----------------
+# RETRIEVE (List)
+# -----------------
 class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
     allow_empty = True
     context_object_name = 'ledger_list'
@@ -110,6 +125,9 @@ class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
     paginate_by = 30
 
 
+# -----------------
+# CREATE
+# -----------------
 class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
     template_name = 'django_ledger/ledger/ledger_create.html'
     PAGE_TITLE = _('Create Ledger')
@@ -129,6 +147,9 @@ class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
         return reverse('django_ledger:ledger-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
+# -----------------
+# RETRIEVE (Detail → JE list)
+# -----------------
 class LedgerModelDetailView(LedgerModelModelBaseView, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         return reverse(
@@ -137,6 +158,9 @@ class LedgerModelDetailView(LedgerModelModelBaseView, RedirectView):
         )
 
 
+# -----------------
+# UPDATE
+# -----------------
 class LedgerModelUpdateView(LedgerModelModelBaseView, UpdateView):
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
@@ -157,6 +181,9 @@ class LedgerModelUpdateView(LedgerModelModelBaseView, UpdateView):
         return reverse('django_ledger:ledger-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
+# -----------------
+# DELETE
+# -----------------
 class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
     template_name = 'django_ledger/ledger/ledger_delete.html'
     pk_url_kwarg = 'ledger_pk'
@@ -169,34 +196,91 @@ class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
 # ACTIONS....
 
 
-class LedgerModelModelActionView(LedgerModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
+# -----------------
+# ACTIONS (post / lock / hide)
+# -----------------
+class LedgerModelModelActionView(LedgerModelModelBaseView, DjangoLedgerActionView):
+    """
+    Shared ledger action endpoint.
+
+    Concrete subclasses set ``action_name`` (post, unpost, lock, unlock, hide,
+    unhide, or bulk journal-entry helpers). Uses ``action_before_redirect``
+    because the redirect URL depends on ``self.object``. Honors a safe
+    ``next`` target; otherwise goes to the ledger's journal-entry list.
+    Requires POST by default.
+    """
+
     pk_url_kwarg = 'ledger_pk'
-    action_name = None
-    commit = True
+    action_before_redirect = True
+    # user_model is passed via get_action_kwargs; do not also inject into URL kwargs.
+    pass_user_model_to_kwargs = False
 
     def get_redirect_url(self, *args, **kwargs):
-        next_url = self.request.GET.get('next', None)
+        next_url = self.get_safe_next_url()
         if next_url:
             return next_url
         ledger_model: LedgerModel = self.object
         return ledger_model.get_journal_entry_list_url()
 
-    def get(self, request, *args, **kwargs):
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        ledger_model: LedgerModel = self.get_object()
-        self.object = ledger_model
-
-        try:
-            getattr(ledger_model, self.action_name)(commit=self.commit, user_model=self.request.user, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request, message=e.message, level=messages.ERROR, extra_tags='is-danger')
-
-        return super().get(request, **kwargs)
+    def get_action_kwargs(self, **kwargs):
+        # Preserve prior call signature: commit + user_model + URL kwargs.
+        action_kwargs = dict(kwargs)
+        action_kwargs['commit'] = self.commit
+        action_kwargs['user_model'] = self.request.user
+        return action_kwargs
 
 
-# Ledger Balance Sheet Views...
+class LedgerModelActionPostView(LedgerModelModelActionView):
+    """Posts the ledger so its journal entries become part of financial reports."""
+
+    action_name = 'post'
+
+
+class LedgerModelActionPostJournalEntriesView(LedgerModelModelActionView):
+    """Bulk-posts all eligible journal entries belonging to the ledger."""
+
+    action_name = 'post_journal_entries'
+
+
+class LedgerModelActionUnpostView(LedgerModelModelActionView):
+    """Unposts the ledger, removing it from posted financial activity."""
+
+    action_name = 'unpost'
+
+
+class LedgerModelActionLockView(LedgerModelModelActionView):
+    """Locks the ledger to prevent further journal-entry edits."""
+
+    action_name = 'lock'
+
+
+class LedgerModelActionLockJournalEntriesView(LedgerModelModelActionView):
+    """Bulk-locks all eligible journal entries belonging to the ledger."""
+
+    action_name = 'lock_journal_entries'
+
+
+class LedgerModelActionUnlockView(LedgerModelModelActionView):
+    """Unlocks the ledger so journal entries can be edited again."""
+
+    action_name = 'unlock'
+
+
+class LedgerModelActionHideView(LedgerModelModelActionView):
+    """Hides the ledger from default list views without deleting it."""
+
+    action_name = 'hide'
+
+
+class LedgerModelActionUnhideView(LedgerModelModelActionView):
+    """Restores a hidden ledger to the default visible list."""
+
+    action_name = 'unhide'
+
+
+# -----------------
+# REPORTS (Balance Sheet)
+# -----------------
 class BaseLedgerModelBalanceSheetView(LedgerModelModelBaseView, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year

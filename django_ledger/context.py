@@ -1,7 +1,10 @@
 from django.conf import settings
 
 from django_ledger import __version__
-from django_ledger.settings import DJANGO_LEDGER_THEME
+from django_ledger.settings import (
+    DJANGO_LEDGER_THEME,
+    DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET,
+)
 
 
 def django_ledger_context(request):
@@ -9,4 +12,5 @@ def django_ledger_context(request):
         'DEBUG': settings.DEBUG,
         'VERSION': __version__,
         'DJANGO_LEDGER_THEME': DJANGO_LEDGER_THEME,
+        'DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET': DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET,
     }
