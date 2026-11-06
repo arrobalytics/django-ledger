@@ -60,21 +60,15 @@
     </footer>
     <footer class="card-footer">
         {% if coa_model.can_mark_as_default %}
-            <a href="{{ coa_model.mark_as_default_url }}"
-               class="card-footer-item has-text-danger has-text-weight-bold">
-                {% trans 'Mark as Default' %}
-            </a>
+            {% trans 'Mark as Default' as coa_default_label %}
+            {% djl_action_button coa_model.mark_as_default_url coa_default_label 'card-footer-item has-text-danger has-text-weight-bold' %}
         {% endif %}
         {% if coa_model.can_deactivate %}
-            <a href="{{ coa_model.mark_as_inactive_url }}"
-               class="card-footer-item has-text-warning has-text-weight-bold">
-                {% trans 'Mark as Inactive' %}
-            </a>
+            {% trans 'Mark as Inactive' as coa_inactive_label %}
+            {% djl_action_button coa_model.mark_as_inactive_url coa_inactive_label 'card-footer-item has-text-warning has-text-weight-bold' %}
         {% elif coa_model.can_activate %}
-            <a href="{{ coa_model.mark_as_active_url }}"
-               class="card-footer-item has-text-success has-text-weight-bold">
-                {% trans 'Mark as Active' %}
-            </a>
+            {% trans 'Mark as Active' as coa_active_label %}
+            {% djl_action_button coa_model.mark_as_active_url coa_active_label 'card-footer-item has-text-success has-text-weight-bold' %}
         {% endif %}
     </footer>
 </div>

@@ -7,8 +7,21 @@
             <div class="card-footer">
                 <a onclick="djLedger.toggleModal('{{ html_id }}')"
                    class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
-                <a href="{{ action_url }}"
-                   class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+                {% if http_method == 'post' %}
+                    <form name="djl-action-form-{{ html_id }}"
+                          id="djl-action-form-{{ html_id }}"
+                          method="post"
+                          action="{{ action_url }}"
+                          style="display:none">
+                        {% csrf_token %}
+                    </form>
+                    <a onclick="djLedger.submitForm('djl-action-form-{{ html_id }}', '{{ html_id }}')"
+                       class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+                {% else %}
+                    {# Legacy GET confirm — only used when callers pass http_method='get' #}
+                    <a href="{{ action_url }}"
+                       class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -18,5 +31,3 @@
             onclick="djLedger.toggleModal('{{ html_id }}')">
     </button>
 </div>
-
-

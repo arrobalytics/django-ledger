@@ -88,12 +88,15 @@
                                            href="{% url 'django_ledger:je-list' ledger_pk=bill_model.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                             {% trans 'Ledger Journal Entries' %}
                                         </a>
-                                        <a href="{% url "django_ledger:bill-action-lock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
-                                           class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Ledger' %}</a>
-                                        <a href="{% url "django_ledger:bill-action-unlock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
-                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Ledger' %}</a>
-                                        <a href="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
-                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate' %}</a>
+                                        {% url "django_ledger:bill-action-lock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid as bill_lock_ledger_url %}
+                                        {% trans 'Lock Ledger' as bill_lock_ledger_label %}
+                                        <div class="mt-2">{% djl_action_button bill_lock_ledger_url bill_lock_ledger_label 'button is-small is-success is-fullwidth' %}</div>
+                                        {% url "django_ledger:bill-action-unlock-ledger" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid as bill_unlock_ledger_url %}
+                                        {% trans 'Unlock Ledger' as bill_unlock_ledger_label %}
+                                        <div class="mt-2">{% djl_action_button bill_unlock_ledger_url bill_unlock_ledger_label 'button is-small is-danger is-fullwidth' %}</div>
+                                        {% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid as bill_force_migrate_url %}
+                                        {% trans 'Force Migrate' as bill_force_migrate_label %}
+                                        <div class="mt-2">{% djl_action_button bill_force_migrate_url bill_force_migrate_label 'button is-small is-danger is-fullwidth' %}</div>
                                     </div>
                                 </div>
                             </div>

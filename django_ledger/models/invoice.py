@@ -1018,14 +1018,19 @@ class InvoiceModelAbstract(
             ])
 
     # DRAFT...
-    def mark_as_draft(self, draft_date: Union[date, datetime], commit: bool = False, **kwargs):
+    def mark_as_draft(
+        self,
+        draft_date: Optional[Union[date, datetime]] = None,
+        commit: bool = False,
+        **kwargs,
+    ):
         """
         Marks InvoiceModel as Draft.
 
         Parameters
         __________
 
-        date_draft: date
+        draft_date: date
             Draft date. If None, defaults to localdate().
 
         commit: bool
@@ -1036,17 +1041,18 @@ class InvoiceModelAbstract(
 
         if draft_date:
             if isinstance(draft_date, datetime):
-                self.draft_date = draft_date.date()
+                self.date_draft = draft_date.date()
             elif isinstance(draft_date, date):
-                self.draft_date = draft_date
+                self.date_draft = draft_date
         else:
-            self.draft_date = get_localdate()
+            self.date_draft = get_localdate()
 
         self.invoice_status = self.INVOICE_STATUS_DRAFT
         self.clean()
         if commit:
             self.save(update_fields=[
                 'invoice_status',
+                'date_draft',
                 'updated'
             ])
         invoice_status_draft.send_robust(sender=self.__class__,
@@ -1228,7 +1234,7 @@ class InvoiceModelAbstract(
             if isinstance(date_approved, datetime):
                 self.date_approved = date_approved.date()
             elif isinstance(date_approved, date):
-                self.draft_date = date_approved
+                self.date_approved = date_approved
         else:
             self.date_approved = get_localdate()
 

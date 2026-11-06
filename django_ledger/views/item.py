@@ -4,7 +4,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Item / UOM / Product / Service / Expense / Inventory item views.
+
+Each resource group below follows CRUD (List/Create/Update/Delete where present).
+All querysets are scoped to the authorized entity.
 """
+
+from typing import Optional
 
 from django.contrib.messages import add_message, ERROR
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,27 +24,39 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from django_ledger.forms.item import (
-    ProductCreateForm, UnitOfMeasureModelCreateForm, UnitOfMeasureModelUpdateForm, ProductUpdateForm,
-    ExpenseItemCreateForm, ExpenseItemUpdateForm, InventoryItemCreateForm, InventoryItemUpdateForm,
-    ServiceCreateForm, ServiceUpdateForm
+    ProductCreateForm,
+    UnitOfMeasureModelCreateForm,
+    UnitOfMeasureModelUpdateForm,
+    ProductUpdateForm,
+    ExpenseItemCreateForm,
+    ExpenseItemUpdateForm,
+    InventoryItemCreateForm,
+    InventoryItemUpdateForm,
+    ServiceCreateForm,
+    ServiceUpdateForm,
 )
 from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel, UnitOfMeasureModelQuerySet
+from django_ledger.models.items import ItemModelQuerySet
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-# todo: Create delete views...
-
-# UNIT OF MEASURE VIEWS...
+# =====================================================================
+# UNIT OF MEASURE — CRUD
+# =====================================================================
 class UnitOfMeasureModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset: UnitOfMeasureModelQuerySet = None
+    """Entity-scoped UOM queryset shared by all unit-of-measure CRUD views."""
 
-    def get_queryset(self):
+    queryset: Optional[UnitOfMeasureModelQuerySet] = None
+
+    def get_queryset(self) -> UnitOfMeasureModelQuerySet:
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.unitofmeasuremodel_set.all()
+            qs: UnitOfMeasureModelQuerySet = entity_model.unitofmeasuremodel_set.all()
+            self.queryset = qs
         return self.queryset
 
 
+# --- RETRIEVE ---
 class UnitOfMeasureModelListView(UnitOfMeasureModelModelBaseView, ListView):
     template_name = 'django_ledger/uom/uom_list.html'
     PAGE_TITLE = _('Unit of Measures')
@@ -45,30 +64,26 @@ class UnitOfMeasureModelListView(UnitOfMeasureModelModelBaseView, ListView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'carbon:circle-measurement'
+        'header_subtitle_icon': 'carbon:circle-measurement',
     }
 
 
+# --- CREATE ---
 class UnitOfMeasureModelCreateView(UnitOfMeasureModelModelBaseView, CreateView):
     template_name = 'django_ledger/uom/uom_create.html'
     PAGE_TITLE = _('Create Unit of Measure')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'carbon:circle-measurement'
+        'header_subtitle_icon': 'carbon:circle-measurement',
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:uom-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:uom-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
     def get_form(self, form_class=None):
         return UnitOfMeasureModelCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def form_valid(self, form):
@@ -78,24 +93,28 @@ class UnitOfMeasureModelCreateView(UnitOfMeasureModelModelBaseView, CreateView):
             entity_model: EntityModel = self.AUTHORIZED_ENTITY_MODEL
             instance.entity = entity_model
         except ObjectDoesNotExist:
-            add_message(self.request,
-                        level=ERROR,
-                        message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
-                        extra_tags='is-danger')
+            add_message(
+                self.request,
+                level=ERROR,
+                message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
+                extra_tags='is-danger',
+            )
         else:
             try:
                 instance.save()
             except IntegrityError:
                 unit_abbr = form.cleaned_data['unit_abbr']
-                add_message(self.request,
-                            level=ERROR,
-                            message=_(
-                                f'The Unit of Measure {unit_abbr} already created for Entity {entity_model.name}.'),
-                            extra_tags='is-danger')
+                add_message(
+                    self.request,
+                    level=ERROR,
+                    message=_(f'The Unit of Measure {unit_abbr} already created for Entity {entity_model.name}.'),
+                    extra_tags='is-danger',
+                )
                 return self.render_to_response(self.get_context_data(form=form))
         return super().form_valid(form)
 
 
+# --- UPDATE ---
 class UnitOfMeasureModelUpdateView(UnitOfMeasureModelModelBaseView, UpdateView):
     template_name = 'django_ledger/uom/uom_update.html'
     PAGE_TITLE = _('Update Unit of Measure')
@@ -105,23 +124,19 @@ class UnitOfMeasureModelUpdateView(UnitOfMeasureModelModelBaseView, UpdateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'carbon:circle-measurement'
+        'header_subtitle_icon': 'carbon:circle-measurement',
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:uom-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:uom-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
     def get_form(self, form_class=None):
         return UnitOfMeasureModelUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
 
+# --- DELETE ---
 class UnitOfMeasureModelDeleteView(UnitOfMeasureModelModelBaseView, DeleteView):
     pk_url_kwarg = 'uom_pk'
     template_name = 'django_ledger/uom/uom_delete.html'
@@ -131,40 +146,39 @@ class UnitOfMeasureModelDeleteView(UnitOfMeasureModelModelBaseView, DeleteView):
         try:
             return super(UnitOfMeasureModelDeleteView, self).form_valid(form)
         except RestrictedError:
-
             uom_model: UnitOfMeasureModel = self.object
-            add_message(self.request,
-                        level=ERROR,
-                        message=f'Unable to delete UOM {uom_model.name}. '
-                                'Remove dependencies before deleting.',
-                        extra_tags='is-danger')
+            add_message(
+                self.request,
+                level=ERROR,
+                message=f'Unable to delete UOM {uom_model.name}. Remove dependencies before deleting.',
+                extra_tags='is-danger',
+            )
 
             return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:uom-list',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug']
-                                    })
+                redirect_to=reverse('django_ledger:uom-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
             )
 
     def get_success_url(self):
-        return reverse('django_ledger:uom-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:uom-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
-# PRODUCTS VIEWS...
+# =====================================================================
+# PRODUCTS — CRUD
+# =====================================================================
 class ProductItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped product item queryset shared by all product CRUD views."""
 
-    def get_queryset(self):
-        if not self.queryset:
+    queryset: Optional[ItemModelQuerySet] = None
+
+    def get_queryset(self) -> ItemModelQuerySet:
+        if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.itemmodel_set.products().select_related(
-                'earnings_account',
-                'cogs_account',
-                'inventory_account',
-                'uom').order_by('-updated')
+            qs: ItemModelQuerySet = (
+                entity_model.itemmodel_set.products()
+                .select_related('earnings_account', 'cogs_account', 'inventory_account', 'uom')
+                .order_by('-updated')
+            )
+            self.queryset = qs
         return super().get_queryset()
 
 
@@ -175,7 +189,7 @@ class ProductListView(ProductItemModelModelBaseView, ListView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
 
@@ -186,20 +200,15 @@ class ProductCreateView(ProductItemModelModelBaseView, CreateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:product-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:product-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
     def get_form(self, form_class=None):
         return ProductCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def form_valid(self, form):
@@ -220,26 +229,19 @@ class ProductUpdateView(ProductItemModelModelBaseView, UpdateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_queryset(self):
-        return ItemModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        ).products()
+        return ItemModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL).products()
 
     def get_form(self, form_class=None):
         return ProductUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:product-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:product-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
 class ProductDeleteView(ProductItemModelModelBaseView, DeleteView):
@@ -252,40 +254,39 @@ class ProductDeleteView(ProductItemModelModelBaseView, DeleteView):
             # todo: add success message...
             return super(ProductDeleteView, self).form_valid(form)
         except RestrictedError:
-
             item_model: ItemModel = self.object
-            add_message(self.request,
-                        level=ERROR,
-                        message=f'Unable to delete Product or Service {item_model.name}. '
-                                'Remove dependencies before deleting.',
-                        extra_tags='is-danger')
+            add_message(
+                self.request,
+                level=ERROR,
+                message=f'Unable to delete Product or Service {item_model.name}. Remove dependencies before deleting.',
+                extra_tags='is-danger',
+            )
 
             return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:product-list',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug']
-                                    })
+                redirect_to=reverse('django_ledger:product-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
             )
 
     def get_success_url(self):
-        return reverse('django_ledger:product-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:product-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
-# SERVICES VIEWS...
+# =====================================================================
+# SERVICES — CRUD
+# =====================================================================
 class ServiceItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped service item queryset shared by all service CRUD views."""
 
-    def get_queryset(self):
-        if not self.queryset:
+    queryset: Optional[ItemModelQuerySet] = None
+
+    def get_queryset(self) -> ItemModelQuerySet:
+        if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.itemmodel_set.services().select_related(
-                'earnings_account',
-                'cogs_account',
-                'inventory_account',
-                'uom').order_by('-updated')
+            qs: ItemModelQuerySet = (
+                entity_model.itemmodel_set.services()
+                .select_related('earnings_account', 'cogs_account', 'inventory_account', 'uom')
+                .order_by('-updated')
+            )
+            self.queryset = qs
         return super().get_queryset()
 
 
@@ -296,7 +297,7 @@ class ServiceListView(ServiceItemModelModelBaseView, ListView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
 
@@ -307,20 +308,15 @@ class ServiceCreateView(ServiceItemModelModelBaseView, CreateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:service-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:service-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
     def get_form(self, form_class=None):
         return ServiceCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def form_valid(self, form):
@@ -340,26 +336,19 @@ class ServiceUpdateView(ServiceItemModelModelBaseView, UpdateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_queryset(self):
-        return ItemModel.objects.for_entity(
-            entity_model=self.kwargs['entity_slug']
-        ).services()
+        return ItemModel.objects.for_entity(entity_model=self.kwargs['entity_slug']).services()
 
     def get_form(self, form_class=None):
         return ServiceUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:service-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:service-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
 class ServiceDeleteView(ServiceItemModelModelBaseView, DeleteView):
@@ -372,38 +361,37 @@ class ServiceDeleteView(ServiceItemModelModelBaseView, DeleteView):
             # todo: add success message...
             return super(ServiceDeleteView, self).form_valid(form)
         except RestrictedError:
-
             item_model: ItemModel = self.object
-            add_message(self.request,
-                        level=ERROR,
-                        message=f'Unable to delete Product or Service {item_model.name}. '
-                                'Remove dependencies before deleting.',
-                        extra_tags='is-danger')
+            add_message(
+                self.request,
+                level=ERROR,
+                message=f'Unable to delete Product or Service {item_model.name}. Remove dependencies before deleting.',
+                extra_tags='is-danger',
+            )
 
             return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:service-list',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug']
-                                    })
+                redirect_to=reverse('django_ledger:service-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
             )
 
     def get_success_url(self):
-        return reverse('django_ledger:service-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:service-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
-# EXPENSE ITEMS VIEW...
+# =====================================================================
+# EXPENSE ITEMS — CRUD
+# =====================================================================
 class ExpenseItemItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped expense item queryset shared by all expense-item CRUD views."""
 
-    def get_queryset(self):
-        if not self.queryset:
+    queryset: Optional[ItemModelQuerySet] = None
+
+    def get_queryset(self) -> ItemModelQuerySet:
+        if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.itemmodel_set.expenses().select_related(
-                'expense_account',
-                'uom').order_by('-updated')
+            qs: ItemModelQuerySet = (
+                entity_model.itemmodel_set.expenses().select_related('expense_account', 'uom').order_by('-updated')
+            )
+            self.queryset = qs
         return super().get_queryset()
 
 
@@ -414,7 +402,7 @@ class ExpenseItemModelListView(ExpenseItemItemModelModelBaseView, ListView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
 
@@ -425,20 +413,15 @@ class ExpenseItemCreateView(ExpenseItemItemModelModelBaseView, CreateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:expense-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:expense-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
     def get_form(self, form_class=None):
         return ExpenseItemCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def form_valid(self, form):
@@ -460,35 +443,35 @@ class ExpenseItemUpdateView(ExpenseItemItemModelModelBaseView, UpdateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_form(self, form_class=None):
         return ExpenseItemUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:expense-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:expense-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
 
-# INVENTORY VIEWS...
+# =====================================================================
+# INVENTORY ITEMS — CRUD
+# =====================================================================
 class InventoryItemItemModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped inventory item queryset shared by all inventory-item CRUD views."""
 
-    def get_queryset(self):
-        if not self.queryset:
+    queryset: Optional[ItemModelQuerySet] = None
+
+    def get_queryset(self) -> ItemModelQuerySet:
+        if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.itemmodel_set.inventory_wip().select_related(
-                'inventory_account',
-                'cogs_account',
-                'uom'
-            ).order_by('-updated')
+            qs: ItemModelQuerySet = (
+                entity_model.itemmodel_set.inventory_wip()
+                .select_related('inventory_account', 'cogs_account', 'uom')
+                .order_by('-updated')
+            )
+            self.queryset = qs
         return super().get_queryset()
 
 
@@ -499,7 +482,7 @@ class InventoryItemModelListView(InventoryItemItemModelModelBaseView, ListView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
 
@@ -510,20 +493,15 @@ class InventoryItemCreateView(InventoryItemItemModelModelBaseView, CreateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:inventory-item-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:inventory-item-list', kwargs={'entity_slug': self.kwargs['entity_slug']})
 
     def get_form(self, form_class=None):
         return InventoryItemCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def form_invalid(self, form):
@@ -549,18 +527,13 @@ class InventoryItemUpdateView(InventoryItemItemModelModelBaseView, UpdateView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'zmdi:collection-item'
+        'header_subtitle_icon': 'zmdi:collection-item',
     }
 
     def get_form(self, form_class=None):
         return InventoryItemUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
+            entity_slug=self.kwargs['entity_slug'], user_model=self.request.user, **self.get_form_kwargs()
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:inventory-item-list',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
-                       })
+        return reverse('django_ledger:inventory-item-list', kwargs={'entity_slug': self.kwargs['entity_slug']})

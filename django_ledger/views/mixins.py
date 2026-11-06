@@ -4,12 +4,25 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Shared view mixins and base classes for django_ledger.
+
+This module centralizes:
+  * Date-range / fiscal-period helpers for financial reports
+  * Entity-scoped authorization (DjangoLedgerSecurityMixIn)
+  * Reusable one-shot model actions (DjangoLedgerActionView)
+  * PDF and digest context helpers
+
+Security note: entity-scoped views must inherit DjangoLedgerSecurityMixIn so
+that only users authorized for the entity_slug in the URL can read or mutate
+that entity's data.
 """
 
 from calendar import monthrange
 from datetime import timedelta, date
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
 
+from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
 from django.core.exceptions import (
     ValidationError,
@@ -17,15 +30,28 @@ from django.core.exceptions import (
     ImproperlyConfigured,
 )
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseGone,
+    HttpResponsePermanentRedirect,
+    HttpResponseRedirect,
+)
 from django.urls import reverse
 from django.utils.dateparse import parse_date
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
+from django.views import View
+from django.views.generic import RedirectView
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel, LedgerModel
 from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
-from django_ledger.settings import DJANGO_LEDGER_AUTHORIZED_SUPERUSER
+from django_ledger.settings import (
+    DJANGO_LEDGER_AUTHORIZED_SUPERUSER,
+    DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET,
+)
 
 
 class ContextFromToDateMixin:
@@ -39,18 +65,14 @@ class ContextFromToDateMixin:
         return self.TO_DATE_CONTEXT_NAME
 
 
-class YearlyReportMixIn(
-    YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn
-):
+class YearlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
 
     def get_to_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_end_date(year, fy_start)
 
-    def get_from_to_dates(
-        self, year: int = None, fy_start: int = None, **kwargs
-    ) -> Tuple[date, date]:
+    def get_from_to_dates(self, year: int = None, fy_start: int = None, **kwargs) -> Tuple[date, date]:
         from_date = self.get_from_date(year, fy_start, **kwargs)
         to_date = self.get_to_date(year, fy_start, **kwargs)
         return from_date, to_date
@@ -85,9 +107,7 @@ class YearlyReportMixIn(
         return context
 
 
-class QuarterlyReportMixIn(
-    YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn
-):
+class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
@@ -100,9 +120,7 @@ class QuarterlyReportMixIn(
             except ValidationError:
                 raise Http404(_('Invalid quarter number'))
         except ValueError:
-            raise Http404(
-                _(f'Invalid quarter format. Cannot parse {quarter} into integer.')
-            )
+            raise Http404(_(f'Invalid quarter format. Cannot parse {quarter} into integer.'))
         return quarter
 
     def get_quarter(self) -> int:
@@ -118,39 +136,27 @@ class QuarterlyReportMixIn(
         quarter = self.parse_quarter(quarter)
         return quarter
 
-    def get_from_date(
-        self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs
-    ) -> date:
+    def get_from_date(self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_quarter_start_date(quarter, year, fy_start)
 
-    def get_to_date(
-        self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs
-    ) -> date:
+    def get_to_date(self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_quarter_end_date(quarter, year, fy_start)
 
     def get_from_to_dates(
         self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs
     ) -> Tuple[date, date]:
-        from_date = self.get_from_date(
-            quarter=quarter, year=year, fy_start=fy_start, **kwargs
-        )
-        to_date = self.get_to_date(
-            quarter=quarter, year=year, fy_start=fy_start, **kwargs
-        )
+        from_date = self.get_from_date(quarter=quarter, year=year, fy_start=fy_start, **kwargs)
+        to_date = self.get_to_date(quarter=quarter, year=year, fy_start=fy_start, **kwargs)
         return from_date, to_date
 
-    def get_quarter_start_date(
-        self, quarter: int = None, year: int = None, fy_start: int = None
-    ) -> date:
+    def get_quarter_start_date(self, quarter: int = None, year: int = None, fy_start: int = None) -> date:
         if not year:
             year = self.get_year()
         if not quarter:
             quarter = self.get_quarter()
         return self.get_quarter_start(year, quarter, fy_start)
 
-    def get_quarter_end_date(
-        self, quarter: int = None, year: int = None, fy_start: int = None
-    ) -> date:
+    def get_quarter_end_date(self, quarter: int = None, year: int = None, fy_start: int = None) -> date:
         if not year:
             year = self.get_year()
         if not quarter:
@@ -189,9 +195,7 @@ class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
     def get_to_date(self, month: int = None, year: int = None, **kwargs) -> date:
         return self.get_month_end_date(month=month, year=year)
 
-    def get_from_to_dates(
-        self, month: int = None, year: int = None, **kwargs
-    ) -> Tuple[date, date]:
+    def get_from_to_dates(self, month: int = None, year: int = None, **kwargs) -> Tuple[date, date]:
         from_date = self.get_from_date(month=month, year=year, **kwargs)
         to_date = self.get_to_date(month=month, year=year, **kwargs)
         return from_date, to_date
@@ -259,9 +263,7 @@ class DateReportMixIn(MonthlyReportMixIn, ContextFromToDateMixin, DayMixin):
     def get_to_date(self, month: int = None, year: int = None, **kwargs) -> date:
         return self.get_date()
 
-    def get_from_to_dates(
-        self, month: int = None, year: int = None, **kwargs
-    ) -> Tuple[date, date]:
+    def get_from_to_dates(self, month: int = None, year: int = None, **kwargs) -> Tuple[date, date]:
         dt = self.get_from_date(month=month, year=year, **kwargs)
         return dt, dt
 
@@ -305,17 +307,50 @@ class FromToDatesParseMixIn:
 
 
 class SuccessUrlNextMixIn:
-    def has_next_url(self):
-        return self.request.GET.get('next') is not None
+    """
+    Optional post-form redirect via a ``?next=`` query parameter.
+
+    Only same-host relative/absolute URLs are accepted to prevent open redirects
+    that could leak session context to a third-party site.
+    """
+
+    def has_next_url(self) -> bool:
+        return self.get_safe_next_url() is not None
+
+    def get_safe_next_url(self) -> Optional[str]:
+        """Return ``next`` only when it targets this host; otherwise ``None``."""
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if not next_url:
+            return None
+        if url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={self.request.get_host()},
+            require_https=self.request.is_secure(),
+        ):
+            return next_url
+        return None
 
     def get_success_url(self):
-        next = self.request.GET.get('next')
-        if next:
-            return next
+        next_url = self.get_safe_next_url()
+        if next_url:
+            return next_url
         return reverse('django_ledger:home')
 
 
-class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
+class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """
+    Gatekeeper for entity-scoped views.
+
+    Requires an authenticated user and, when ``entity_slug`` is present in the
+    URL kwargs, verifies that the user is authorized for that entity via
+    ``EntityModel.objects.for_user``. On success, caches the entity on
+    ``self.AUTHORIZED_ENTITY_MODEL`` for downstream queryset scoping.
+
+    This is the primary defense against cross-entity data leaks: list/detail
+    querysets must further filter by the authorized entity (or by a related
+    FK that itself is entity-scoped).
+    """
+
     ENTITY_SLUG_URL_KWARG = 'entity_slug'
     ENTITY_MODEL_CONTEXT_NAME = 'entity_model'
     AUTHORIZE_SUPERUSER: bool = DJANGO_LEDGER_AUTHORIZED_SUPERUSER
@@ -327,9 +362,7 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[self.ENTITY_MODEL_CONTEXT_NAME] = self.get_authorized_entity_instance(
-            raise_exception=False
-        )
+        context[self.ENTITY_MODEL_CONTEXT_NAME] = self.get_authorized_entity_instance(raise_exception=False)
         return context
 
     def get_login_url(self):
@@ -357,10 +390,9 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
         if self.request.user.is_authenticated:
             if entity_slug_kwarg in self.kwargs:
                 try:
-                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(
-                        slug__exact=self.kwargs[entity_slug_kwarg]
-                    )
+                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
                 except ObjectDoesNotExist:
+                    # Unknown or unauthorized entity slug → deny (no leak via 404 detail).
                     return False
             return True
         return False
@@ -371,9 +403,7 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             authorized_superuser=self.get_superuser_authorization(),
         )
 
-    def get_authorized_entity_instance(
-        self, raise_exception: bool = True
-    ) -> Optional[EntityModel]:
+    def get_authorized_entity_instance(self, raise_exception: bool = True) -> Optional[EntityModel]:
         if self.AUTHORIZED_ENTITY_MODEL is None:
             if raise_exception:
                 raise Http404()
@@ -385,6 +415,151 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
         if not entity_model:
             return None
         return entity_model.name
+
+    def get_safe_next_url(self) -> Optional[str]:
+        """
+        Shared helper for action/redirect views that honor ``next``.
+
+        Accepts ``next`` from POST body or query string. Rejects off-host URLs
+        to avoid open-redirect phishing.
+        """
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if not next_url:
+            return None
+        if url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={self.request.get_host()},
+            require_https=self.request.is_secure(),
+        ):
+            return next_url
+        return None
+
+
+class DjangoLedgerActionView(RedirectView, SingleObjectMixin):
+    """
+    Reusable base for one-shot model actions triggered by UI buttons/forms
+    (mark as draft/approved/paid, lock/unlock ledgers, activate accounts, etc.).
+
+    Intended usage — mix this *after* an entity-secured queryset base::
+
+        class BaseBillActionView(BillModelModelBaseView, DjangoLedgerActionView):
+            pk_url_kwarg = 'bill_pk'
+            action_name = None  # set on each concrete Action subclass
+
+            def get_redirect_url(self, *args, **kwargs):
+                ...
+
+    HTTP methods:
+      * POST is always allowed and is the secure default (CSRF-protected).
+      * GET is allowed only when ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET`` is True,
+        so older templates and bookmarks can keep working during migration.
+
+    Behavior:
+      1. Require ``action_name`` (model method to invoke).
+      2. Optionally inject ``request.user`` into kwargs as ``user_model``.
+      3. Load the object from the entity-scoped queryset (SingleObjectMixin).
+      4. Call ``getattr(obj, action_name)(**action_kwargs)``.
+      5. Surface ``ValidationError`` as a Django error message; do not 500.
+      6. Redirect to ``get_redirect_url()``.
+
+    Subclasses customize via:
+      * ``action_name`` / ``commit``
+      * ``pass_user_model_to_kwargs`` — inject user into kwargs before the call
+      * ``action_extra_kwargs`` — fixed extras (e.g. verify=True)
+      * ``get_action_kwargs()`` — full control of call signature
+      * ``action_before_redirect`` — run the action before building the redirect
+        (needed when ``get_redirect_url`` depends on ``self.object``)
+      * ``handle_action_success()`` — optional success messaging
+    """
+
+    http_method_names = ['get', 'post'] if DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET else ['post']
+    action_name: Optional[str] = None
+    commit: bool = True
+    pass_user_model_to_kwargs: bool = True
+    action_extra_kwargs: Optional[Dict[str, Any]] = None
+    # When True, resolve the object and run the action before building the redirect.
+    action_before_redirect: bool = False
+
+    def get_action_name(self) -> str:
+        if not self.action_name:
+            raise ImproperlyConfigured(f'{self.__class__.__name__} requires the action_name attribute.')
+        return self.action_name
+
+    def get_action_kwargs(self, **kwargs) -> Dict[str, Any]:
+        """Build the keyword arguments passed to the model action method."""
+        action_kwargs = dict(kwargs)
+        action_kwargs['commit'] = self.commit
+        if self.action_extra_kwargs:
+            action_kwargs.update(self.action_extra_kwargs)
+        return action_kwargs
+
+    def execute_action(self, model_instance, **kwargs):
+        action_fn = getattr(model_instance, self.get_action_name())
+        return action_fn(**self.get_action_kwargs(**kwargs))
+
+    def handle_action_failure(self, request, exception: ValidationError):
+        messages.add_message(
+            request,
+            message=exception.message,
+            level=messages.ERROR,
+            extra_tags='is-danger',
+        )
+
+    def handle_action_success(self, request, model_instance):
+        """Optional hook after a successful action (e.g. flash a success message)."""
+        return None
+
+    def _prepare_action_kwargs(self, kwargs: dict) -> dict:
+        if self.pass_user_model_to_kwargs:
+            kwargs = dict(kwargs)
+            kwargs['user_model'] = self.request.user
+        return kwargs
+
+    def _run_action_with_messages(self, request, model_instance, **kwargs):
+        try:
+            self.execute_action(model_instance, **kwargs)
+        except ValidationError as e:
+            self.handle_action_failure(request, e)
+        else:
+            self.handle_action_success(request, model_instance)
+
+    def _build_redirect_response(self, *args, **kwargs):
+        """Mirror RedirectView.get without tying actions to the GET verb."""
+        url = self.get_redirect_url(*args, **kwargs)
+        if not url:
+            return HttpResponseGone()
+        if self.permanent:
+            return HttpResponsePermanentRedirect(url)
+        return HttpResponseRedirect(url)
+
+    def _handle_action(self, request, *args, **kwargs):
+        """Shared POST/GET action pipeline ending in a redirect response."""
+        self.get_action_name()
+        kwargs = self._prepare_action_kwargs(kwargs)
+
+        if self.action_before_redirect:
+            # Resolve object first so get_redirect_url can rely on self.object.
+            model_instance = self.get_object()
+            self.object = model_instance
+            self._run_action_with_messages(request, model_instance, **kwargs)
+            return self._build_redirect_response(*args, **kwargs)
+
+        # Match prior RedirectView ordering: resolve redirect URL first, then act.
+        response = self._build_redirect_response(*args, **kwargs)
+        model_instance = self.get_object()
+        self._run_action_with_messages(request, model_instance, **kwargs)
+        return response
+
+    def post(self, request, *args, **kwargs):
+        """Preferred entry point — CSRF-protected state change."""
+        return self._handle_action(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        """
+        Legacy entry point. Only registered when
+        ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET`` is True.
+        """
+        return self._handle_action(request, *args, **kwargs)
 
 
 class EntityUnitMixIn:
@@ -402,9 +577,7 @@ class EntityUnitMixIn:
         unit_slug = self.get_unit_slug()
         context['unit_slug'] = unit_slug
 
-        by_unit = any(
-            [True if unit_slug else False, self.request.GET.get('by_unit') is not None]
-        )
+        by_unit = any([True if unit_slug else False, self.request.GET.get('by_unit') is not None])
 
         context['by_unit'] = by_unit
         return context
@@ -454,9 +627,7 @@ class DigestContextMixIn:
             if self.IO_DIGEST_UNBOUNDED:
                 io_digest = io_model.digest(
                     user_model=self.request.user,
-                    entity_slug=io_model.entity_slug
-                    if isinstance(io_model, LedgerModel)
-                    else None,
+                    entity_slug=io_model.entity_slug if isinstance(io_model, LedgerModel) else None,
                     to_date=to_date,
                     unit_slug=unit_slug,
                     by_period=True if by_period else False,
@@ -466,9 +637,7 @@ class DigestContextMixIn:
                 )
 
                 context[self.get_io_manager_unbounded_context_name()] = io_digest
-                context[self.get_io_digest_unbounded_context_name()] = (
-                    io_digest.get_io_data()
-                )
+                context[self.get_io_digest_unbounded_context_name()] = io_digest.get_io_data()
 
             if self.IO_DIGEST_BOUNDED:
                 io_digest_equity = io_model.digest(
@@ -484,9 +653,7 @@ class DigestContextMixIn:
                 )
 
                 context[self.get_io_manager_bounded_context_name()] = io_digest_equity
-                context[self.get_io_digest_bounded_context_name()] = (
-                    io_digest_equity.get_io_data()
-                )
+                context[self.get_io_digest_bounded_context_name()] = io_digest_equity.get_io_data()
 
             # todo: how is this used??....
             context['date_filter'] = to_date
@@ -519,9 +686,7 @@ class UnpaidElementsMixIn:
 
             unit_slug = self.get_unit_slug()
             if unit_slug:
-                qs = qs.filter(
-                    ledger__journal_entries__entity_unit__slug__exact=unit_slug
-                )
+                qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
 
             return qs
 
@@ -542,9 +707,7 @@ class UnpaidElementsMixIn:
             unit_slug = self.get_unit_slug()
 
             if unit_slug:
-                qs = qs.filter(
-                    ledger__journal_entries__entity_unit__slug__exact=unit_slug
-                )
+                qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
 
             return qs
 
@@ -568,9 +731,7 @@ class BaseDateNavigationUrlMixIn:
         view_name_base = '-'.join(view_name.split('-')[:2])
         context['date_navigation_url'] = reverse(
             f'django_ledger:{view_name_base}',
-            kwargs={
-                k: v for k, v in self.kwargs.items() if k in self.BASE_DATE_URL_KWARGS
-            },
+            kwargs={k: v for k, v in self.kwargs.items() if k in self.BASE_DATE_URL_KWARGS},
         )
 
 
@@ -593,9 +754,7 @@ class PDFReportMixIn:
 
     def get_pdf_func_name(self):
         if not self.pdf_report_type:
-            raise NotImplementedError(
-                f'Must define pdf_report_type from {self.PDFReportEnum.__name__}'
-            )
+            raise NotImplementedError(f'Must define pdf_report_type from {self.PDFReportEnum.__name__}')
         return self.pdf_io_mixin_function_map[self.pdf_report_type]
 
     def get_pdf(self):
@@ -629,15 +788,10 @@ class PDFReportMixIn:
             bytes(pdf.output()),
             content_type='application/pdf',
         )
-        response.headers['Content-Disposition'] = (
-            f'attachment; filename={pdf.get_pdf_filename()}'
-        )
+        response.headers['Content-Disposition'] = f'attachment; filename={pdf.get_pdf_filename()}'
         return response
 
     def get(self, request, **kwargs):
-        if (
-            request.GET.get(self.pdf_format_query_param)
-            == self.pdf_format_query_param_value
-        ):
+        if request.GET.get(self.pdf_format_query_param) == self.pdf_format_query_param_value:
             return self.get_pdf_response()
         return super().get(request, **kwargs)

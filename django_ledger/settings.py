@@ -126,3 +126,9 @@ DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = getattr(settings, 'DJANGO_LEDGER_USE_DEP
 DJANGO_LEDGER_THEME = getattr(settings, 'DJANGO_LEDGER_THEME', 'litera')
 DJANGO_LEDGER_DB_ROUTER_HINT_KEY = getattr(settings, 'DJANGO_LEDGER_DB_ROUTER_HINT_KEY', 'djl_db_router')
 DJANGO_LEDGER_DB_ROUTING_ALIAS = getattr(settings, 'DJANGO_LEDGER_DB_ROUTING_ALIAS', None)
+
+# When False (default), DjangoLedgerActionView accepts POST only (CSRF-protected).
+# Set True to keep legacy GET-based action links/bookmarks working during migration.
+DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET = getattr(
+    settings, 'DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET', False
+)

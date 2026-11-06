@@ -4,41 +4,63 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Journal Entry views grouped by CRUD + Actions.
+
+  * CREATE   — JournalEntryCreateView
+  * RETRIEVE — List / Year / Month, DetailView, TXS detail
+  * UPDATE   — JournalEntryUpdateView
+  * DELETE   — JournalEntryDeleteView
+  * ACTIONS  — post / unpost / lock / unlock via BaseJournalEntryActionView
+
+Journal entries are always scoped to a ledger that belongs to the authorized entity.
 """
+
 from typing import Optional
 
 from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseForbidden
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
-    ArchiveIndexView, DeleteView
+    YearArchiveView,
+    MonthArchiveView,
+    DetailView,
+    UpdateView,
+    CreateView,
+    ArchiveIndexView,
+    DeleteView,
 )
-from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.journal_entry import (
     JournalEntryModelUpdateForm,
     JournalEntryModelCannotEditForm,
-    JournalEntryModelCreateForm
+    JournalEntryModelCreateForm,
 )
 from django_ledger.forms.transactions import get_transactionmodel_formset_class
 from django_ledger.io.io_core import get_localtime
 from django_ledger.models import EntityModel, LedgerModel
-from django_ledger.models.journal_entry import JournalEntryModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
+from django_ledger.models.journal_entry import JournalEntryModel, JournalEntryModelQuerySet
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionView
 
 
 class JournalEntryModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """
+    Entity- and ledger-scoped journal-entry queryset shared by all JE
+    CRUD/action views. Resolves the parent ledger from the authorized entity,
+    then exposes that ledger's journal entries only.
+    """
+
+    queryset: Optional[JournalEntryModelQuerySet] = None
     ledger_model: Optional[LedgerModel] = None
 
-    def get_queryset(self):
+    def get_queryset(self) -> JournalEntryModelQuerySet:
         if self.queryset is None:
             ledger_model: LedgerModel = self.get_ledger_model()
-            journal_entry_queryset = ledger_model.journal_entries.select_related('entity_unit', 'ledger', 'ledger__entity').order_by('-timestamp')
-            self.queryset = journal_entry_queryset
+            qs: JournalEntryModelQuerySet = ledger_model.journal_entries.select_related(
+                'entity_unit', 'ledger', 'ledger__entity'
+            ).order_by('-timestamp')
+            self.queryset = qs
         return self.queryset
 
     def get_ledger_model(self) -> LedgerModel:
@@ -49,13 +71,13 @@ class JournalEntryModelModelBaseView(DjangoLedgerSecurityMixIn):
 
 
 # JE Views ---
+# -----------------
+# CREATE
+# -----------------
 class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
     template_name = 'django_ledger/journal_entry/je_create.html'
     PAGE_TITLE = _('Create Journal Entry')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
     ledger_model: Optional[LedgerModel] = None
 
     def get_context_data(self, **kwargs):
@@ -71,13 +93,11 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
         return JournalEntryModelCreateForm(
             entity_model=self.get_authorized_entity_instance(),
             ledger_model=self.get_ledger_model(),
-            **self.get_form_kwargs()
+            **self.get_form_kwargs(),
         )
 
     def get_initial(self):
-        return {
-            'timestamp': get_localtime()
-        }
+        return {'timestamp': get_localtime()}
 
     def get_success_url(self):
         ledger_model = self.get_ledger_model()
@@ -85,6 +105,9 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
 
 
 # ARCHIVE VIEWS START....
+# -----------------
+# RETRIEVE (List)
+# -----------------
 class JournalEntryListView(JournalEntryModelModelBaseView, ArchiveIndexView):
     context_object_name = 'journal_entry_qs'
     template_name = 'django_ledger/journal_entry/je_list.html'
@@ -106,10 +129,12 @@ class JournalEntryListView(JournalEntryModelModelBaseView, ArchiveIndexView):
         context['header_subtitle_icon'] = 'bi:journal-check'
 
         if ledger_model.is_locked():
-            messages.add_message(self.request,
-                                 message=_('Locked Journal Entry. Must unlock ledger to add new Journal Entries.'),
-                                 level=messages.WARNING,
-                                 extra_tags='is-warning')
+            messages.add_message(
+                self.request,
+                message=_('Locked Journal Entry. Must unlock ledger to add new Journal Entries.'),
+                level=messages.WARNING,
+                extra_tags='is-warning',
+            )
         return context
 
 
@@ -124,15 +149,16 @@ class JournalEntryMonthListView(JournalEntryListView, MonthArchiveView):
 
 # ARCHIVE VIEWS END....
 
+
+# -----------------
+# UPDATE
+# -----------------
 class JournalEntryUpdateView(JournalEntryModelModelBaseView, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_update.html'
     pk_url_kwarg = 'je_pk'
     PAGE_TITLE = _('Update Journal Entry')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
 
     def get_form_class(self, form_class=None):
         je_model: JournalEntryModel = self.object
@@ -145,20 +171,22 @@ class JournalEntryUpdateView(JournalEntryModelModelBaseView, UpdateView):
         return je_model.get_journal_entry_list_url()
 
 
+# -----------------
+# RETRIEVE (Detail)
+# -----------------
 class JournalEntryDetailView(JournalEntryModelModelBaseView, DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_detail.html'
     slug_url_kwarg = 'je_pk'
     slug_field = 'uuid'
     PAGE_TITLE = _('Journal Entry Detail')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'bi:journal-plus'
-    }
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE, 'header_subtitle_icon': 'bi:journal-plus'}
     http_method_names = ['get']
 
 
+# -----------------
+# DELETE
+# -----------------
 class JournalEntryDeleteView(JournalEntryModelModelBaseView, DeleteView):
     template_name = 'django_ledger/journal_entry/je_delete.html'
     context_object_name = 'je_model'
@@ -174,10 +202,7 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
     template_name = 'django_ledger/journal_entry/je_detail_txs.html'
     PAGE_TITLE = _('Edit Transactions')
     pk_url_kwarg = 'je_pk'
-    extra_context = {
-        'header_title': PAGE_TITLE,
-        'page_title': PAGE_TITLE
-    }
+    extra_context = {'header_title': PAGE_TITLE, 'page_title': PAGE_TITLE}
     context_object_name = 'journal_entry'
 
     def get_queryset(self):
@@ -188,10 +213,12 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
         context = super().get_context_data(**kwargs)
         je_model: JournalEntryModel = self.object
         if je_model.is_locked():
-            messages.add_message(self.request,
-                                 message=_('Locked Journal Entry. Must unlock to Edit.'),
-                                 level=messages.WARNING,
-                                 extra_tags='is-warning')
+            messages.add_message(
+                self.request,
+                message=_('Locked Journal Entry. Must unlock to Edit.'),
+                level=messages.WARNING,
+                extra_tags='is-warning',
+            )
         if not txs_formset:
             TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
             context['txs_formset'] = TransactionModelFormSet(
@@ -211,22 +238,23 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
         self.object = je_model
 
         TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
-        txs_formset = TransactionModelFormSet(request.POST,
-                                              entity_model=self.get_authorized_entity_instance(),
-                                              je_model=je_model)
+        txs_formset = TransactionModelFormSet(
+            request.POST, entity_model=self.get_authorized_entity_instance(), je_model=je_model
+        )
 
         if je_model.locked:
-            messages.add_message(self.request,
-                                 message=_('Cannot update a Locked Journal Entry.'),
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
+            messages.add_message(
+                self.request,
+                message=_('Cannot update a Locked Journal Entry.'),
+                level=messages.ERROR,
+                extra_tags='is-danger',
+            )
             return self.render_to_response(context=self.get_context_data(txs_formset=txs_formset))
 
         if not je_model.posted:
-            messages.add_message(self.request,
-                                 message=_('Journal Entry has not been posted.'),
-                                 level=messages.INFO,
-                                 extra_tags='is-info')
+            messages.add_message(
+                self.request, message=_('Journal Entry has not been posted.'), level=messages.INFO, extra_tags='is-info'
+            )
 
         if txs_formset.is_valid():
             txs_list = txs_formset.save(commit=False)
@@ -238,54 +266,66 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
             txs_formset.save()
             messages.add_message(request, messages.SUCCESS, 'Successfully saved transactions.', extra_tags='is-success')
         else:
-            messages.add_message(request,
-                                 messages.ERROR,
-                                 'Hmmm, this doesn\'t add up!. Check your math!',
-                                 extra_tags='is-danger')
+            messages.add_message(
+                request, messages.ERROR, "Hmmm, this doesn't add up!. Check your math!", extra_tags='is-danger'
+            )
             self.render_to_response(context=self.get_context_data(txs_formset=txs_formset))
         return self.render_to_response(context=self.get_context_data())
 
 
-# ACTION VIEWS...
-class BaseJournalEntryActionView(
-    JournalEntryModelModelBaseView,
-    RedirectView,
-    SingleObjectMixin
-):
-    http_method_names = ['get']
+# -----------------
+# ACTIONS (post / lock)
+# -----------------
+class BaseJournalEntryActionView(JournalEntryModelModelBaseView, DjangoLedgerActionView):
+    """
+    Shared journal-entry action endpoint.
+
+    Concrete subclasses set ``action_name`` (post, unpost, lock, or unlock).
+    Scoped to the authorized entity and parent ledger. Always calls the model
+    method with ``verify=True`` and ``raise_exception=True``. Redirects to a
+    safe ``next`` target when provided; otherwise returns to the JE list.
+    Requires POST by default (see ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET``).
+    """
+
     pk_url_kwarg = 'je_pk'
-    action_name = None
-    commit = True
+    action_extra_kwargs = {
+        'verify': True,
+        'raise_exception': True,
+    }
 
     def get_queryset(self):
-        return JournalEntryModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        ).for_ledger(ledger_pk=self.kwargs['ledger_pk'])
+        return JournalEntryModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL).for_ledger(
+            ledger_pk=self.kwargs['ledger_pk']
+        )
 
     def get_redirect_url(self, *args, **kwargs):
-        next_url = self.request.GET.get('next')
+        next_url = self.get_safe_next_url()
         if next_url:
             return next_url
-        return reverse('django_ledger:je-list',
-                       kwargs={
-                           'entity_slug': kwargs['entity_slug'],
-                           'ledger_pk': kwargs['ledger_pk']
-                       })
+        return reverse(
+            'django_ledger:je-list', kwargs={'entity_slug': kwargs['entity_slug'], 'ledger_pk': kwargs['ledger_pk']}
+        )
 
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseJournalEntryActionView, self).get(request, *args, **kwargs)
-        je_model: BaseJournalEntryActionView = self.get_object()
 
-        try:
-            getattr(je_model, self.action_name)(commit=self.commit,
-                                                verify=True,
-                                                raise_exception=True, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+class JournalEntryActionMarkAsPostedView(BaseJournalEntryActionView):
+    """Posts the journal entry after verifying it is balanced and ready."""
+
+    action_name = 'mark_as_posted'
+
+
+class JournalEntryActionMarkAsUnpostedView(BaseJournalEntryActionView):
+    """Unposts the journal entry so it can be edited again."""
+
+    action_name = 'mark_as_unposted'
+
+
+class JournalEntryActionMarkAsLockedView(BaseJournalEntryActionView):
+    """Locks the journal entry to prevent further transaction edits."""
+
+    action_name = 'mark_as_locked'
+
+
+class JournalEntryActionMarkAsUnlockedView(BaseJournalEntryActionView):
+    """Unlocks the journal entry so its transactions can be modified."""
+
+    action_name = 'mark_as_unlocked'

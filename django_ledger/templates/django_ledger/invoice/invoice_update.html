@@ -87,12 +87,15 @@
                                            href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                             {% trans 'Ledger Journal Entries' %}
                                         </a>
-                                        <a href="{% url "django_ledger:invoice-action-lock-ledger" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                                           class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Ledger' %}</a>
-                                        <a href="{% url "django_ledger:invoice-action-unlock-ledger" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Ledger' %}</a>
-                                        <a href="{% url "django_ledger:invoice-action-force-migrate" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate' %}</a>
+                                        {% url "django_ledger:invoice-action-lock-ledger" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid as inv_lock_ledger_url %}
+                                        {% trans 'Lock Ledger' as inv_lock_ledger_label %}
+                                        <div class="mt-2">{% djl_action_button inv_lock_ledger_url inv_lock_ledger_label 'button is-small is-success is-fullwidth' %}</div>
+                                        {% url "django_ledger:invoice-action-unlock-ledger" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid as inv_unlock_ledger_url %}
+                                        {% trans 'Unlock Ledger' as inv_unlock_ledger_label %}
+                                        <div class="mt-2">{% djl_action_button inv_unlock_ledger_url inv_unlock_ledger_label 'button is-small is-danger is-fullwidth' %}</div>
+                                        {% url "django_ledger:invoice-action-force-migrate" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid as inv_force_migrate_url %}
+                                        {% trans 'Force Migrate' as inv_force_migrate_label %}
+                                        <div class="mt-2">{% djl_action_button inv_force_migrate_url inv_force_migrate_label 'button is-small is-danger is-fullwidth' %}</div>
                                     </div>
                                 </div>
                             </div>

@@ -1,43 +1,61 @@
 """
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Account views grouped by CRUD + Actions.
+
+  * CREATE   — AccountModelCreateView
+  * RETRIEVE — AccountModelListView, detail / date report views
+  * UPDATE   — AccountModelUpdateView
+  * ACTIONS  — activate / deactivate / lock / unlock via BaseAccountModelActionView
 """
 
+from typing import Optional
+
 from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
-from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, ChartOfAccountModel
-from django_ledger.models.accounts import AccountModel
+from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.views.mixins import (
-    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn,
-    BaseDateNavigationUrlMixIn, EntityUnitMixIn, DateReportMixIn
+    YearlyReportMixIn,
+    MonthlyReportMixIn,
+    QuarterlyReportMixIn,
+    DjangoLedgerSecurityMixIn,
+    BaseDateNavigationUrlMixIn,
+    EntityUnitMixIn,
+    DateReportMixIn,
+    DjangoLedgerActionView,
 )
 
 
-class BaseAccountModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
-    coa_model = None
+class AccountModelModelBaseView(DjangoLedgerSecurityMixIn):
+    """
+    Entity- and CoA-scoped account queryset shared by all account CRUD/action
+    and report views.
+    """
+
+    queryset: Optional[AccountModelQuerySet] = None
+    coa_model: Optional[ChartOfAccountModel] = None
 
     def get_authorized_entity_queryset(self):
         qs = super().get_authorized_entity_queryset()
         return qs.select_related('admin', 'default_coa', 'default_coa__entity')
 
-    def get_coa_model(self):
+    def get_coa_model(self) -> ChartOfAccountModel:
         if not self.coa_model:
             entity_model: EntityModel = self.get_authorized_entity_instance()
             self.coa_model = entity_model.chartofaccountmodel_set.get(slug__exact=self.kwargs['coa_slug'])
         return self.coa_model
 
-    def get_queryset(self):
+    def get_queryset(self) -> AccountModelQuerySet:
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
             coa_slug = self.kwargs['coa_slug']
@@ -45,25 +63,21 @@ class BaseAccountModelBaseView(DjangoLedgerSecurityMixIn):
             coa_model, account_model_qs = entity_model.get_coa_accounts(
                 coa_model=entity_model.default_coa if coa_slug == entity_model.default_coa_slug else coa_slug,
                 return_coa_model=True,
-                active=False
+                active=False,
             )
 
             search = self.request.GET.get('q')
             if search:
-                account_model_qs = account_model_qs.filter(
-                    Q(code__icontains=search) |
-                    Q(name__icontains=search)
-                )
+                account_model_qs = account_model_qs.filter(Q(code__icontains=search) | Q(name__icontains=search))
 
-            account_model_qs = account_model_qs.select_related(
-                'coa_model',
-                'coa_model__entity'
-            ).order_by(
-                'coa_model', 'role', 'code'
-            ).not_coa_root()
+            qs: AccountModelQuerySet = (
+                account_model_qs.select_related('coa_model', 'coa_model__entity')
+                .order_by('coa_model', 'role', 'code')
+                .not_coa_root()
+            )
 
             self.coa_model = coa_model
-            self.queryset = account_model_qs
+            self.queryset = qs
 
         return super().get_queryset()
 
@@ -73,15 +87,16 @@ class BaseAccountModelBaseView(DjangoLedgerSecurityMixIn):
         return context
 
 
-# Account Views ----
-class AccountModelListView(BaseAccountModelBaseView, ListView):
+# -----------------
+# RETRIEVE (List)
+# -----------------
+class AccountModelListView(AccountModelModelBaseView, ListView):
+    """Lists CoA accounts for the authorized entity (optional active-only filter)."""
+
     template_name = 'django_ledger/account/account_list.html'
     context_object_name = 'accounts'
     PAGE_TITLE = _('Entity Accounts')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE}
     active_only = False
 
     def get_context_data(self, **kwargs):
@@ -107,21 +122,20 @@ class AccountModelListView(BaseAccountModelBaseView, ListView):
         return response
 
 
-class AccountModelCreateView(BaseAccountModelBaseView, CreateView):
+# -----------------
+# CREATE
+# -----------------
+class AccountModelCreateView(AccountModelModelBaseView, CreateView):
     template_name = 'django_ledger/account/account_create.html'
     PAGE_TITLE = _('Create Account')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'ic:twotone-account-tree'
-
+        'header_subtitle_icon': 'ic:twotone-account-tree',
     }
 
     def get_form(self, form_class=None):
-        return AccountModelCreateForm(
-            coa_model=self.get_coa_model(),
-            **self.get_form_kwargs()
-        )
+        return AccountModelCreateForm(coa_model=self.get_coa_model(), **self.get_form_kwargs())
 
     def get_initial(self):
         return {
@@ -146,7 +160,10 @@ class AccountModelCreateView(BaseAccountModelBaseView, CreateView):
         return coa_model.get_account_list_url()
 
 
-class AccountModelUpdateView(BaseAccountModelBaseView, UpdateView):
+# -----------------
+# UPDATE
+# -----------------
+class AccountModelUpdateView(AccountModelModelBaseView, UpdateView):
     context_object_name = 'account'
     template_name = 'django_ledger/account/account_update.html'
     slug_url_kwarg = 'account_pk'
@@ -165,48 +182,48 @@ class AccountModelUpdateView(BaseAccountModelBaseView, UpdateView):
         return coa_model.get_account_list_url()
 
 
-class AccountModelDetailView(BaseAccountModelBaseView, RedirectView):
-
+class AccountModelDetailView(AccountModelModelBaseView, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         loc_date = get_localdate()
         entity_model: EntityModel = self.get_authorized_entity_instance()
-        return reverse('django_ledger:account-detail-month',
-                       kwargs={
-                           'entity_slug': entity_model.slug,
-                           'account_pk': self.kwargs['account_pk'],
-                           'coa_slug': self.kwargs['coa_slug'],
-                           'year': loc_date.year,
-                           'month': loc_date.month,
-                       })
+        return reverse(
+            'django_ledger:account-detail-month',
+            kwargs={
+                'entity_slug': entity_model.slug,
+                'account_pk': self.kwargs['account_pk'],
+                'coa_slug': self.kwargs['coa_slug'],
+                'year': loc_date.year,
+                'month': loc_date.month,
+            },
+        )
 
 
-class AccountModelYearDetailView(BaseAccountModelBaseView,
-                                 BaseDateNavigationUrlMixIn,
-                                 EntityUnitMixIn,
-                                 YearlyReportMixIn,
-                                 DetailView):
+class AccountModelYearDetailView(
+    AccountModelModelBaseView, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn, DetailView
+):
     context_object_name = 'account'
     template_name = 'django_ledger/account/account_detail.html'
     slug_url_kwarg = 'account_pk'
     slug_field = 'uuid'
     DEFAULT_TXS_DAYS = 30
-    extra_context = {
-        'DEFAULT_TXS_DAYS': DEFAULT_TXS_DAYS,
-        'header_subtitle_icon': 'ic:round-account-tree'
-    }
+    extra_context = {'DEFAULT_TXS_DAYS': DEFAULT_TXS_DAYS, 'header_subtitle_icon': 'ic:round-account-tree'}
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         account_model: AccountModel = context['object']
         context['header_title'] = f'Account {account_model.code} - {account_model.name}'
         context['page_title'] = f'Account {account_model.code} - {account_model.name}'
-        txs_qs = account_model.transactionmodel_set.all().not_closing_entry().posted().order_by(
-            'journal_entry__timestamp'
-        ).select_related(
-            'journal_entry',
-            'journal_entry__entity_unit',
-            'journal_entry__ledger__billmodel',
-            'journal_entry__ledger__invoicemodel',
+        txs_qs = (
+            account_model.transactionmodel_set.all()
+            .not_closing_entry()
+            .posted()
+            .order_by('journal_entry__timestamp')
+            .select_related(
+                'journal_entry',
+                'journal_entry__entity_unit',
+                'journal_entry__ledger__billmodel',
+                'journal_entry__ledger__invoicemodel',
+            )
         )
         txs_qs = txs_qs.from_date(self.get_from_date())
         txs_qs = txs_qs.to_date(self.get_to_date())
@@ -232,33 +249,44 @@ class AccountModelDateDetailView(AccountModelYearDetailView, DateReportMixIn):
     """
 
 
-# ACTIONS...
-class BaseAccountModelActionView(BaseAccountModelBaseView,
-                                 RedirectView,
-                                 SingleObjectMixin):
-    http_method_names = ['get']
+# -----------------
+# ACTIONS (activate / lock)
+# -----------------
+class BaseAccountModelActionView(AccountModelModelBaseView, DjangoLedgerActionView):
+    """
+    Shared account action endpoint.
+
+    Concrete subclasses set ``action_name``. After the mutation, the user is
+    redirected to the CoA account list. Requires POST unless
+    ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET`` is enabled.
+    """
+
     pk_url_kwarg = 'account_pk'
-    action_name = None
-    commit = True
 
     def get_redirect_url(self, *args, **kwargs):
         account_model: AccountModel = self.get_object()
         return account_model.get_coa_account_list_url()
 
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseAccountModelActionView, self).get(request, *args, **kwargs)
-        account_model: AccountModel = self.get_object()
 
-        try:
-            getattr(account_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(
-                request,
-                message=e.message,
-                level=messages.ERROR,
-                extra_tags='is-danger'
-            )
-        return response
+class AccountModelActionActivateView(BaseAccountModelActionView):
+    """Activates an account so it can receive new journal entry activity."""
+
+    action_name = 'activate'
+
+
+class AccountModelActionDeactivateView(BaseAccountModelActionView):
+    """Deactivates an account without deleting its historical balances."""
+
+    action_name = 'deactivate'
+
+
+class AccountModelActionLockView(BaseAccountModelActionView):
+    """Locks an account to prevent further postings against it."""
+
+    action_name = 'lock'
+
+
+class AccountModelActionUnlockView(BaseAccountModelActionView):
+    """Unlocks a previously locked account so postings can resume."""
+
+    action_name = 'unlock'

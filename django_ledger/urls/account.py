@@ -36,15 +36,15 @@ urlpatterns = [
 
     # Account Actions...
     path('<slug:entity_slug>/<slug:coa_slug>/action/<uuid:account_pk>/activate/',
-         views.BaseAccountModelActionView.as_view(action_name='activate'),
+         views.AccountModelActionActivateView.as_view(),
          name='account-action-activate'),
     path('<slug:entity_slug>/<slug:coa_slug>/action/<uuid:account_pk>/deactivate/',
-         views.BaseAccountModelActionView.as_view(action_name='deactivate'),
+         views.AccountModelActionDeactivateView.as_view(),
          name='account-action-deactivate'),
     path('<slug:entity_slug>/<slug:coa_slug>/action/<uuid:account_pk>/lock/',
-         views.BaseAccountModelActionView.as_view(action_name='lock'),
+         views.AccountModelActionLockView.as_view(),
          name='account-action-lock'),
     path('<slug:entity_slug>/<slug:coa_slug>/action/<uuid:account_pk>/unlock/',
-         views.BaseAccountModelActionView.as_view(action_name='unlock'),
+         views.AccountModelActionUnlockView.as_view(),
          name='account-action-unlock')
 ]

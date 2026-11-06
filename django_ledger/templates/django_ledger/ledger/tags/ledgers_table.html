@@ -1,6 +1,6 @@
 {% now "Y" as current_year %}
-{% load icon from django_ledger %}
-{% load trans from i18n %}
+{% load django_ledger %}
+{% load i18n %}
 
 <div class="box">
     <div class="table-container">
@@ -116,47 +116,35 @@
                                     </a>
                                     <hr class="dropdown-divider">
                                     {% if ledger_model.can_lock %}
-                                        <a href="{% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-info">
-                                            <span class="icon is-small mr-2">{% icon 'bi:lock-fill' 16 %}</span>
-                                            {% trans 'Lock' %}
-                                        </a>
+                                        {% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger_model.uuid as ledger_lock_url %}
+                                        {% trans 'Lock' as ledger_lock_label %}
+                                        {% djl_action_button ledger_lock_url ledger_lock_label 'dropdown-item has-text-info' 'bi:lock-fill' 16 current_path %}
                                     {% endif %}
                                     {% if ledger_model.can_unlock %}
-                                        <a href="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-warning">
-                                            <span class="icon is-small mr-2">{% icon 'bi:unlock-fill' 16 %}</span>
-                                            {% trans 'UnLock' %}
-                                        </a>
+                                        {% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger_model.uuid as ledger_unlock_url %}
+                                        {% trans 'UnLock' as ledger_unlock_label %}
+                                        {% djl_action_button ledger_unlock_url ledger_unlock_label 'dropdown-item has-text-warning' 'bi:unlock-fill' 16 current_path %}
                                     {% endif %}
                                     {% if ledger_model.can_post %}
-                                        <a href="{% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-info">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-upload-fill' 16 %}</span>
-                                            {% trans 'Post' %}
-                                        </a>
+                                        {% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger_model.uuid as ledger_post_url %}
+                                        {% trans 'Post' as ledger_post_label %}
+                                        {% djl_action_button ledger_post_url ledger_post_label 'dropdown-item has-text-info' 'bi:cloud-upload-fill' 16 current_path %}
                                     {% endif %}
                                     {% if ledger_model.can_unpost %}
-                                        <a href="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-warning">
-                                            <span class="icon is-small mr-2">{% icon 'bi:cloud-download-fill' 16 %}</span>
-                                            {% trans 'UnPost' %}
-                                        </a>
+                                        {% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger_model.uuid as ledger_unpost_url %}
+                                        {% trans 'UnPost' as ledger_unpost_label %}
+                                        {% djl_action_button ledger_unpost_url ledger_unpost_label 'dropdown-item has-text-warning' 'bi:cloud-download-fill' 16 current_path %}
                                     {% endif %}
 
                                     {% if ledger_model.can_hide %}
-                                        <a href="{% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-warning">
-                                            <span class="icon is-small mr-2">{% icon 'bi:eye-slash-fill' 16 %}</span>
-                                            {% trans 'Hide' %}
-                                        </a>
+                                        {% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger_model.uuid as ledger_hide_url %}
+                                        {% trans 'Hide' as ledger_hide_label %}
+                                        {% djl_action_button ledger_hide_url ledger_hide_label 'dropdown-item has-text-warning' 'bi:eye-slash-fill' 16 current_path %}
                                     {% endif %}
                                     {% if ledger_model.can_unhide %}
-                                        <a href="{% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}?next={{ current_path }}"
-                                           class="dropdown-item has-text-info">
-                                            <span class="icon is-small mr-2">{% icon 'bi:eye-fill' 16 %}</span>
-                                            {% trans 'UnHide' %}
-                                        </a>
+                                        {% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger_model.uuid as ledger_unhide_url %}
+                                        {% trans 'UnHide' as ledger_unhide_label %}
+                                        {% djl_action_button ledger_unhide_url ledger_unhide_label 'dropdown-item has-text-info' 'bi:eye-fill' 16 current_path %}
                                     {% endif %}
 
                                     {% if ledger_model.can_delete %}

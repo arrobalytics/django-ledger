@@ -4,20 +4,35 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Bill views grouped by CRUD + Actions.
+
+  * CREATE   — BillModelCreateView
+  * RETRIEVE — BillModelListView / Year / Month, BillModelDetailView
+  * UPDATE   — BillModelUpdateView (and item-update variant)
+  * DELETE   — status-driven via Actions (mark_as_delete)
+  * ACTIONS  — BaseBillActionView and mark-as-* / ledger lock helpers
+
+All querysets are scoped to the authorized entity via BillModelModelBaseView.
 """
 
+from typing import Optional
+
 from django.contrib import messages
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    UpdateView, CreateView, ArchiveIndexView, MonthArchiveView, YearArchiveView,
-    DetailView, RedirectView
+    UpdateView,
+    CreateView,
+    ArchiveIndexView,
+    MonthArchiveView,
+    YearArchiveView,
+    DetailView,
 )
-from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import (
     BillModelCreateForm,
@@ -28,18 +43,20 @@ from django_ledger.forms.bill import (
     InReviewBillModelUpdateForm,
     ApprovedBillModelUpdateForm,
     AccruedAndApprovedBillModelUpdateForm,
-    PaidBillModelUpdateForm
+    PaidBillModelUpdateForm,
 )
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, PurchaseOrderModel, EstimateModel, BillModelQuerySet
 from django_ledger.models.bill import BillModel
-from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, DjangoLedgerActionView
 
 
 class BillModelModelBaseView(DjangoLedgerSecurityMixIn):
-    queryset = None
+    """Entity-scoped bill queryset shared by all bill CRUD/action views."""
 
-    def get_queryset(self):
+    queryset: Optional[BillModelQuerySet] = None
+
+    def get_queryset(self) -> BillModelQuerySet:
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
             qs: BillModelQuerySet = entity_model.get_bills()
@@ -47,14 +64,13 @@ class BillModelModelBaseView(DjangoLedgerSecurityMixIn):
         return super().get_queryset()
 
 
+# -----------------
+# CREATE
+# -----------------
 class BillModelCreateView(BillModelModelBaseView, CreateView):
     template_name = 'django_ledger/bills/bill_create.html'
     PAGE_TITLE = _('Create Bill')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'uil:bill'
-    }
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE, 'header_subtitle_icon': 'uil:bill'}
     for_purchase_order = False
     for_estimate = False
 
@@ -89,61 +105,50 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                 entity_model=self.kwargs['entity_slug'],
             ).prefetch_related('itemtransactionmodel_set')
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
-            po_itemtxs_qs = po_model.itemtransactionmodel_set.filter(
-                bill_model__isnull=True,
-                uuid__in=po_item_uuids
-            )
+            po_itemtxs_qs = po_model.itemtransactionmodel_set.filter(bill_model__isnull=True, uuid__in=po_item_uuids)
             context['po_model'] = po_model
             context['po_itemtxs_qs'] = po_itemtxs_qs
-            form_action = reverse('django_ledger:bill-create-po',
-                                  kwargs={
-                                      'entity_slug': self.kwargs['entity_slug'],
-                                      'po_pk': po_model.uuid
-                                  }) + f'?item_uuids={po_item_uuids_qry_param}'
-        elif self.for_estimate:
-            estimate_qs = EstimateModel.objects.for_entity(
-                entity_model=self.AUTHORIZED_ENTITY_MODEL
+            form_action = (
+                reverse(
+                    'django_ledger:bill-create-po',
+                    kwargs={'entity_slug': self.kwargs['entity_slug'], 'po_pk': po_model.uuid},
+                )
+                + f'?item_uuids={po_item_uuids_qry_param}'
             )
+        elif self.for_estimate:
+            estimate_qs = EstimateModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL)
             estimate_uuid = self.kwargs['ce_pk']
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=estimate_uuid)
-            form_action = reverse('django_ledger:bill-create-estimate',
-                                  kwargs={
-                                      'entity_slug': self.kwargs['entity_slug'],
-                                      'ce_pk': estimate_model.uuid
-                                  })
+            form_action = reverse(
+                'django_ledger:bill-create-estimate',
+                kwargs={'entity_slug': self.kwargs['entity_slug'], 'ce_pk': estimate_model.uuid},
+            )
         else:
-            form_action = reverse('django_ledger:bill-create',
-                                  kwargs={
-                                      'entity_slug': self.kwargs['entity_slug'],
-                                  })
+            form_action = reverse(
+                'django_ledger:bill-create',
+                kwargs={
+                    'entity_slug': self.kwargs['entity_slug'],
+                },
+            )
         context['form_action_url'] = form_action
         return context
 
     def get_initial(self):
-        return {
-            'date_draft': get_localdate()
-        }
+        return {'date_draft': get_localdate()}
 
     def get_form(self, form_class=None):
         entity_model: EntityModel = self.get_authorized_entity_instance()
-        return BillModelCreateForm(
-            entity_model=entity_model,
-            **self.get_form_kwargs()
-        )
+        return BillModelCreateForm(entity_model=entity_model, **self.get_form_kwargs())
 
     def form_valid(self, form):
         bill_model: BillModel = form.save(commit=False)
         ledger_model, bill_model = bill_model.configure(
-            entity_slug=self.AUTHORIZED_ENTITY_MODEL.slug,
-            user_model=self.request.user,
-            commit_ledger=True
+            entity_slug=self.AUTHORIZED_ENTITY_MODEL.slug, user_model=self.request.user, commit_ledger=True
         )
 
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
-            estimate_model_qs = EstimateModel.objects.for_entity(
-                entity_model=self.kwargs['entity_slug']
-            )
+            estimate_model_qs = EstimateModel.objects.for_entity(entity_model=self.kwargs['entity_slug'])
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             bill_model.bind_estimate(estimate_model=estimate_model, commit=False)
@@ -162,10 +167,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
             try:
                 bill_model.can_bind_po(po_model, raise_exception=True)
             except ValidationError as e:
-                messages.add_message(self.request,
-                                     message=e.message,
-                                     level=messages.ERROR,
-                                     extra_tags='is-danger')
+                messages.add_message(self.request, message=e.message, level=messages.ERROR, extra_tags='is-danger')
                 return self.render_to_response(self.get_context_data(form=form))
 
             po_model_items_qs = po_model.itemtransactionmodel_set.filter(uuid__in=item_uuids)
@@ -186,26 +188,22 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
         entity_slug = self.kwargs['entity_slug']
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
-            return reverse('django_ledger:po-update',
-                           kwargs={
-                               'entity_slug': entity_slug,
-                               'po_pk': po_pk
-                           })
+            return reverse('django_ledger:po-update', kwargs={'entity_slug': entity_slug, 'po_pk': po_pk})
         elif self.for_estimate:
-            return reverse('django_ledger:customer-estimate-detail',
-                           kwargs={
-                               'entity_slug': entity_slug,
-                               'ce_pk': self.kwargs['ce_pk']
-                           })
+            return reverse(
+                'django_ledger:customer-estimate-detail',
+                kwargs={'entity_slug': entity_slug, 'ce_pk': self.kwargs['ce_pk']},
+            )
         bill_model: BillModel = self.object
-        return reverse('django_ledger:bill-detail',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': bill_model.uuid
-                       })
+        return reverse('django_ledger:bill-detail', kwargs={'entity_slug': entity_slug, 'bill_pk': bill_model.uuid})
 
 
+# -----------------
+# RETRIEVE (List / Detail)
+# -----------------
 class BillModelListView(BillModelModelBaseView, ArchiveIndexView):
+    """Paginated archive of bills for the authorized entity."""
+
     template_name = 'django_ledger/bills/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
@@ -216,11 +214,7 @@ class BillModelListView(BillModelModelBaseView, ArchiveIndexView):
     paginate_orphans = 2
     allow_empty = True
     ordering = '-updated'
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'uil:bill'
-    }
+    extra_context = {'page_title': PAGE_TITLE, 'header_title': PAGE_TITLE, 'header_subtitle_icon': 'uil:bill'}
 
 
 class BillModelYearListView(YearArchiveView, BillModelListView):
@@ -239,10 +233,7 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
     slug_field = 'uuid'
     context_object_name = 'bill'
     template_name = 'django_ledger/bills/bill_detail.html'
-    extra_context = {
-        'header_subtitle_icon': 'uil:bill',
-        'hide_menu': True
-    }
+    extra_context = {'header_subtitle_icon': 'uil:bill', 'hide_menu': True}
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
@@ -256,17 +247,18 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
 
         if not bill_model.is_configured():
             link = format_html(f"""
-            <a href="{reverse("django_ledger:bill-update", kwargs={
-                'entity_slug': self.kwargs['entity_slug'],
-                'bill_pk': bill_model.uuid
-            })}">here</a>
+            <a href="{
+                reverse(
+                    'django_ledger:bill-update',
+                    kwargs={'entity_slug': self.kwargs['entity_slug'], 'bill_pk': bill_model.uuid},
+                )
+            }">here</a>
             """)
-            msg = f'Bill {bill_model.bill_number} has not been fully set up. ' + \
-                  f'Please update or assign associated accounts {link}.'
-            messages.add_message(self.request,
-                                 message=msg,
-                                 level=messages.WARNING,
-                                 extra_tags='is-danger')
+            msg = (
+                f'Bill {bill_model.bill_number} has not been fully set up. '
+                + f'Please update or assign associated accounts {link}.'
+            )
+            messages.add_message(self.request, message=msg, level=messages.WARNING, extra_tags='is-danger')
         return context
 
     def get_queryset(self):
@@ -280,18 +272,24 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
             'unearned_account',
             'cash_account__coa_model',
             'prepaid_account__coa_model',
-            'unearned_account__coa_model'
+            'unearned_account__coa_model',
         )
 
 
+# -----------------
+# UPDATE
+# -----------------
 class BillModelUpdateView(BillModelModelBaseView, UpdateView):
+    """
+    Update bill header fields and optionally line items
+    (when ``action_update_items`` is enabled via as_view / subclass).
+    """
+
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill_model'
     template_name = 'django_ledger/bills/bill_update.html'
-    extra_context = {
-        'header_subtitle_icon': 'uil:bill'
-    }
+    extra_context = {'header_subtitle_icon': 'uil:bill'}
     http_method_names = ['get', 'post']
     action_update_items = False
 
@@ -299,16 +297,8 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
         form_class = self.get_form_class()
         entity_model: EntityModel = self.get_authorized_entity_instance()
         if self.request.method == 'POST' and self.action_update_items:
-            return form_class(
-                entity_model=entity_model,
-                user_model=self.request.user,
-                instance=self.object
-            )
-        return form_class(
-            entity_model=entity_model,
-            user_model=self.request.user,
-            **self.get_form_kwargs()
-        )
+            return form_class(entity_model=entity_model, user_model=self.request.user, instance=self.object)
+        return form_class(entity_model=entity_model, user_model=self.request.user, **self.get_form_kwargs())
 
     def get_form_class(self):
         bill_model: BillModel = self.object
@@ -326,11 +316,7 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
             return PaidBillModelUpdateForm
         return BaseBillModelUpdateForm
 
-    def get_context_data(self,
-                         *,
-                         object_list=None,
-                         itemtxs_formset=None,
-                         **kwargs):
+    def get_context_data(self, *, object_list=None, itemtxs_formset=None, **kwargs):
 
         context = super().get_context_data(object_list=object_list, **kwargs)
         entity_model: EntityModel = self.get_authorized_entity_instance()
@@ -347,27 +333,33 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
                 request=self.request,
                 message=f'Bill {bill_model.bill_number} must have all accounts configured.',
                 level=messages.ERROR,
-                extra_tags='is-danger'
+                extra_tags='is-danger',
             )
 
         if not bill_model.is_paid():
             if ledger_model.locked:
-                messages.add_message(self.request,
-                                     messages.ERROR,
-                                     f'Warning! This bill is locked. Must unlock before making any changes.',
-                                     extra_tags='is-danger')
+                messages.add_message(
+                    self.request,
+                    messages.ERROR,
+                    f'Warning! This bill is locked. Must unlock before making any changes.',
+                    extra_tags='is-danger',
+                )
 
         if ledger_model.locked:
-            messages.add_message(self.request,
-                                 messages.ERROR,
-                                 f'Warning! This bill is locked. Must unlock before making any changes.',
-                                 extra_tags='is-danger')
+            messages.add_message(
+                self.request,
+                messages.ERROR,
+                f'Warning! This bill is locked. Must unlock before making any changes.',
+                extra_tags='is-danger',
+            )
 
         if not ledger_model.is_posted():
-            messages.add_message(self.request,
-                                 messages.INFO,
-                                 f'This bill has not been posted. Must post to see ledger changes.',
-                                 extra_tags='is-info')
+            messages.add_message(
+                self.request,
+                messages.INFO,
+                f'This bill has not been posted. Must post to see ledger changes.',
+                extra_tags='is-info',
+            )
 
         itemtxs_qs = itemtxs_formset.get_queryset() if itemtxs_formset else None
         if not itemtxs_formset:
@@ -389,11 +381,7 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         bill_pk = self.kwargs['bill_pk']
-        return reverse('django_ledger:bill-detail',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': bill_pk
-                       })
+        return reverse('django_ledger:bill-detail', kwargs={'entity_slug': entity_slug, 'bill_pk': bill_pk})
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -406,31 +394,31 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
             'unearned_account',
             'cash_account__coa_model',
             'prepaid_account__coa_model',
-            'unearned_account__coa_model'
+            'unearned_account__coa_model',
         )
 
     def form_valid(self, form):
         form.save(commit=False)
-        messages.add_message(self.request,
-                             messages.SUCCESS,
-                             f'Bill {self.object.bill_number} successfully updated.',
-                             extra_tags='is-success')
+        messages.add_message(
+            self.request,
+            messages.SUCCESS,
+            f'Bill {self.object.bill_number} successfully updated.',
+            extra_tags='is-success',
+        )
         return super().form_valid(form)
 
     def get(self, request, *args, **kwargs):
         if self.action_update_items:
             return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:bill-update',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug'],
-                                        'bill_pk': self.kwargs['bill_pk']
-                                    })
+                redirect_to=reverse(
+                    'django_ledger:bill-update',
+                    kwargs={'entity_slug': self.kwargs['entity_slug'], 'bill_pk': self.kwargs['bill_pk']},
+                )
             )
         return super(BillModelUpdateView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if self.action_update_items:
-
             if not request.user.is_authenticated:
                 return HttpResponseForbidden()
 
@@ -442,11 +430,7 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
             self.object = bill_model
 
             bill_itemtxs_formset_class = get_bill_itemtxs_formset_class(bill_model)
-            itemtxs_formset = bill_itemtxs_formset_class(
-                request.POST,
-                bill_model=bill_model,
-                entity_model=entity_model
-            )
+            itemtxs_formset = bill_itemtxs_formset_class(request.POST, bill_model=bill_model, entity_model=entity_model)
 
             if itemtxs_formset.has_changed():
                 if itemtxs_formset.is_valid():
@@ -461,33 +445,28 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
                     bill_model.get_state(commit=True)
                     bill_model.clean()
                     bill_model.save(
-                        update_fields=[
-                            'amount_due',
-                            'amount_receivable',
-                            'amount_unearned',
-                            'amount_earned',
-                            'updated'
-                        ])
+                        update_fields=['amount_due', 'amount_receivable', 'amount_unearned', 'amount_earned', 'updated']
+                    )
 
                     bill_model.migrate_state(
                         entity_slug=self.kwargs['entity_slug'],
                         user_model=self.request.user,
                         itemtxs_qs=itemtxs_qs,
-                        raise_exception=False
+                        raise_exception=False,
                     )
 
-                    messages.add_message(request,
-                                         message=f'Items for Invoice {bill_model.bill_number} saved.',
-                                         level=messages.SUCCESS,
-                                         extra_tags='is-success')
+                    messages.add_message(
+                        request,
+                        message=f'Items for Invoice {bill_model.bill_number} saved.',
+                        level=messages.SUCCESS,
+                        extra_tags='is-success',
+                    )
 
                     # if valid get saved formset from DB
                     return HttpResponseRedirect(
-                        redirect_to=reverse('django_ledger:bill-update',
-                                            kwargs={
-                                                'entity_slug': entity_model.slug,
-                                                'bill_pk': bill_pk
-                                            })
+                        redirect_to=reverse(
+                            'django_ledger:bill-update', kwargs={'entity_slug': entity_model.slug, 'bill_pk': bill_pk}
+                        )
                     )
             context = self.get_context_data(itemtxs_formset=itemtxs_formset)
             return self.render_to_response(context=context)
@@ -495,78 +474,84 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
 
 
 # ACTION VIEWS...
-class BaseBillActionView(BillModelModelBaseView, RedirectView, SingleObjectMixin):
-    http_method_names = ['get']
+# -----------------
+# ACTIONS (status / ledger)
+# -----------------
+class BaseBillActionView(BillModelModelBaseView, DjangoLedgerActionView):
+    """
+    Shared bill action endpoint.
+
+    Invokes a BillModel status or ledger method, then redirects to bill update.
+    Concrete subclasses only set ``action_name``. Requires POST by default
+    (see ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET`` for legacy GET support).
+    """
+
     pk_url_kwarg = 'bill_pk'
-    action_name = None
-    commit = True
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:bill-update',
-                       kwargs={
-                           'entity_slug': kwargs['entity_slug'],
-                           'bill_pk': kwargs['bill_pk']
-                       })
-
-    def get(self, request, *args, **kwargs):
-        kwargs['user_model'] = self.request.user
-        if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseBillActionView, self).get(request, *args, **kwargs)
-        bill_model: BillModel = self.get_object()
-
-        try:
-            getattr(bill_model, self.action_name)(commit=self.commit, **kwargs)
-        except ValidationError as e:
-            messages.add_message(request,
-                                 message=e.message,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger')
-        return response
+        return reverse(
+            'django_ledger:bill-update', kwargs={'entity_slug': kwargs['entity_slug'], 'bill_pk': kwargs['bill_pk']}
+        )
 
 
 class BillModelActionMarkAsDraftView(BaseBillActionView):
+    """Moves the bill back to draft so header and line items can be edited."""
+
     action_name = 'mark_as_draft'
 
 
 class BillModelActionMarkAsInReviewView(BaseBillActionView):
+    """Submits the bill for review before approval."""
+
     action_name = 'mark_as_review'
 
 
 class BillModelActionMarkAsApprovedView(BaseBillActionView):
+    """Approves the bill and posts related ledger activity when configured."""
+
     action_name = 'mark_as_approved'
 
 
 class BillModelActionMarkAsPaidView(BaseBillActionView):
+    """Records the bill as fully paid."""
+
     action_name = 'mark_as_paid'
 
 
 class BillModelActionDeleteView(BaseBillActionView):
+    """Soft-delete / mark-as-delete workflow (not a Django DeleteView)."""
+
     action_name = 'mark_as_delete'
 
 
 class BillModelActionVoidView(BaseBillActionView):
+    """Voids an approved or paid bill and reverses its accounting impact."""
+
     action_name = 'mark_as_void'
 
 
 class BillModelActionCanceledView(BaseBillActionView):
+    """Cancels a bill that has not progressed to a posted/paid state."""
+
     action_name = 'mark_as_canceled'
 
 
 class BillModelActionLockLedgerView(BaseBillActionView):
+    """Locks the bill's underlying ledger to prevent further journal edits."""
+
     action_name = 'lock_ledger'
 
 
 class BillModelActionUnlockLedgerView(BaseBillActionView):
+    """Unlocks the bill's ledger so journal entries can be edited again."""
+
     action_name = 'unlock_ledger'
 
 
 class BillModelActionForceMigrateView(BaseBillActionView):
+    """Force-migrates bill ledger state when balances need reconciliation."""
+
     action_name = 'migrate_state'
 
     def get_redirect_url(self, entity_slug, bill_pk, *args, **kwargs):
-        return reverse('django_ledger:bill-update',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': bill_pk
-                       })
+        return reverse('django_ledger:bill-update', kwargs={'entity_slug': entity_slug, 'bill_pk': bill_pk})

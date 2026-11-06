@@ -175,6 +175,12 @@ class DjangoLedgerBaseTest(TestCase):
     def get_random_draft_date(self):
         return self.START_DATE + timedelta(days=randint(0, 365))
 
+    def get_random_ledger(self, entity_model: EntityModel, qs_limit: int = 100, posted: bool = True) -> LedgerModel:
+
+        ledger_model_qs = entity_model.get_ledgers(posted=posted).filter(journal_entries__count__gt=0)
+
+        return choice(ledger_model_qs[:qs_limit])
+
     def get_random_account(
         self,
         entity_model: EntityModel,
@@ -188,24 +194,6 @@ class DjangoLedgerBaseTest(TestCase):
         account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=active, locked=locked)
         account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
         return choice(account_qs)
-
-    def get_random_ledger(self, entity_model: EntityModel, qs_limit: int = 100, posted: bool = True) -> LedgerModel:
-        """
-        Returns 1 random LedgerModel object.
-        """
-        ledger_model_qs = entity_model.get_ledgers(posted=posted).filter(journal_entries__count__gt=0)
-
-        # no need to check because data generator will always populate an entity with sample data.
-        # if not ledger_model.exists():
-        #     for i in range(3):
-        #         LedgerModel.objects.create(
-        #             name=f"{i}Example Ledger {randint(10000, 99999)}",
-        #             ledger_xid=f"{i}example-ledger-xid-{randint(10000, 99999)}",
-        #             entity=entity_model,
-        #         )
-
-        # limits the queryset in case of large querysets...
-        return choice(ledger_model_qs[:qs_limit])
 
     def get_random_je(
         self,

@@ -28,6 +28,7 @@ from django_ledger.settings import (
     DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_FINANCIAL_ANALYSIS,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL,
+    DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET,
 )
 from django_ledger.utils import (
     get_default_entity_session_key,
@@ -450,9 +451,17 @@ def chart_container(chart_id, endpoint=None):
 
 @register.inclusion_tag('django_ledger/components/modals.html', takes_context=True)
 def modal_action(context, model, http_method: str = 'post', entity_slug: str = None):
+    """
+    Confirmation modal for marking a document paid.
+
+    Defaults to POST. Pass ``http_method='get'`` only when
+    ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET`` is enabled for legacy links.
+    """
     if not entity_slug:
         entity_slug = context['view'].kwargs['entity_slug']
     action_url = model.get_mark_as_paid_url(entity_slug=entity_slug)
+    if http_method == 'get' and not DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET:
+        http_method = 'post'
     return {
         'object': model,
         'action_url': action_url,
@@ -468,14 +477,50 @@ def modal_action_v2(
         action_url: str,
         message: str,
         html_id: str,
-        http_method: str = 'get',
+        http_method: str = 'post',
 ):
+    """
+    Confirmation modal that submits a DjangoLedgerActionView endpoint.
+
+    Defaults to POST (CSRF-protected). GET is only rendered when explicitly
+    requested and ``DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET`` is True.
+    """
+    if http_method == 'get' and not DJANGO_LEDGER_ACTION_VIEW_ALLOW_GET:
+        http_method = 'post'
     return {
         'object': model,
         'action_url': action_url,
         'http_method': http_method,
         'message': message,
         'html_id': html_id,
+    }
+
+
+@register.inclusion_tag('django_ledger/components/action_button.html')
+def djl_action_button(
+        action_url: str,
+        label: str,
+        element_class: str = 'button',
+        icon_name: str = None,
+        icon_size: int = 16,
+        next_url: str = None,
+):
+    """
+    Renders a CSRF-protected POST button/link for DjangoLedgerActionView URLs.
+
+    Optional ``next_url`` is appended as a query parameter so the action view
+    can redirect back safely after the mutation.
+    """
+    url = action_url
+    if next_url:
+        separator = '&' if '?' in url else '?'
+        url = f'{url}{separator}next={next_url}'
+    return {
+        'action_url': url,
+        'label': label,
+        'element_class': element_class,
+        'icon_name': icon_name,
+        'icon_size': icon_size,
     }
 
 

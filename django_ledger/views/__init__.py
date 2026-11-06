@@ -4,6 +4,9 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Public view package. Domain modules are organized by CRUD (+ Actions) inside
+each file. Shared security and action bases live in ``views.mixins``.
 """
 
 from django_ledger.views.account import *
@@ -29,3 +32,7 @@ from django_ledger.views.unit import *
 from django_ledger.views.vendor import *
 from django_ledger.views.closing_entry import *
 from django_ledger.views.receipt import *
+from django_ledger.views.mixins import (
+    DjangoLedgerSecurityMixIn,
+    DjangoLedgerActionView,
+)

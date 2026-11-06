@@ -4,6 +4,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+Receipt views grouped by CRUD.
+
+  * RETRIEVE — ReceiptModelListView / Year / Month / Quarter, DetailView
+  * DELETE   — ReceiptModelDeleteView
+  * REPORTS — Vendor / Customer receipt report list variants
+
+All receipt querysets come from the authorized entity via get_receipts().
 """
 
 from typing import Optional
@@ -29,16 +37,23 @@ from django_ledger.views.mixins import (
 )
 
 
-class BaseReceiptModelViewMixIn(DjangoLedgerSecurityMixIn):
+class ReceiptModelModelBaseView(DjangoLedgerSecurityMixIn):
+    """
+    Entity-scoped receipt queryset shared by all receipt CRUD/report views.
+
+    Optional filters by receipt type, vendor, or customer (from URL kwargs)
+    never return receipts from another entity.
+    """
+
     queryset: Optional[ReceiptModelQuerySet] = None
 
-    def get_queryset(self):
+    def get_queryset(self) -> ReceiptModelQuerySet:
         if self.queryset is None:
-            entity_model: EntityModel = self.AUTHORIZED_ENTITY_MODEL
-            qs = entity_model.get_receipts()
-            qs = qs.select_related(
-                'ledger_model', 'customer_model', 'vendor_model'
-            ).order_by('-receipt_date', '-created')
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            qs: ReceiptModelQuerySet = entity_model.get_receipts()
+            qs = qs.select_related('ledger_model', 'customer_model', 'vendor_model').order_by(
+                '-receipt_date', '-created'
+            )
 
             receipt_type = self.kwargs.get('receipt_type')
             if receipt_type:
@@ -47,17 +62,13 @@ class BaseReceiptModelViewMixIn(DjangoLedgerSecurityMixIn):
                     ReceiptModel.SALES_RECEIPT,
                     ReceiptModel.SALES_REFUND,
                 ]:
-                    qs = qs.filter(
-                        customer_model__isnull=False, vendor_model__isnull=True
-                    )
+                    qs = qs.filter(customer_model__isnull=False, vendor_model__isnull=True)
 
                 elif receipt_type in [
                     ReceiptModel.EXPENSE_RECEIPT,
                     ReceiptModel.EXPENSE_REFUND,
                 ]:
-                    qs = qs.filter(
-                        vendor_model__isnull=False, customer_model__isnull=True
-                    )
+                    qs = qs.filter(vendor_model__isnull=False, customer_model__isnull=True)
 
             vendor_pk = self.kwargs.get('vendor_pk')
             if vendor_pk:
@@ -72,7 +83,10 @@ class BaseReceiptModelViewMixIn(DjangoLedgerSecurityMixIn):
         return self.queryset
 
 
-class ReceiptModelListView(BaseReceiptModelViewMixIn, ArchiveIndexView):
+# -----------------
+# RETRIEVE (List)
+# -----------------
+class ReceiptModelListView(ReceiptModelModelBaseView, ArchiveIndexView):
     template_name = 'django_ledger/receipt/receipt_list.html'
     context_object_name = 'receipt_list'
     PAGE_TITLE = _('Receipts List')
@@ -98,16 +112,16 @@ class ReceiptModelListView(BaseReceiptModelViewMixIn, ArchiveIndexView):
 
         vendor_pk = self.kwargs.get('vendor_pk')
         if vendor_pk:
-            vendor = VendorModel.objects.for_entity(
-                entity_model=self.AUTHORIZED_ENTITY_MODEL
-            ).get(uuid__exact=vendor_pk)
+            vendor = VendorModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL).get(
+                uuid__exact=vendor_pk
+            )
             subtitle = vendor.vendor_name
         customer_pk = self.kwargs.get('customer_pk')
 
         if customer_pk:
-            customer = CustomerModel.objects.for_entity(
-                entity_model=self.AUTHORIZED_ENTITY_MODEL
-            ).get(uuid__exact=customer_pk)
+            customer = CustomerModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL).get(
+                uuid__exact=customer_pk
+            )
             subtitle = customer.customer_name
 
         if subtitle:
@@ -150,7 +164,10 @@ class ReceiptModelMonthListView(ReceiptModelYearListView, MonthArchiveView):
         return context
 
 
-class ReceiptModelDetailView(BaseReceiptModelViewMixIn, DetailView):
+# -----------------
+# RETRIEVE (Detail)
+# -----------------
+class ReceiptModelDetailView(ReceiptModelModelBaseView, DetailView):
     template_name = 'django_ledger/receipt/receipt_detail.html'
     context_object_name = 'receipt'
     slug_field = 'uuid'
@@ -167,9 +184,7 @@ class ReceiptModelDetailView(BaseReceiptModelViewMixIn, DetailView):
         context['header_subtitle_icon'] = 'mdi:receipt'
 
         tx_list = (
-            TransactionModel.objects.for_entity(
-                entity_model=self.AUTHORIZED_ENTITY_MODEL
-            )
+            TransactionModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL)
             .for_ledger(ledger_model=ledger_model)
             .posted()
             .not_closing_entry()
@@ -195,12 +210,8 @@ class VendorReceiptReportListView(ReceiptModelListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         vendor_pk = self.kwargs['vendor_pk']
-        vendor_model_qs = VendorModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        )
-        vendor_model: VendorModel = get_object_or_404(
-            vendor_model_qs, uuid__exact=vendor_pk
-        )
+        vendor_model_qs = VendorModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL)
+        vendor_model: VendorModel = get_object_or_404(vendor_model_qs, uuid__exact=vendor_pk)
         context['vendor_model'] = vendor_model
         context['page_title'] = _(f'Vendor Receipts {vendor_model.vendor_name}')
         context['header_title'] = _('Vendor Receipts')
@@ -228,9 +239,7 @@ class CustomerReceiptReportListView(ReceiptModelListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        customer_model_qs = CustomerModel.objects.for_entity(
-            entity_model=self.AUTHORIZED_ENTITY_MODEL
-        )
+        customer_model_qs = CustomerModel.objects.for_entity(entity_model=self.AUTHORIZED_ENTITY_MODEL)
         customer_pk = self.kwargs['customer_pk']
         customer_model = get_object_or_404(
             customer_model_qs,
@@ -259,7 +268,10 @@ class CustomerReceiptReportMonthListView(ReceiptModelMonthListView):
     month_format = '%m'
 
 
-class ReceiptModelDeleteView(BaseReceiptModelViewMixIn, DeleteView):
+# -----------------
+# DELETE
+# -----------------
+class ReceiptModelDeleteView(ReceiptModelModelBaseView, DeleteView):
     template_name = 'django_ledger/receipt/receipt_delete.html'
     context_object_name = 'receipt'
     slug_field = 'uuid'
@@ -276,17 +288,13 @@ class ReceiptModelDeleteView(BaseReceiptModelViewMixIn, DeleteView):
 
     def can_delete(self, receipt_model: ReceiptModel) -> bool:
         entity_model: EntityModel = self.AUTHORIZED_ENTITY_MODEL
-        ce_date = entity_model.get_closing_entry_for_date(
-            io_date=receipt_model.receipt_date, inclusive=True
-        )
+        ce_date = entity_model.get_closing_entry_for_date(io_date=receipt_model.receipt_date, inclusive=True)
         return ce_date is None
 
     def delete(self, request, *args, **kwargs):
         receipt_model: ReceiptModel = self.object
         if not receipt_model.can_delete():
-            return HttpResponseForbidden(
-                'Receipt cannot be deleted because it falls within a closed period.'
-            )
+            return HttpResponseForbidden('Receipt cannot be deleted because it falls within a closed period.')
         return super().delete(request, *args, **kwargs)
 
     def get_success_url(self):

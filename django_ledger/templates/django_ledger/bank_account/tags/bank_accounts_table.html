@@ -51,17 +51,13 @@
                                         {% trans 'Update' %}
                                     </a>
                                     {% if bank_acc.can_activate %}
-                                        <a href="{% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                           class="dropdown-item has-text-success">
-                                            <span class="icon is-small mr-2">{% icon 'bi:play-fill' 16 %}</span>
-                                            {% trans 'Activate' %}
-                                        </a>
+                                        {% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid as bank_activate_url %}
+                                        {% trans 'Activate' as bank_activate_label %}
+                                        {% djl_action_button bank_activate_url bank_activate_label 'dropdown-item has-text-success' 'bi:play-fill' 16 %}
                                     {% elif bank_acc.can_inactivate %}
-                                        <a href="{% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
-                                           class="dropdown-item has-text-danger">
-                                            <span class="icon is-small mr-2">{% icon 'bi:stop-fill' 16 %}</span>
-                                            {% trans 'Inactivate' %}
-                                        </a>
+                                        {% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid as bank_inactivate_url %}
+                                        {% trans 'Inactivate' as bank_inactivate_label %}
+                                        {% djl_action_button bank_inactivate_url bank_inactivate_label 'dropdown-item has-text-danger' 'bi:stop-fill' 16 %}
                                     {% endif %}
                                 </div>
                             </div>

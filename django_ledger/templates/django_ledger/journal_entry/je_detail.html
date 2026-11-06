@@ -15,11 +15,9 @@
         <span>{% trans 'Edit TXS' %}</span>
     </a>
     {% if journal_entry.can_unlock %}
-        <a class="button is-warning  is-outlined"
-           href="{% url 'django_ledger:je-mark-as-unlocked' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-            <span class="icon">{% icon 'bi:unlock-fill' 16 %}</span>
-            <span>{% trans 'Unlock' %}</span>
-        </a>
+        {% url 'django_ledger:je-mark-as-unlocked' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid as je_unlock_url %}
+        {% trans 'Unlock' as je_unlock_label %}
+        {% djl_action_button je_unlock_url je_unlock_label 'button is-warning is-outlined' 'bi:unlock-fill' 16 %}
     {% endif %}
     <a class="button is-info  is-outlined"
        href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">

@@ -1,0 +1,16 @@
+{% load i18n %}
+{% load django_ledger %}
+
+<form method="post"
+      action="{{ action_url }}"
+      class="djl-action-form"
+      style="display:contents">
+    {% csrf_token %}
+    <button type="submit" class="{{ element_class }}">
+        {% if icon_name %}
+            <span class="icon is-small
+                    {% if 'button' in element_class %}{% else %} mr-2{% endif %}">{% icon icon_name icon_size %}</span>
+        {% endif %}
+        <span>{{ label }}</span>
+    </button>
+</form>
