@@ -415,11 +415,7 @@ class ReceiptModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn, IOMixIn):
         bool
             True if the receipt date is after the entity's last closing date.
         """
-        return all(
-            [
-                self.last_closing_date < self.receipt_date,
-            ]
-        )
+        return self.last_closing_date is None or self.last_closing_date < self.receipt_date
 
     def delete(self, using=None, keep_parents=False, delete_ledger: bool = True, **kwargs):
         """Delete the receipt and related journal entries if allowed.
