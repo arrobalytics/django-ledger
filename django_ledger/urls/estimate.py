@@ -4,7 +4,7 @@ from django_ledger.views import (EstimateModelListView, EstimateModelCreateView,
                                  EstimateModelDetailView, EstimateModelUpdateView,
                                  EstimateActionMarkAsDraftView, EstimateActionMarkAsReviewView,
                                  EstimateActionMarkAsApprovedView, EstimateActionMarkAsCompletedView,
-                                 EstimateActionMarkAsCanceledView)
+                                 EstimateActionMarkAsCanceledView, EstimateActionMarkAsVoidView)
 
 urlpatterns = [
     path('<slug:entity_slug>/list/', EstimateModelListView.as_view(), name='customer-estimate-list'),
@@ -35,4 +35,7 @@ urlpatterns = [
     path('<slug:entity_slug>/action/<uuid:ce_pk>/mark-as-canceled/',
          EstimateActionMarkAsCanceledView.as_view(),
          name='customer-estimate-action-mark-as-canceled'),
+    path('<slug:entity_slug>/action/<uuid:ce_pk>/mark-as-void/',
+         EstimateActionMarkAsVoidView.as_view(),
+         name='customer-estimate-action-mark-as-void'),
 ]

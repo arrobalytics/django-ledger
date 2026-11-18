@@ -475,7 +475,7 @@ class ItemModelManager(Manager):
     def for_estimate(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for EstimateModels for a specific EntityModel &
-        UserModel. These types of items qualify as products.
+        UserModel. These types of items qualify as products or services sold.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
@@ -489,7 +489,7 @@ class ItemModelManager(Manager):
             A Filtered ItemModelQuerySet.
         """
         qs = self.for_entity_active(entity_model=entity_model, **kwargs)
-        return qs.products()
+        return qs.estimates()
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -986,6 +986,7 @@ class ItemTransactionModelQuerySet(QuerySet):
         """
         return self.filter(
             Q(bill_model_id__isnull=True) &
+            Q(invoice_model_id__isnull=True) &
             Q(po_model_id__isnull=True) &
             Q(ce_model_id__isnull=True)
         )
@@ -1550,9 +1551,9 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         Returns
         -------
         bool
-            True if received, else False.
+            True if ordered, else False.
         """
-        return self.po_item_status == self.STATUS_RECEIVED
+        return self.po_item_status == self.STATUS_ORDERED
 
     def is_canceled(self):
         """

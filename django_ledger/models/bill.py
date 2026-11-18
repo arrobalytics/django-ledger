@@ -970,6 +970,13 @@ class BillModelAbstract(
                 raise BillModelValidationError('Cannot bind an unapproved PO.')
             return False
 
+        if self.entity_model_id and self.entity_model_id != po_model.entity_id:
+            if raise_exception:
+                raise BillModelValidationError(
+                    'Cannot bind PO from a different entity.'
+                )
+            return False
+
         if po_model.date_approved > self.date_draft:
             if raise_exception:
                 raise BillModelValidationError(

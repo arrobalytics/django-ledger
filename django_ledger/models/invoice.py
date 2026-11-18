@@ -92,7 +92,7 @@ class InvoiceModelQuerySet(QuerySet):
         InvoiceModelQuerySet
             Returns a QuerySet of in review invoices only.
         """
-        return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_DRAFT)
+        return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_REVIEW)
 
     def approved(self):
         """
@@ -881,6 +881,12 @@ class InvoiceModelAbstract(
             if raise_exception:
                 raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
                                                   f'Estimate {self.ce_model.estimate_number}')
+            return False
+        elif self.entity_model_id and self.entity_model_id != estimate_model.entity_id:
+            if raise_exception:
+                raise InvoiceModelValidationError(
+                    f'Invalid EstimateModel for entity {self.entity_model.slug}'
+                )
             return False
 
         is_approved = estimate_model.is_approved()
@@ -1814,7 +1820,7 @@ class InvoiceModelAbstract(
         return self.invoice_number
 
     def generate_descriptive_title(self) -> str:
-        return f'Bill {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}'
+        return f'Invoice {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}'
 
     # --> URLs <---
     def get_absolute_url(self):

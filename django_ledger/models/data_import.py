@@ -195,7 +195,7 @@ class ImportJobModelManager(Manager):
         elif isinstance(entity_model, UUID):
             qs = qs.filter(bank_account_model__entity_model_id=entity_model)
         elif isinstance(entity_model, str):
-            qs = qs.filter(bank_account_model__slug__exact=entity_model)
+            qs = qs.filter(bank_account_model__entity_model__slug__exact=entity_model)
         else:
             raise ImportJobModelValidationError(
                 message=_('Must pass EntityModel, slug or UUID'),
@@ -343,7 +343,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     # URLS...
     def get_data_import_url(self) -> str:
         return reverse(
-            'django_ledger:data-import-job-txs',
+            'django_ledger:import-job-detail',
             kwargs={
                 'entity_slug': self.entity_slug,
                 'job_pk': self.uuid,
@@ -399,7 +399,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
 
     def get_edit_txs_url(self) -> str:
         return reverse(
-            'django_ledger:data-import-job-txs',
+            'django_ledger:import-job-detail',
             kwargs={
                 'entity_slug': self.entity_slug,
                 'job_pk': self.uuid,
@@ -2198,9 +2198,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 )
             return
         self.matched_transaction = False
+        self.matched_transaction_model = None
         if commit:
             with transaction.atomic():
-                self.save(update_fields=['matched_transaction', 'updated'])
+                self.save(update_fields=['matched_transaction', 'matched_transaction_model', 'updated'])
 
     def can_delete(self) -> bool:
         if self.is_children():
