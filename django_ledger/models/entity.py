@@ -178,6 +178,10 @@ class EntityModelFiscalPeriodMixIn:
         The fiscal year start month represents the month (as an integer) when the assigned fiscal year of the
         EntityModel starts.
 
+        An EntityModel answers with its own fy_start_month field. Any other class using this mixin, such as a
+        financial statement view, answers with the fy_start_month of the EntityModel behind it, as found by
+        get_fiscal_period_entity_model().
+
         Returns
         -------
         int
@@ -189,26 +193,36 @@ class EntityModelFiscalPeriodMixIn:
             * 4 -> April.
             * 9 -> September.
         """
+        if hasattr(self, 'fy_start_month'):
+            return self.fy_start_month
+        entity_model = self.get_fiscal_period_entity_model()
+        return entity_model.fy_start_month
 
-        try:
-            fy: int = getattr(self, 'fy_start_month')
-        except AttributeError:
-            # current object is not an entity, get current entity and fetch its fy_start_month value
+    def get_fiscal_period_entity_model(self) -> 'EntityModel':
+        """
+        Finds the EntityModel whose fiscal year settings apply when this mixin is used by a class that is not an
+        EntityModel, such as a report view.
 
-            # if current object is a detail view with an object...
-            obj = getattr(self, 'object', None) or getattr(self, 'AUTHORIZED_ENTITY_MODEL')
-            if isinstance(obj, EntityModel):
-                entity = obj
-            elif isinstance(obj, LedgerModel):
-                entity = obj.entity
-            elif isinstance(obj, EntityUnitModel):
-                entity = obj.entity
-            elif isinstance(obj, AccountModel):
-                entity = obj.coa_model.entity
+        The current object of a detail view comes first: an EntityModel is used as is, and a LedgerModel,
+        EntityUnitModel or AccountModel leads to its EntityModel. Without an object, the EntityModel authorized
+        for the request is used.
 
-            fy: int = getattr(entity, 'fy_start_month')
-
-        return fy
+        Returns
+        -------
+        EntityModel
+            The EntityModel that owns the fiscal year settings.
+        """
+        # if current object is a detail view with an object...
+        obj = getattr(self, 'object', None) or getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+        if isinstance(obj, EntityModel):
+            entity = obj
+        elif isinstance(obj, LedgerModel):
+            entity = obj.entity
+        elif isinstance(obj, EntityUnitModel):
+            entity = obj.entity
+        elif isinstance(obj, AccountModel):
+            entity = obj.coa_model.entity
+        return entity
 
     def validate_quarter(self, quarter: int):
         """
