@@ -15,7 +15,7 @@ to operate on such EntityModel.
 
 EntityModels may also have different financial reporting periods, (also known as fiscal year), which start month is
 specified at the time of creation. All key functionality around the Fiscal Year is encapsulated in the
-EntityReportMixIn.
+EntityModelFiscalPeriodMixIn.
 """
 
 from calendar import monthrange
@@ -78,6 +78,7 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 UserModel = get_user_model()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
+DEFAULT_FY_START_MONTH = 1
 
 
 class EntityModelValidationError(ValidationError):
@@ -129,7 +130,7 @@ class EntityModelManager(MP_NodeManager):
 
     def get_queryset(self) -> EntityModelQuerySet:
         """Sets the custom queryset as the default."""
-        qs = EntityModelQuerySet(self.model, using=self._db).order_by('path')
+        qs = EntityModelQuerySet(self.model, using=self._db)
         return (
             qs.order_by('path')
             .select_related('admin', 'default_coa')
@@ -180,12 +181,17 @@ class EntityModelFiscalPeriodMixIn:
 
         An EntityModel answers with its own fy_start_month field. Any other class using this mixin, such as a
         financial statement view, answers with the fy_start_month of the EntityModel behind it, as found by
-        get_fiscal_period_entity_model().
+        get_fiscal_period_entity_model(). A month that was never set falls back to DEFAULT_FY_START_MONTH.
 
         Returns
         -------
         int
             An integer representing the month that the fiscal year starts.
+
+        Raises
+        ------
+        ValidationError
+            If the month found is not between 1 and 12.
 
         Examples
         ________
@@ -194,9 +200,13 @@ class EntityModelFiscalPeriodMixIn:
             * 9 -> September.
         """
         if hasattr(self, 'fy_start_month'):
-            return self.fy_start_month
-        entity_model = self.get_fiscal_period_entity_model()
-        return entity_model.fy_start_month
+            fy_start_month = self.fy_start_month
+        else:
+            fy_start_month = self.get_fiscal_period_entity_model().fy_start_month
+        if fy_start_month is None:
+            return DEFAULT_FY_START_MONTH
+        self.validate_month(fy_start_month)
+        return fy_start_month
 
     def get_fiscal_period_entity_model(self) -> 'EntityModel':
         """
@@ -204,27 +214,34 @@ class EntityModelFiscalPeriodMixIn:
         EntityModel, such as a report view.
 
         The current object of a detail view comes first: an EntityModel is used as is, and a LedgerModel,
-        EntityUnitModel or AccountModel leads to its EntityModel. Without an object, the EntityModel authorized
-        for the request is used.
+        EntityUnitModel or AccountModel leads to its EntityModel. Otherwise, the EntityModel authorized for the
+        request is used.
 
         Returns
         -------
         EntityModel
             The EntityModel that owns the fiscal year settings.
-        """
-        # if current object is a detail view with an object...
-        obj = getattr(self, 'object', None) or getattr(self, 'AUTHORIZED_ENTITY_MODEL')
-        if isinstance(obj, EntityModel):
-            entity = obj
-        elif isinstance(obj, LedgerModel):
-            entity = obj.entity
-        elif isinstance(obj, EntityUnitModel):
-            entity = obj.entity
-        elif isinstance(obj, AccountModel):
-            entity = obj.coa_model.entity
-        return entity
 
-    def validate_quarter(self, quarter: int):
+        Raises
+        ------
+        EntityModelValidationError
+            If no EntityModel can be found.
+        """
+        obj = getattr(self, 'object', None)
+        if isinstance(obj, EntityModel):
+            return obj
+        if isinstance(obj, (LedgerModel, EntityUnitModel)):
+            return obj.entity
+        if isinstance(obj, AccountModel):
+            return obj.coa_model.entity
+        entity_model = getattr(self, 'AUTHORIZED_ENTITY_MODEL', None)
+        if isinstance(entity_model, EntityModel):
+            return entity_model
+        raise EntityModelValidationError(
+            message=_('Cannot determine the EntityModel that sets the fiscal year for this request.')
+        )
+
+    def validate_quarter(self, quarter: int) -> None:
         """
         Validates the quarter as a valid parameter for other functions.
         Makes sure that only integers 1,2,3, or 4 are used to refer to a particular Quarter.
@@ -243,7 +260,7 @@ class EntityModelFiscalPeriodMixIn:
         if quarter not in self.VALID_QUARTERS:
             raise ValidationError(f'Specified quarter is not valid: {quarter}')
 
-    def validate_month(self, month: int):
+    def validate_month(self, month: int) -> None:
         """
         Validates the month as a valid parameter for other functions.
         Makes sure that only integers between 1 and 12 are used to refer to a particular month.
@@ -285,7 +302,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
         return date(year, fy_start_month, 1)
 
-    def get_fy_end(self, year: int, fy_start_month: int = None) -> date:
+    def get_fy_end(self, year: int, fy_start_month: Optional[int] = None) -> date:
         """
         The fiscal year ending date of the EntityModel, according to its settings.
 
@@ -309,7 +326,7 @@ class EntityModelFiscalPeriodMixIn:
         me = 12 if fy_start_month == 1 else fy_start_month - 1
         return date(ye, me, monthrange(ye, me)[1])
 
-    def get_quarter_start(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+    def get_quarter_start(self, year: int, quarter: int, fy_start_month: Optional[int] = None) -> date:
         """
         The fiscal year quarter starting date of the EntityModel, according to its settings.
 
@@ -340,7 +357,7 @@ class EntityModelFiscalPeriodMixIn:
             year_start = year + 1
         return date(year_start, quarter_month_start, 1)
 
-    def get_quarter_end(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+    def get_quarter_end(self, year: int, quarter: int, fy_start_month: Optional[int] = None) -> date:
         """
         The fiscal year quarter ending date of the EntityModel, according to its settings.
 
@@ -371,7 +388,7 @@ class EntityModelFiscalPeriodMixIn:
             year_end += 1
         return date(year_end, quarter_month_end, monthrange(year_end, quarter_month_end)[1])
 
-    def get_fiscal_year_dates(self, year: int, fy_start_month: int = None) -> Tuple[date, date]:
+    def get_fiscal_year_dates(self, year: int, fy_start_month: Optional[int] = None) -> Tuple[date, date]:
         """
         Convenience method to get in one shot both, fiscal year start and end dates.
 
@@ -396,7 +413,12 @@ class EntityModelFiscalPeriodMixIn:
         ed = self.get_fy_end(year, fy_start_month)
         return sd, ed
 
-    def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int = None) -> Tuple[date, date]:
+    def get_fiscal_quarter_dates(
+            self,
+            year: int,
+            quarter: int,
+            fy_start_month: Optional[int] = None,
+    ) -> Tuple[date, date]:
         """
         Convenience method to get in one shot both, fiscal year quarter start and end dates.
 
@@ -441,8 +463,8 @@ class EntityModelFiscalPeriodMixIn:
 
         Returns
         _______
-        str or date
-            Fiscal year as an integer or string, depending on as_str parameter.
+        int or str
+            Fiscal year as an integer, or as a string if as_str is True.
         """
         fy_start_month = self.get_fy_start_month()
         if dt.month >= fy_start_month:
@@ -730,12 +752,13 @@ class EntityModelAbstract(
 
     The EntityModel also inherits functionality from the following MixIns:
 
-        1. :func:`SlugNameMixIn <django_ledger.models.mixins.SlugNameMixIn>`
-        2. :func:`PaymentTermsMixIn <django_ledger.models.mixins.PaymentTermsMixIn>`
-        3. :func:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
-        4. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
-        5. :func:`EntityReportMixIn <django_ledger.models.mixins.EntityReportMixIn>`
-        6. :func:`IOMixIn <django_ledger.io.io_mixin.IOMixIn>`
+        1. :class:`SlugNameMixIn <django_ledger.models.mixins.SlugNameMixIn>`
+        2. :class:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
+        3. :class:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
+        4. :class:`IOMixIn <django_ledger.io.io_core.IOMixIn>`
+        5. :class:`LoggingMixIn <django_ledger.models.mixins.LoggingMixIn>`
+        6. :class:`EntityModelFiscalPeriodMixIn <django_ledger.models.entity.EntityModelFiscalPeriodMixIn>`
+        7. :class:`EntityModelClosingEntryMixIn <django_ledger.models.entity.EntityModelClosingEntryMixIn>`
 
 
     Attributes
@@ -815,7 +838,11 @@ class EntityModelAbstract(
 
     hidden = models.BooleanField(default=False)
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
-    fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
+    fy_start_month = models.IntegerField(
+        choices=FY_MONTHS,
+        default=DEFAULT_FY_START_MONTH,
+        verbose_name=_('Fiscal Year Start'),
+    )
     last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
     picture = models.ImageField(blank=True, null=True)
     meta = models.JSONField(default=dict, null=True, blank=True)
@@ -836,11 +863,21 @@ class EntityModelAbstract(
         self._CLOSING_ENTRY_DATES: Optional[List[date]] = None
 
     @property
-    def default_coa_slug(self):
-        try:
-            return getattr(self, '_default_coa_slug')
-        except AttributeError:
-            return self.default_coa.slug
+    def default_coa_slug(self) -> Optional[str]:
+        """
+        The slug of the default ChartOfAccountModel of the EntityModel.
+
+        EntityModels fetched through the EntityModelManager carry this slug as an annotation, so no extra query is
+        needed. An EntityModel created or loaded any other way reads the slug from its default Chart of Accounts.
+
+        Returns
+        -------
+        str or None
+            The default Chart of Accounts slug. None if the annotated EntityModel has no default Chart of Accounts.
+        """
+        if hasattr(self, '_default_coa_slug'):
+            return self._default_coa_slug
+        return self.default_coa.slug
 
     # ## Logging ###
     def get_logger_name(self):
@@ -1554,8 +1591,6 @@ class EntityModelAbstract(
         else:
             coa_model = self.default_coa
 
-        # account_model = AccountModel(**account_model_kwargs)
-        # account_model.clean()
         return coa_model, coa_model.create_account(**account_model_kwargs)
 
     def get_account_balance(self, account_codes: List[str], to_date: Union[datetime, date, str], **kwargs):
