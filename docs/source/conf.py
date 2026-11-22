@@ -29,6 +29,8 @@ BASE_DIR_PATH = Path(BASE_DIR)
 os.environ["DJANGO_SETTINGS_MODULE"] = "dev_env.settings"
 django.setup()
 
+from django_ledger import __version__
+
 # copies the readme into the source docs files.
 # file is included in .gitignore
 copy(src=BASE_DIR_PATH.joinpath('README.md'), dst=BASE_DIR_PATH.joinpath('docs/source/'))
@@ -39,8 +41,12 @@ copy(src=BASE_DIR_PATH.joinpath('README.md'), dst=BASE_DIR_PATH.joinpath('docs/s
 # -- Project information -----------------------------------------------------
 
 project = 'Django Ledger'
-copyright = '2025, EDMA Group Inc'
+copyright = '2025-2026, EDMA Group Inc'
 author = 'Miguel Sanda'
+
+# The full version (release) and the short X.Y version both come from pyproject.toml through django_ledger.
+release = __version__
+version = '.'.join(release.split('.')[:2])
 
 # -- General configuration ---------------------------------------------------
 
