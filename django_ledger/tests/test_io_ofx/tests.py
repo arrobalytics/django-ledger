@@ -2,7 +2,7 @@ import os
 from decimal import Decimal
 
 from django_ledger.io.ofx import OFXFileManager
-from django_ledger.tests.base import DjangoLedgerBaseTest
+from django_ledger.tests.test_base import DjangoLedgerBaseTest
 
 
 class SimpleOFXTest(DjangoLedgerBaseTest):
@@ -19,11 +19,11 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
         This field can be used to identify the bank in the absence of the <FI.ORG> fields.
         """
         ofx = self.get_sample_ofx("v1_with_intu_bid.ofx")
-        accounts = ofx.get_accounts()
+        account = ofx.get_account_data()
 
         # The bank and fid fields are not provided in this ofx file.
-        self.assertIsNone(accounts[0]["fid"])
-        self.assertIsNone(accounts[0]["bank"])
+        self.assertIsNone(account["fid"])
+        self.assertIsNone(account["bank"])
         # balance observed from the ofx file
         self.assertEqual(ofx.ofx_data.statements[0].balance.balamt, Decimal("123456.49"))
 
@@ -32,8 +32,7 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
         OFX v1 with open tags like `<DTSERVER>20211015063225[-5:EST]` instead of `<DTSERVER>20230510120000</DTSERVER>`
         """
         ofx = self.get_sample_ofx("v1_with_open_tags.ofx")
-        accounts = ofx.get_accounts()
-        account = accounts[0]
+        account = ofx.get_account_data()
 
         self.assertIsNone(account["fid"])
         self.assertIsNone(account["bank"])
@@ -44,8 +43,7 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
         ofx v2 uses XML rather than SGML. This is a good ofx v2 file.
         """
         ofx = self.get_sample_ofx("v2_good.ofx")
-        accounts = ofx.get_accounts()
-        account = accounts[0]
+        account = ofx.get_account_data()
 
         self.assertEqual(account["fid"], "123456789")
         self.assertEqual(account["bank"], "BANK NAME")
