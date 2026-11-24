@@ -343,7 +343,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     # URLS...
     def get_data_import_url(self) -> str:
         return reverse(
-            'django_ledger:data-import-job-txs',
+            'django_ledger:import-job-detail',
             kwargs={
                 'entity_slug': self.entity_slug,
                 'job_pk': self.uuid,
@@ -399,7 +399,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
 
     def get_edit_txs_url(self) -> str:
         return reverse(
-            'django_ledger:data-import-job-txs',
+            'django_ledger:import-job-detail',
             kwargs={
                 'entity_slug': self.entity_slug,
                 'job_pk': self.uuid,
