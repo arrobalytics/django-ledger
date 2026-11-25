@@ -1,7 +1,9 @@
 from datetime import timedelta
 from uuid import uuid4
 
+from django.contrib import messages
 from django.contrib.admin import TabularInline, ModelAdmin
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Count
 from django.forms import BaseInlineFormSet
 from django.urls import reverse
@@ -192,10 +194,15 @@ class EntityModelAdmin(ModelAdmin):
     def populate_random_data(self, request, queryset):
         for entity_model in queryset:
             start_date = get_localtime() - timedelta(days=180)
-            entity_model.populate_random_data(
-                start_date=start_date,
-                days_forward=180,
-                tx_quantity=25)
+            try:
+                entity_model.populate_random_data(
+                    start_date=start_date,
+                    days_forward=180,
+                    tx_quantity=25)
+            except ImproperlyConfigured as error:
+                # Raised by the generator when the demo extra (Faker) is not installed.
+                self.message_user(request, str(error), level=messages.ERROR)
+                return
 
     def get_coa_count(self, obj):
         return obj.chartofaccountmodel__count

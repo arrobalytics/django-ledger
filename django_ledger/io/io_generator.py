@@ -27,6 +27,7 @@ from typing import Union, Optional
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.demo import FAKER_MISSING_MESSAGE
 from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.io.roles import (
     INCOME_OPERATIONAL,
@@ -105,7 +106,7 @@ class EntityDataGenerator(LoggingMixIn):
         assert capital_contribution > 0, 'Capital contribution must be greater than 0'
 
         if not FAKER_IMPORTED:
-            raise ImproperlyConfigured('Must install Faker library to generate random data.')
+            raise ImproperlyConfigured(FAKER_MISSING_MESSAGE)
 
         if entity_model.admin != user_model:
             raise EntityModelValidationError(

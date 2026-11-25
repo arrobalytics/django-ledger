@@ -90,6 +90,14 @@ python manage.py runserver
 
 Navigate to `http://127.0.0.1:8000/ledger` and log in using your superuser credentials.
 
+### 6. Sample Data (Optional)
+
+The sample data generator needs Faker, which is not installed with Django Ledger. Install the `demo` extra to use it:
+
+```shell
+pip install "django-ledger[demo]"
+```
+
 ---
 
 ## ⚙️ Deprecated Behavior Setting (v0.8.0+)

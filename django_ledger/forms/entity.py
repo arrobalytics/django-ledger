@@ -10,6 +10,7 @@ from django.forms import (ModelForm, TextInput, BooleanField, ValidationError, I
                           EmailInput, URLInput, CheckboxInput, Select, Form)
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.demo import FAKER_INSTALLED, FAKER_MISSING_MESSAGE
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -20,6 +21,14 @@ class EntityModelCreateForm(ModelForm):
     default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
     activate_all_accounts = BooleanField(required=False, initial=False, label=_('Activate All Accounts'))
     generate_sample_data = BooleanField(required=False, initial=False, label=_('Fill With Sample Data?'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not FAKER_INSTALLED:
+            # Sample data needs the demo extra. The box is greyed out and says why; clean() still rejects it.
+            sample_data_field = self.fields['generate_sample_data']
+            sample_data_field.widget.attrs['disabled'] = True
+            sample_data_field.help_text = FAKER_MISSING_MESSAGE
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -34,6 +43,8 @@ class EntityModelCreateForm(ModelForm):
         activate_all_accounts = self.cleaned_data['activate_all_accounts']
         sample_data = self.cleaned_data['generate_sample_data']
 
+        if sample_data and not FAKER_INSTALLED:
+            raise ValidationError(FAKER_MISSING_MESSAGE)
         if sample_data and not all([
             populate_coa,
             activate_all_accounts

@@ -1,6 +1,7 @@
 from django.urls import reverse
 
 from dev_env.settings import LOGIN_URL
+from django_ledger.tests.mixins import SeededTestMixIn, requires_faker
 
 
 from datetime import date, timedelta, datetime, time
@@ -22,7 +23,8 @@ from django_ledger.models import JournalEntryModel, LedgerModel, TransactionMode
 from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
 
 
-class DjangoLedgerBaseTest(TestCase):
+@requires_faker
+class DjangoLedgerBaseTest(SeededTestMixIn, TestCase):
     FY_STARTS = None
     CAPITAL_CONTRIBUTION = None
     START_DATE = None

@@ -21,6 +21,7 @@ from decimal import Decimal
 from random import randint
 from typing import Optional
 
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -28,9 +29,9 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.io_core import get_localdate, get_localtime
-from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models import EntityModel, ItemTransactionModel, TransactionModel
 from django_ledger.models.entity import EntityModelQuerySet
+from django_ledger.models.utils import lazy_loader
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn,
     YearlyReportMixIn,
@@ -96,38 +97,43 @@ class EntityModelCreateView(EntityModelModelBaseView, CreateView):
 
         user_model = self.request.user
 
-        entity_model: EntityModel = EntityModel(
-            name=cleaned_data['name'],
-            slug=EntityModel.generate_slug_from_name(name=cleaned_data['name']),
-            address_1=cleaned_data['address_1'],
-            address_2=cleaned_data['address_2'],
-            city=cleaned_data['city'],
-            state=cleaned_data['state'],
-            zip_code=cleaned_data['zip_code'],
-            country=cleaned_data['country'],
-            email=cleaned_data['email'],
-            website=cleaned_data['website'],
-            phone=cleaned_data['phone'],
-            fy_start_month=cleaned_data['fy_start_month'],
-            accrual_method=cleaned_data['accrual_method'],
-            admin=user_model,
-        )
-        entity_model: EntityModel = EntityModel.add_root(instance=entity_model)
-        default_coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
-
-        if default_coa:
-            entity_model.populate_default_coa(activate_accounts=activate_accounts, coa_model=default_coa_model)
-
-        if sample_data:
-            entity_generator = EntityDataGenerator(
-                entity_model=entity_model,
-                user_model=self.request.user,
-                start_dttm=get_localtime() - timedelta(days=30 * 8),
-                capital_contribution=Decimal.from_float(50000),
-                days_forward=30 * 7,
-                tx_quantity=50,
+        # The entity, its chart of accounts and any sample data are saved together, so an error part way through
+        # never leaves a half-created entity behind.
+        with transaction.atomic():
+            entity_model: EntityModel = EntityModel(
+                name=cleaned_data['name'],
+                slug=EntityModel.generate_slug_from_name(name=cleaned_data['name']),
+                address_1=cleaned_data['address_1'],
+                address_2=cleaned_data['address_2'],
+                city=cleaned_data['city'],
+                state=cleaned_data['state'],
+                zip_code=cleaned_data['zip_code'],
+                country=cleaned_data['country'],
+                email=cleaned_data['email'],
+                website=cleaned_data['website'],
+                phone=cleaned_data['phone'],
+                fy_start_month=cleaned_data['fy_start_month'],
+                accrual_method=cleaned_data['accrual_method'],
+                admin=user_model,
             )
-            entity_generator.populate_entity()
+            entity_model: EntityModel = EntityModel.add_root(instance=entity_model)
+            default_coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+
+            if default_coa:
+                entity_model.populate_default_coa(activate_accounts=activate_accounts, coa_model=default_coa_model)
+
+            if sample_data:
+                # The generator needs the demo extra, so it is loaded only when sample data is requested.
+                entity_data_generator_class = lazy_loader.get_entity_data_generator()
+                entity_generator = entity_data_generator_class(
+                    entity_model=entity_model,
+                    user_model=self.request.user,
+                    start_dttm=get_localtime() - timedelta(days=30 * 8),
+                    capital_contribution=Decimal.from_float(50000),
+                    days_forward=30 * 7,
+                    tx_quantity=50,
+                )
+                entity_generator.populate_entity()
 
         return HttpResponseRedirect(redirect_to=self.get_success_url())
 
