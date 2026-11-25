@@ -81,6 +81,7 @@ ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 DEFAULT_FY_START_MONTH = 1
 
 
+
 class EntityModelValidationError(ValidationError):
     pass
 
@@ -161,7 +162,7 @@ class EntityModelManager(MP_NodeManager):
         qs = self.get_queryset()
         if user_model.is_superuser and authorized_superuser:
             return qs
-        return qs.filter(Q(admin=user_model) | Q(managers__in=[user_model]))
+        return qs.filter(Q(admin=user_model) | Q(managers__in=[user_model])).distinct()
 
 
 class EntityModelFiscalPeriodMixIn:
@@ -789,9 +790,6 @@ class EntityModelAbstract(
 
     fy_start_month: int
         An integer that specifies the month that the Fiscal Year starts.
-
-    picture
-        The image or logo used to identify the company on reports or UI/UX.
     """
 
     CASH_METHOD = 'cash'
@@ -844,7 +842,6 @@ class EntityModelAbstract(
         verbose_name=_('Fiscal Year Start'),
     )
     last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
-    picture = models.ImageField(blank=True, null=True)
     meta = models.JSONField(default=dict, null=True, blank=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
